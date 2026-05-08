@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
 export const alt = 'Byte-Pulse — fully automated bilingual tech magazine';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -15,30 +14,31 @@ export default async function OpengraphImage() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '70px',
+          padding: 70,
           background: '#0a0a0f',
           backgroundImage:
             'radial-gradient(circle at 25% 0%, rgba(255,51,102,0.25) 0%, transparent 55%), radial-gradient(circle at 80% 90%, rgba(168,85,247,0.18) 0%, transparent 55%)',
-          color: '#fff',
+          color: '#ffffff',
           fontFamily: 'system-ui, sans-serif',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <div
             style={{
+              display: 'flex',
               width: 22,
               height: 22,
-              borderRadius: '50%',
+              borderRadius: 11,
               background: '#ff3366',
-              boxShadow: '0 0 30px rgba(255,51,102,0.6)',
             }}
           />
-          <div style={{ fontSize: 44, fontWeight: 900, letterSpacing: '-0.02em' }}>Byte-Pulse</div>
+          <div style={{ display: 'flex', fontSize: 44, fontWeight: 900 }}>Byte-Pulse</div>
           <div
             style={{
+              display: 'flex',
               fontSize: 18,
               fontWeight: 700,
-              letterSpacing: '0.2em',
+              letterSpacing: 4,
               color: '#7a7a8c',
               marginLeft: 8,
             }}
@@ -47,21 +47,14 @@ export default async function OpengraphImage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div
-            style={{
-              fontSize: 92,
-              fontWeight: 900,
-              letterSpacing: '-0.035em',
-              lineHeight: 1.0,
-              maxWidth: 1000,
-            }}
-          >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', fontSize: 86, fontWeight: 900, lineHeight: 1, color: '#ffffff' }}>
             Tech, gaming, AI —
-            <br />
-            <span style={{ color: '#ff3366' }}>what matters now.</span>
           </div>
-          <div style={{ fontSize: 28, color: '#a8a8b8', maxWidth: 900 }}>
+          <div style={{ display: 'flex', fontSize: 86, fontWeight: 900, lineHeight: 1, color: '#ff3366' }}>
+            what matters now.
+          </div>
+          <div style={{ display: 'flex', fontSize: 28, color: '#a8a8b8', marginTop: 8 }}>
             7 KI-Agenten · 96 Artikel/Tag · EN + DE
           </div>
         </div>
@@ -75,13 +68,13 @@ export default async function OpengraphImage() {
             color: '#7a7a8c',
           }}
         >
-          <span>byte-pulse.net</span>
-          <span style={{ display: 'flex', gap: 24 }}>
-            <span>🤖 AI</span>
-            <span>🎮 Gaming</span>
-            <span>⚙️ Hardware</span>
-            <span>🛡️ Security</span>
-          </span>
+          <div style={{ display: 'flex' }}>byte-pulse.net</div>
+          <div style={{ display: 'flex', gap: 24 }}>
+            <div style={{ display: 'flex' }}>AI</div>
+            <div style={{ display: 'flex' }}>Gaming</div>
+            <div style={{ display: 'flex' }}>Hardware</div>
+            <div style={{ display: 'flex' }}>Security</div>
+          </div>
         </div>
       </div>
     ),

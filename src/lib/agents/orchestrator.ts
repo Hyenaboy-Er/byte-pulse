@@ -7,6 +7,7 @@ import { reviewArticle } from './reviewer';
 import { uniqueSlug } from '../slugify';
 import { getCurrentTrends, trendsBoost, type TrendsSnapshot } from './keyword-research';
 import { translateArticle } from './translator';
+import { tgError } from '../telegram';
 
 export type RunReport = {
   startedAt: string;
@@ -204,6 +205,19 @@ export async function runOnce(): Promise<RunReport> {
   } catch (err) {
     report.error = (err as Error).message;
     await logAgent('orchestrator', 'run', 'error', report.error);
+
+    // Rate-limited Telegram alert: only one error notification per hour
+    try {
+      const recent = await prisma.agentLog.findFirst({
+        where: { agent: 'orchestrator', action: 'tg-alert', createdAt: { gte: new Date(Date.now() - 60 * 60_000) } },
+      });
+      if (!recent) {
+        await tgError(`Writer pipeline crashed: ${report.error?.slice(0, 200)}`);
+        await prisma.agentLog.create({
+          data: { agent: 'orchestrator', action: 'tg-alert', status: 'sent', message: report.error?.slice(0, 200) },
+        });
+      }
+    } catch {}
   }
 
   report.finishedAt = new Date().toISOString();

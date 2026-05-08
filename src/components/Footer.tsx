@@ -14,20 +14,18 @@ export default function Footer() {
     sections: 'Rubriken',
     more: 'Mehr',
     rss: 'RSS',
-    about: 'Über uns',
+    about: 'Impressum',
     privacy: 'Datenschutz',
-    newsletter: 'Newsletter',
-    bottom: (year: number) => `© ${year} ${SITE_NAME}. Artikel werden von KI-Agenten mit Pflicht-Faktencheck erstellt. Quellen sind in jedem Artikel verlinkt.`,
+    bottom: (year: number) => `© ${year} ${SITE_NAME}. Betrieben von BRL Vision Solutions, Leverkusen. Artikel werden von KI-Agenten mit Pflicht-Faktencheck erstellt — Quellen sind in jedem Artikel verlinkt.`,
     feedHref: '/de/feed.xml',
   } : {
     pitch: "Fully automated tech magazine. Seven AI agents scan the world's top sources 24/7 and publish only the stories worth your time.",
     sections: 'Sections',
     more: 'More',
     rss: 'RSS',
-    about: 'About',
+    about: 'About / Impressum',
     privacy: 'Privacy',
-    newsletter: 'Newsletter',
-    bottom: (year: number) => `© ${year} ${SITE_NAME}. Articles are produced by AI editors with mandatory fact-checking. Sources are linked on every article.`,
+    bottom: (year: number) => `© ${year} ${SITE_NAME}. Operated by BRL Vision Solutions, Germany. Articles are produced by AI editors with mandatory fact-checking — sources are linked on every article.`,
     feedHref: '/feed.xml',
   };
   return (
@@ -52,7 +50,6 @@ export default function Footer() {
         <div>
           <div className="text-white/60 mb-3 uppercase text-xs tracking-wider">{t.more}</div>
           <ul className="space-y-2">
-            <li><Link href={`${prefix}/newsletter`} className="hover:text-white text-white/80">{t.newsletter}</Link></li>
             <li><a href={t.feedHref} className="hover:text-white text-white/80">{t.rss}</a></li>
             <li><Link href={`${prefix}/about`} className="hover:text-white text-white/80">{t.about}</Link></li>
             <li><Link href={`${prefix}/privacy`} className="hover:text-white text-white/80">{t.privacy}</Link></li>

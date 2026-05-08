@@ -61,11 +61,11 @@ export function ArticleCard({
               {cat.emoji} {cat.name}
             </span>
           )}
-          <h2 className="mt-4 text-3xl md:text-5xl font-display font-extrabold tracking-tight leading-[1.05] group-hover:text-accent transition">
+          <h2 className="mt-4 text-3xl md:text-5xl font-display font-extrabold tracking-tight leading-[1.1] group-hover:text-accent transition">
             {article.title}
           </h2>
           {article.subtitle && (
-            <p className="mt-3 text-lg md:text-xl text-white/70 max-w-3xl">{article.subtitle}</p>
+            <p className="mt-3 text-lg md:text-xl text-white/70 max-w-3xl line-clamp-2">{article.subtitle}</p>
           )}
           <div className="mt-5 flex items-center gap-3 text-sm text-muted">
             <span>{time}</span>

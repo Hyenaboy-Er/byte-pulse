@@ -1,42 +1,21 @@
-import NewsletterForm from '@/components/NewsletterForm';
-
 export const metadata = {
-  title: 'Newsletter abonnieren',
-  description: 'Die wichtigsten Tech-Storys jeden Werktag um 7:00 Uhr.',
+  title: 'Newsletter — kommt bald',
+  description: 'Der tägliche Byte-Pulse-Newsletter ist noch nicht aktiv.',
   alternates: { languages: { 'en-US': '/newsletter', 'de-DE': '/de/newsletter' } },
 };
 
 export default function NewsletterPageDE() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-16">
+    <div className="max-w-2xl mx-auto px-4 py-16 text-center">
       <div className="text-5xl mb-4">📬</div>
-      <h1 className="font-display font-extrabold text-4xl tracking-tight">Newsletter</h1>
+      <h1 className="font-display font-extrabold text-4xl tracking-tight">Newsletter — kommt bald</h1>
       <p className="text-white/70 mt-3 text-lg">
-        Werktags um 7:00 Uhr in deiner Inbox: die fünf wichtigsten Tech-Storys der letzten 24 Stunden,
-        kuratiert von KI-Redakteuren — ohne Filter-Bubble, ohne Bullshit.
+        Wir feilen noch an der redaktionellen Linie. Der tägliche Newsletter geht online sobald wir
+        gleichmäßige Qualität über alle Rubriken haben. Danke für deine Geduld.
       </p>
-
-      <div className="mt-8">
-        <NewsletterForm />
-      </div>
-
-      <div className="mt-10 grid grid-cols-3 gap-4 text-sm text-white/60">
-        <div>
-          <div className="text-2xl mb-1">⏱</div>
-          <strong className="text-white">2 Min. Lesezeit</strong>
-          <div>Schnell durch beim Kaffee.</div>
-        </div>
-        <div>
-          <div className="text-2xl mb-1">🚫</div>
-          <strong className="text-white">Kein Spam</strong>
-          <div>Nur werktags, eine Mail.</div>
-        </div>
-        <div>
-          <div className="text-2xl mb-1">↗️</div>
-          <strong className="text-white">1 Klick weg</strong>
-          <div>Abmelden in jeder Mail.</div>
-        </div>
-      </div>
+      <p className="text-sm text-muted mt-6">
+        Bis dahin: abonniere den <a href="/de/feed.xml" className="text-accent">RSS-Feed</a>.
+      </p>
     </div>
   );
 }

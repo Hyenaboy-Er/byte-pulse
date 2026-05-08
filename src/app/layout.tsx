@@ -3,6 +3,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import StickyAdBar from '@/components/StickyAdBar';
+import CookieBanner from '@/components/CookieBanner';
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'TechPuls';
 const TAGLINE = process.env.NEXT_PUBLIC_SITE_TAGLINE ?? 'Tech-News, Gaming, KI – alles was heute zählt.';
@@ -30,11 +31,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark">
       <head>
         {adsenseClient ? (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-            crossOrigin="anonymous"
-          />
+          <>
+            {/* Default to denied consent until the user picks in CookieBanner. */}
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});`,
+              }}
+            />
+            <script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
+              crossOrigin="anonymous"
+            />
+          </>
         ) : null}
       </head>
       <body className="min-h-screen flex flex-col">
@@ -42,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1 pb-24">{children}</main>
         <Footer />
         <StickyAdBar />
+        <CookieBanner />
       </body>
     </html>
   );

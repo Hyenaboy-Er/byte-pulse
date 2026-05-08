@@ -11,7 +11,6 @@ export default function Header() {
   const isDE = pathname === '/de' || pathname.startsWith('/de/');
   const prefix = isDE ? '/de' : '';
   const home = isDE ? '/de' : '/';
-  const newsletterLabel = isDE ? 'Newsletter' : 'Newsletter';
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur bg-bg/80 border-b border-white/5">
@@ -40,12 +39,6 @@ export default function Header() {
               aria-label={isDE ? 'Suche' : 'Search'}
             >🔎</Link>
             <LangSwitcher />
-            <Link
-              href="/newsletter"
-              className="ml-1 px-4 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-white font-semibold transition"
-            >
-              {newsletterLabel}
-            </Link>
           </nav>
         </div>
         <div className="md:hidden -mt-2 pb-2 -mx-4 px-4 flex items-center gap-2 overflow-x-auto scrollbar-thin">

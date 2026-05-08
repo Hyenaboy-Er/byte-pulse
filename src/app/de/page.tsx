@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db';
 import { ArticleCard } from '@/components/ArticleCard';
-import NewsletterForm from '@/components/NewsletterForm';
 import AdSlot from '@/components/AdSlot';
 import { CATEGORIES } from '@/lib/categories';
 import { translateArticle } from '@/lib/agents/translator';
@@ -75,12 +74,6 @@ export default async function HomePageDE() {
                 {trending.map((a) => (
                   <ArticleCard key={a.id} article={a as any} variant="compact" hrefPrefix="/de" />
                 ))}
-              </div>
-
-              <div className="rounded-xl bg-gradient-to-br from-accent/20 to-purple-500/10 border border-accent/30 p-5">
-                <div className="font-display font-extrabold text-xl mb-1">{lang.newsletter}</div>
-                <p className="text-sm text-white/70 mb-3">{lang.newsletterPitch}</p>
-                <NewsletterForm compact />
               </div>
 
               <div className="rounded-xl bg-bg-card border border-white/5 p-5">

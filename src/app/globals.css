@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background: #0a0a0f;
+  color: #e8e8ee;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: #ff3366; color: white; }
+
+a { color: inherit; }
+
+.gradient-mesh {
+  background:
+    radial-gradient(at 20% 0%, #ff336622 0px, transparent 50%),
+    radial-gradient(at 80% 0%, #a855f722 0px, transparent 50%),
+    radial-gradient(at 50% 30%, #06b6d422 0px, transparent 50%);
+}
+
+.prose-tech h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; letter-spacing: -0.01em; }
+.prose-tech h3 { font-size: 1.2rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.prose-tech p  { font-size: 1.075rem; line-height: 1.7; margin-bottom: 1rem; color: #d6d6dd; }
+.prose-tech strong { color: #fff; }
+.prose-tech ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #d6d6dd; }
+.prose-tech ul li { margin-bottom: 0.4rem; }
+.prose-tech a { color: #ff5b85; text-decoration: underline; text-underline-offset: 3px; }
+.prose-tech blockquote { border-left: 3px solid #ff3366; padding-left: 1rem; color: #b9b9c4; font-style: italic; margin: 1rem 0; }
+.prose-tech code { background: #1a1a24; padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.95em; }
+
+.scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #2a2a36; border-radius: 4px; }
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 51, 102, 0); }
+}
+.live-dot { animation: pulseGlow 2s infinite; }

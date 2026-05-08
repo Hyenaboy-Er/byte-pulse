@@ -1,0 +1,45 @@
+{
+  "name": "techblog",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "agent:run": "tsx --env-file=.env src/scripts/run-agents.ts",
+    "agent:loop": "tsx --env-file=.env src/scripts/cron-local.ts",
+    "monitor:run": "tsx --env-file=.env src/scripts/run-monitor.ts",
+    "fill": "tsx --env-file=.env src/scripts/fill.ts",
+    "seed": "tsx --env-file=.env src/scripts/seed.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "@mozilla/readability": "^0.5.0",
+    "@prisma/adapter-libsql": "^6.19.3",
+    "@prisma/client": "^6.19.3",
+    "jsdom": "^25.0.1",
+    "next": "15.0.3",
+    "openai": "^4.71.0",
+    "react": "19.0.0-rc-66855b96-20241106",
+    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "rss-parser": "^3.13.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.9.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "node-cron": "^3.0.3",
+    "postcss": "^8.4.49",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^3.4.14",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

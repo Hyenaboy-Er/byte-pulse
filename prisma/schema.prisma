@@ -1,0 +1,80 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  subtitle     String?
+  excerpt      String
+  content      String
+  category     String
+  tags         String    @default("[]")
+  imageUrl     String?
+  imageCredit  String?
+  sourceUrl    String
+  sourceName   String
+  qualityScore Int       @default(0)
+  status       String    @default("draft")
+  views        Int       @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([category, status, publishedAt])
+}
+
+model SeenSource {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  title     String
+  source    String
+  hash      String
+  fetchedAt DateTime @default(now())
+
+  @@index([hash])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  confirmed Boolean  @default(false)
+  token     String
+  createdAt DateTime @default(now())
+}
+
+model AgentLog {
+  id        String   @id @default(cuid())
+  agent     String
+  action    String
+  status    String
+  message   String?
+  meta      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Translation {
+  id          String   @id @default(cuid())
+  articleId   String
+  lang        String   // "de", "fr", ... (target language code)
+  title       String
+  subtitle    String?
+  excerpt     String
+  content     String
+  tags        String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([articleId, lang])
+  @@index([articleId])
+}

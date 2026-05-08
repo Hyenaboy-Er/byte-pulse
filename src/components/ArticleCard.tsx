@@ -99,11 +99,12 @@ export function ArticleCard({
   return (
     <Link
       href={articleHref}
-      className="group block rounded-xl bg-bg-card border border-white/5 hover:border-accent/40 transition overflow-hidden"
+      className="group relative block rounded-xl bg-bg-card border border-white/5 hover:border-accent/50 transition overflow-hidden hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent/10 duration-300"
     >
       {article.imageUrl ? (
-        <div className="aspect-[16/9] w-full overflow-hidden bg-bg-elevated">
-          <img src={article.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-500" />
+        <div className="aspect-[16/9] w-full overflow-hidden bg-bg-elevated relative">
+          <img src={article.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.05] transition duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         </div>
       ) : (
         <div className="aspect-[16/9] gradient-mesh" />
@@ -117,7 +118,7 @@ export function ArticleCard({
         <h3 className="mt-2 text-xl font-display font-bold leading-tight group-hover:text-accent transition line-clamp-3">
           {article.title}
         </h3>
-        <p className="mt-2 text-sm text-white/60 line-clamp-2">{article.excerpt}</p>
+        <p className="mt-2 text-sm text-white/60 line-clamp-2 group-hover:line-clamp-4 transition-all duration-300">{article.excerpt}</p>
         <div className="mt-4 flex items-center gap-2 text-xs text-muted">
           <span>{time}</span>
           <span>·</span>

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import { CATEGORIES } from '@/lib/categories';
+import { relativeTime } from '@/lib/readingTime';
 import Link from 'next/link';
 
 export const revalidate = 60;
@@ -17,8 +18,7 @@ export default async function HomePage() {
   const secondary = articles.slice(1, 5);
   const grid = articles.slice(5, 17);
   const trending = articles.slice(0, 6);
-
-  const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'TechPuls';
+  const lastUpdated = hero?.publishedAt ?? null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -26,6 +26,12 @@ export default async function HomePage() {
         <EmptyState />
       ) : (
         <>
+          {lastUpdated && (
+            <div className="flex items-center gap-2 text-xs text-muted mb-4">
+              <span className="relative inline-flex w-2 h-2 rounded-full bg-green-400 live-dot" />
+              <span>Last update {relativeTime(lastUpdated)} · Updated every 15 min</span>
+            </div>
+          )}
           <section className="mb-10">
             {hero && <ArticleCard article={hero} variant="hero" />}
           </section>

@@ -3,13 +3,14 @@ import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import { CATEGORIES } from '@/lib/categories';
 import { translateArticle } from '@/lib/agents/translator';
+import { relativeTime } from '@/lib/readingTime';
 import Link from 'next/link';
 import { t } from '@/lib/i18n';
 
 export const revalidate = 60;
 export const metadata = {
-  title: 'Byte-Pulse – Tech, Gaming, KI auf Deutsch',
-  description: 'Tech-News, Gaming, KI – das Wichtigste auf Deutsch.',
+  title: 'Aktuelle Tech-News, KI, Gaming, Hardware — Byte-Pulse',
+  description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 15 Minuten neu.',
   alternates: { languages: { 'en-US': '/', 'de-DE': '/de' } },
 };
 
@@ -37,6 +38,7 @@ export default async function HomePageDE() {
   const secondary = translated.slice(1, 5);
   const grid = translated.slice(5, 17);
   const trending = translated.slice(0, 6);
+  const lastUpdated = articles[0]?.publishedAt ?? null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -48,6 +50,12 @@ export default async function HomePageDE() {
         </div>
       ) : (
         <>
+          {lastUpdated && (
+            <div className="flex items-center gap-2 text-xs text-muted mb-4">
+              <span className="relative inline-flex w-2 h-2 rounded-full bg-green-400 live-dot" />
+              <span>Letztes Update {relativeTime(lastUpdated, 'de')} · alle 15 Min aktualisiert</span>
+            </div>
+          )}
           <section className="mb-10">
             {hero && <ArticleCard article={hero as any} variant="hero" hrefPrefix="/de" />}
           </section>

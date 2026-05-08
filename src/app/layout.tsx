@@ -5,23 +5,32 @@ import Footer from '@/components/Footer';
 import StickyAdBar from '@/components/StickyAdBar';
 import CookieBanner from '@/components/CookieBanner';
 
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'TechPuls';
-const TAGLINE = process.env.NEXT_PUBLIC_SITE_TAGLINE ?? 'Tech-News, Gaming, KI – alles was heute zählt.';
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+// SEO-tuned: keyword-rich title + concise description that reads naturally.
+const HOME_TITLE = 'Latest tech news, AI, gaming, hardware — Byte-Pulse';
+const HOME_DESCRIPTION =
+  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Bilingual EN/DE, fact-checked, updated every 15 minutes.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME} – ${TAGLINE}`, template: `%s · ${SITE_NAME}` },
-  description: TAGLINE,
+  title: { default: HOME_TITLE, template: `%s · ${SITE_NAME}` },
+  description: HOME_DESCRIPTION,
   applicationName: SITE_NAME,
+  keywords: [
+    'tech news', 'AI news', 'gaming news', 'hardware news', 'mobile',
+    'software', 'cybersecurity', 'crypto', 'science', 'EV',
+    'Byte-Pulse', 'tech magazine', 'European tech',
+  ],
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
-    title: SITE_NAME,
-    description: TAGLINE,
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     locale: 'en_US',
   },
-  twitter: { card: 'summary_large_image', title: SITE_NAME, description: TAGLINE },
+  twitter: { card: 'summary_large_image', title: HOME_TITLE, description: HOME_DESCRIPTION },
   alternates: { types: { 'application/rss+xml': '/feed.xml' } },
 };
 

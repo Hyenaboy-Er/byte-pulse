@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
 import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
+import AffiliateCTA from '@/components/AffiliateCTA';
 import { getCategory } from '@/lib/categories';
 import { formatDate, readingTime } from '@/lib/readingTime';
 import { translateArticle } from '@/lib/agents/translator';
@@ -134,6 +135,8 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
       {!article.imageUrl && <div className="my-8 h-px bg-white/5" />}
 
       <ArticleBody content={content} />
+
+      <AffiliateCTA category={article.category} lang="de" />
 
       <AdSlot slot="article-bottom" />
 

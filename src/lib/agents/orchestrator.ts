@@ -8,6 +8,8 @@ import { uniqueSlug } from '../slugify';
 import { getCurrentTrends, trendsBoost, type TrendsSnapshot } from './keyword-research';
 import { translateArticle } from './translator';
 import { tgError } from '../telegram';
+import { injectAmazonLinks } from '../affiliate';
+import { broadcastNewArticle } from '../social';
 
 export type RunReport = {
   startedAt: string;
@@ -224,13 +226,18 @@ export async function runOnce(): Promise<RunReport> {
       return existing !== null;
     });
 
+    // Inject Amazon affiliate links into article body (idempotent: only first
+    // mention of each product gets linked). No-op if AMAZON_ASSOCIATE_TAG is unset.
+    const { content: monetizedContent, injected } = injectAmazonLinks(humanized.content, 'en');
+    if (injected > 0) await logAgent('affiliate', 'amazon-inject', 'success', `${injected} links`);
+
     const created = await prisma.article.create({
       data: {
         slug,
         title: finalTitle,
         subtitle: humanized.subtitle,
         excerpt: humanized.excerpt,
-        content: humanized.content,
+        content: monetizedContent,
         category: humanized.category,
         tags: JSON.stringify(humanized.tags ?? []),
         imageUrl: researchResult.imageUrl,
@@ -252,6 +259,21 @@ export async function runOnce(): Promise<RunReport> {
       await logAgent('translator', 'translated', 'success', slug, { lang: 'de' });
     } catch (err) {
       await logAgent('translator', 'translated', 'error', (err as Error).message);
+    }
+
+    // 7. Social broadcast — fan out to X / LinkedIn / Mastodon / Bluesky / Telegram channel.
+    // Each channel silently no-ops if its env creds aren't set, so it stays safe during onboarding.
+    try {
+      const results = await broadcastNewArticle({
+        slug, title: finalTitle, excerpt: humanized.excerpt, category: humanized.category,
+        tags: humanized.tags, imageUrl: researchResult.imageUrl,
+      });
+      const ok = results.filter((r) => r.ok).map((r) => r.channel);
+      const failed = results.filter((r) => !r.ok && !/not set|missing/i.test(r.error ?? ''));
+      if (ok.length) await logAgent('social', 'broadcast', 'success', ok.join(','));
+      for (const f of failed) await logAgent('social', `broadcast-${f.channel}`, 'error', f.error);
+    } catch (err) {
+      await logAgent('social', 'broadcast', 'error', (err as Error).message);
     }
   } catch (err) {
     report.error = (err as Error).message;

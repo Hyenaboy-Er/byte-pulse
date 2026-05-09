@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import StickyAdBar from '@/components/StickyAdBar';
 import CookieBanner from '@/components/CookieBanner';
+import ThirdPartyScripts from '@/components/ThirdPartyScripts';
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -77,6 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Footer />
         <StickyAdBar />
         <CookieBanner />
+        <ThirdPartyScripts />
         <Analytics />
         <SpeedInsights />
       </body>

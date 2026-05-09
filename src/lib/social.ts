@@ -20,20 +20,67 @@ type ChannelResult = { channel: string; ok: boolean; error?: string };
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
 
 // ─── X (Twitter) ───────────────────────────────────────────────────────────
-// Uses OAuth2 user-context Bearer token (X API v2 /tweets endpoint).
-// Set X_BEARER_TOKEN with a User Access Token from a Project (not the Bearer
-// from the App settings — that one only allows read).
+// /2/tweets requires user-context auth — App-only Bearer cannot post tweets.
+// We sign requests with OAuth 1.0a HMAC-SHA1 (consumer key/secret + access
+// token/secret). This is the simplest path for an automated bot.
+import { createHmac, randomBytes } from 'node:crypto';
+
+function rfc3986(s: string): string {
+  return encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+}
+
+function oauth1Header(opts: {
+  method: string; url: string; consumerKey: string; consumerSecret: string;
+  token: string; tokenSecret: string;
+  // Extra params to include in signature (form-data params, query params).
+  // For JSON-body POSTs, this is empty.
+  params?: Record<string, string>;
+}): string {
+  const { method, url, consumerKey, consumerSecret, token, tokenSecret, params = {} } = opts;
+  const oauthParams: Record<string, string> = {
+    oauth_consumer_key: consumerKey,
+    oauth_nonce: randomBytes(16).toString('hex'),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_token: token,
+    oauth_version: '1.0',
+  };
+  // Build signature base string
+  const allParams = { ...oauthParams, ...params };
+  const sortedKeys = Object.keys(allParams).sort();
+  const paramString = sortedKeys.map((k) => `${rfc3986(k)}=${rfc3986(allParams[k])}`).join('&');
+  const baseString = [method.toUpperCase(), rfc3986(url), rfc3986(paramString)].join('&');
+  const signingKey = `${rfc3986(consumerSecret)}&${rfc3986(tokenSecret)}`;
+  const signature = createHmac('sha1', signingKey).update(baseString).digest('base64');
+  oauthParams.oauth_signature = signature;
+  // Header: only oauth_* params, RFC3986-encoded, comma-separated, sorted
+  const header = 'OAuth ' + Object.keys(oauthParams).sort()
+    .map((k) => `${rfc3986(k)}="${rfc3986(oauthParams[k])}"`).join(', ');
+  return header;
+}
+
 async function postToX(t: BroadcastTarget): Promise<ChannelResult> {
-  const token = process.env.X_BEARER_TOKEN;
-  if (!token) return { channel: 'x', ok: false, error: 'X_BEARER_TOKEN not set' };
+  const consumerKey = process.env.X_API_KEY;
+  const consumerSecret = process.env.X_API_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+  if (!consumerKey || !consumerSecret || !accessToken || !accessTokenSecret) {
+    return { channel: 'x', ok: false, error: 'X OAuth1 creds missing' };
+  }
 
   const tagBlock = (t.tags ?? []).slice(0, 3).map((s) => `#${s.replace(/\s+/g, '')}`).join(' ');
   const text = `${t.title}\n\n${t.url}${tagBlock ? '\n\n' + tagBlock : ''}`.slice(0, 280);
+  const url = 'https://api.x.com/2/tweets';
+
+  const authHeader = oauth1Header({
+    method: 'POST', url,
+    consumerKey, consumerSecret, token: accessToken, tokenSecret: accessTokenSecret,
+  });
 
   try {
-    const res = await fetch('https://api.x.com/2/tweets', {
+    const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
       signal: AbortSignal.timeout(10_000),
     });

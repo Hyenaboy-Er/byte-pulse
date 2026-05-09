@@ -5,6 +5,7 @@
 
 import { prisma } from '../db';
 import { chat, MODELS, extractJson } from '../openai';
+import { injectAmazonLinks } from '../affiliate';
 
 export type Translation = {
   title: string;
@@ -75,6 +76,10 @@ Translate to German per the rules.`;
 
   const parsed = extractJson<Translation>(text);
   if (!parsed) throw new Error(`Translator JSON parse failed: ${text.slice(0, 200)}`);
+
+  // Inject .de Amazon affiliate links into the German content (separate tag from EN).
+  const { content: monetizedContent } = injectAmazonLinks(parsed.content, 'de');
+  parsed.content = monetizedContent;
 
   // 4. Cache
   await prisma.translation.create({

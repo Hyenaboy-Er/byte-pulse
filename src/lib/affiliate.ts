@@ -2,15 +2,22 @@
 // safe to commit. If an env var is missing, the helper returns null and the
 // caller falls back to plain text — no broken links.
 
-const AMAZON_TAG = process.env.AMAZON_ASSOCIATE_TAG; // e.g. bytepulse-21
+// Multi-region Amazon tags. We have separate Associate IDs per Amazon region:
+//   - DE (.de) → bytepulse-21 in EU PartnerNet
+//   - US (.com) → bytepulse01-20 in US Associates
+//   - UK/FR/ES/IT also covered by EU PartnerNet (same EU account, separate tag per region — fill in once IDs arrive by email).
+// Each var is optional. AMAZON_ASSOCIATE_TAG remains as a fallback default.
+const AMAZON_TAGS = {
+  en: process.env.AMAZON_ASSOCIATE_TAG_US ?? process.env.AMAZON_ASSOCIATE_TAG,
+  de: process.env.AMAZON_ASSOCIATE_TAG_DE ?? process.env.AMAZON_ASSOCIATE_TAG,
+} as const;
 const SKIMLINKS_ID = process.env.NEXT_PUBLIC_SKIMLINKS_ID; // for the loader script
 const NORDVPN_REF = process.env.NORDVPN_AFFILIATE_REF; // Awin link or NordVPN partner code
 const SURFSHARK_REF = process.env.SURFSHARK_AFFILIATE_REF;
 const HOSTINGER_REF = process.env.HOSTINGER_AFFILIATE_REF;
 const PROTONVPN_REF = process.env.PROTONVPN_AFFILIATE_REF;
 
-// Amazon TLD per locale. Use .de for German edition since most readers will
-// land on the EN site from US/UK and the DE edition from Germany.
+// Amazon TLD per locale. EN articles → amazon.com (US), DE articles → amazon.de.
 const AMAZON_HOSTS = { en: 'amazon.com', de: 'amazon.de' } as const;
 type Lang = keyof typeof AMAZON_HOSTS;
 
@@ -55,10 +62,11 @@ export const PRODUCT_KEYWORDS: { match: RegExp; query: string; cat: 'mobile' | '
 ];
 
 export function amazonSearchUrl(query: string, lang: Lang = 'en'): string | null {
-  if (!AMAZON_TAG) return null;
+  const tag = AMAZON_TAGS[lang];
+  if (!tag) return null;
   const host = AMAZON_HOSTS[lang];
   const q = encodeURIComponent(query);
-  return `https://www.${host}/s?k=${q}&tag=${AMAZON_TAG}`;
+  return `https://www.${host}/s?k=${q}&tag=${tag}`;
 }
 
 // Inject Amazon affiliate links into article markdown ONCE per product mention.
@@ -66,7 +74,7 @@ export function amazonSearchUrl(query: string, lang: Lang = 'en'): string | null
 // product page look spammy and tank UX. Skips replacements that already sit
 // inside an existing markdown link [text](url).
 export function injectAmazonLinks(markdown: string, lang: Lang = 'en'): { content: string; injected: number } {
-  if (!AMAZON_TAG) return { content: markdown, injected: 0 };
+  if (!AMAZON_TAGS[lang]) return { content: markdown, injected: 0 };
 
   let content = markdown;
   let injected = 0;

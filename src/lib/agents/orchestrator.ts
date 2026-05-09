@@ -32,6 +32,37 @@ async function logAgent(agent: string, action: string, status: string, message?:
   } catch {}
 }
 
+// Stop-words removed before comparing titles. Kept short on purpose — anything
+// longer would over-deduplicate ("iPhone 17 Pro Max launches in fall" should
+// still be distinct from "iPhone 17 launches in spring").
+const STOPWORDS = new Set([
+  'a','an','the','and','or','of','for','to','in','on','at','with','by','from','as','is','are','was','were','be','been','being',
+  'this','that','these','those','it','its','their','our','your','he','she','they','them','his','her',
+  'new','update','updates','released','launches','release','launching','now','today','can','will',
+  'about','after','before','over','under','via','vs','versus','no','not','more','all','one','two',
+  // German stopwords for de-language sources
+  'der','die','das','und','oder','von','zu','in','auf','bei','mit','für','aus','nach','über','unter','vor','nun',
+  'ist','sind','war','waren','sein','wird','werden','kann','könnte','wurde','wurden',
+  'ein','eine','einer','eines','einem','einen','dem','des','den','daß','dass',
+]);
+
+function titleSignature(title: string): Set<string> {
+  return new Set(
+    title.toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w))
+  );
+}
+
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (!a.size || !b.size) return 0;
+  let intersect = 0;
+  for (const t of a) if (b.has(t)) intersect++;
+  const union = a.size + b.size - intersect;
+  return union > 0 ? intersect / union : 0;
+}
+
 function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnapshot | null): { item: FeedItem; boost: number } | null {
   const fresh = items.filter((i) => !seenHashes.has(i.hash));
   if (!fresh.length) return null;
@@ -87,6 +118,26 @@ export async function runOnce(): Promise<RunReport> {
     const pick = result.item;
     report.picked = { title: pick.title, source: pick.source.name, link: pick.link, trendsBoost: result.boost };
     await logAgent('orchestrator', 'pick', 'info', pick.title, { source: pick.source.name, trendsBoost: result.boost });
+
+    // Semantic dedup: hash-based dedup catches identical URLs, but RSS feeds publish
+    // multiple articles about the same event ("Discord outage" 3x in 3h from Engadget).
+    // Compare picked title against recently published article titles via Jaccard similarity.
+    const recentPublished = await prisma.article.findMany({
+      where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 12 * 3600_000) } },
+      select: { title: true },
+      take: 200,
+    });
+    const pickSig = titleSignature(pick.title);
+    const dupTitle = recentPublished.find((p) => jaccard(pickSig, titleSignature(p.title)) >= 0.55);
+    if (dupTitle) {
+      await logAgent('orchestrator', 'dedup', 'info', `near-duplicate of ${dupTitle.title.slice(0, 80)}`, { picked: pick.title.slice(0, 120) });
+      // Mark as seen so we don't pick it again next run
+      await prisma.seenSource.create({
+        data: { url: pick.link, title: pick.title, source: pick.source.name, hash: pick.hash },
+      }).catch(() => null);
+      report.finishedAt = new Date().toISOString();
+      return report;
+    }
 
     // mark as seen so we don't loop on a bad input
     await prisma.seenSource.create({

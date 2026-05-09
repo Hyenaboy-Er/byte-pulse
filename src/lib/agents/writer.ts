@@ -35,6 +35,15 @@ Style rules:
   - A second-to-last paragraph "What's still unclear:" — honest list of open questions
   - Final paragraph "Why this matters:" — your editorial take
 - Pick exactly ONE matching category from the list.
+- CATEGORY PRIORITY (read carefully — wrong category = bad SEO):
+  1. If the story's PRIMARY focus is an AI model, AI feature, or LLM (ChatGPT, Claude, Gemini, RAG, prompt eng, AI safety) → category MUST be "ai", even if it ships inside Discord/Slack/Photoshop.
+  2. If the story is about a smartphone, smartwatch or tablet → "mobile" (not "hardware", not "web").
+  3. If the story is about a video game, console, or gaming service → "gaming".
+  4. If the story is about a consumer app/web service (Discord, YouTube, Spotify, Instagram, browsers, social media) → "web".
+  5. If the story is about CPUs/GPUs/chips/PC parts → "hardware".
+  6. If the story is about an OS or developer tool → "software".
+  7. Crypto / EV / Security / Science: only if those are the explicit topic.
+  When in doubt between two categories, pick the more specific one (e.g. "ai" over "software" for an AI tool).
 - 4-6 tags (lowercase, short).
 
 Reply with JSON only:

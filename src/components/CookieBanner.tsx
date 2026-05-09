@@ -9,14 +9,18 @@ export default function CookieBanner() {
   const isDE = pathname === '/de' || pathname.startsWith('/de/');
   const [show, setShow] = useState(false);
 
-  // Banner only renders if AdSense is configured. If not, no tracking → no need.
-  // The actual env check happens server-side via the inlined client value.
-  const adsenseEnabled =
+  // Banner renders if ANY tracking ad network is configured (AdSense, Adsterra,
+  // OneSignal). If none → no tracking → no banner needed.
+  const trackingActive =
     typeof window !== 'undefined' &&
-    !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+    (
+      !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT ||
+      !!process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_URL ||
+      !!process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID
+    );
 
   useEffect(() => {
-    if (!adsenseEnabled) return;
+    if (!trackingActive) return;
     try {
       const v = localStorage.getItem(STORAGE_KEY);
       if (!v) setShow(true);
@@ -24,9 +28,9 @@ export default function CookieBanner() {
       // localStorage might be blocked; show banner anyway
       setShow(true);
     }
-  }, [adsenseEnabled]);
+  }, [trackingActive]);
 
-  if (!adsenseEnabled || !show) return null;
+  if (!trackingActive || !show) return null;
 
   function decide(value: 'accept' | 'reject') {
     try {

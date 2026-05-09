@@ -1,8 +1,10 @@
-// Loads third-party scripts (Skimlinks, OneSignal) AFTER user consent.
-// Reads consent from the same localStorage key the CookieBanner writes
-// (bp_consent_v1 = { value: 'accept' | 'reject' }). When AdSense isn't
-// configured we have no banner — in that case we still load Skimlinks
-// (it's affiliate, not tracking) but defer OneSignal which uses cookies.
+// Loads third-party scripts (Skimlinks, OneSignal, Adsterra Social Bar) AFTER
+// user consent. Reads consent from the same localStorage key the CookieBanner
+// writes (bp_consent_v1 = { value: 'accept' | 'reject' }).
+//
+// When NO ad network is configured we have no banner — in that case we still
+// load Skimlinks (it's affiliate routing under legitimate interest) but defer
+// OneSignal and Adsterra which use cookies for ad tracking.
 'use client';
 import { useEffect, useState } from 'react';
 
@@ -20,23 +22,26 @@ function readConsent(): 'accept' | 'reject' | null {
 export default function ThirdPartyScripts() {
   const skimId = process.env.NEXT_PUBLIC_SKIMLINKS_ID;
   const oneSignalId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+  const adsterraSocialUrl = process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_URL;
   const adsenseEnabled = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  // We show the consent banner whenever ANY ad/tracking network is configured.
+  const trackingActive = adsenseEnabled || !!adsterraSocialUrl || !!oneSignalId;
   const [consent, setConsent] = useState<'accept' | 'reject' | null>(null);
 
   useEffect(() => {
     setConsent(readConsent());
-    // Re-read on storage events so this responds to other tabs / consent changes.
     const onStorage = (e: StorageEvent) => { if (e.key === STORAGE_KEY) setConsent(readConsent()); };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // Skimlinks affiliate loader. Skimlinks itself is affiliate routing — it sets
-  // a cookie to attribute clicks. So we gate it the same way as OneSignal:
-  // if AdSense is on (= banner shown), wait for accept; else just load.
-  const loadSkim = !!skimId && (!adsenseEnabled || consent === 'accept');
-  // OneSignal sets cookies + service worker — always require consent if AdSense on.
-  const loadOneSignal = !!oneSignalId && (!adsenseEnabled || consent === 'accept');
+  // Skimlinks: affiliate routing, lower bar (legitimate interest). Load when no
+  // tracking gate is active OR when the user accepted.
+  const loadSkim = !!skimId && (!trackingActive || consent === 'accept');
+  // OneSignal: web push uses a Service Worker + a subscription cookie → consent required.
+  const loadOneSignal = !!oneSignalId && (!trackingActive || consent === 'accept');
+  // Adsterra Social Bar: ad-network tracking cookies → consent required.
+  const loadAdsterra = !!adsterraSocialUrl && (!trackingActive || consent === 'accept');
 
   return (
     <>
@@ -61,6 +66,9 @@ export default function ThirdPartyScripts() {
             }}
           />
         </>
+      )}
+      {loadAdsterra && (
+        <script async src={adsterraSocialUrl} />
       )}
     </>
   );

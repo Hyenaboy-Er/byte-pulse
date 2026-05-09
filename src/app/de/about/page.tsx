@@ -35,12 +35,15 @@ export default function ImpressumDE() {
         Anschrift wie oben
       </p>
 
-      <h2>Hinweis zu KI-generierten Inhalten</h2>
+      <h2>Transparenzhinweis zur Inhaltserstellung</h2>
       <p>
-        Die redaktionellen Beiträge auf dieser Seite werden vollständig von KI-Agenten erstellt und vor
-        der Veröffentlichung qualitäts- und faktengeprüft. Bei jedem Artikel ist die Originalquelle
-        verlinkt. Trotz sorgfältiger Prüfung können wir keine Gewähr für die Richtigkeit aller Inhalte
-        übernehmen — bitte vor wichtigen Entscheidungen die Originalquelle konsultieren.
+        Um mit der Geschwindigkeit der Tech-Branche Schritt zu halten, setzen wir im
+        gesamten redaktionellen Prozess (Recherche, Texterstellung, Übersetzung, Faktencheck)
+        KI-gestützte Tools ein. Jeder Artikel wird vor Veröffentlichung gegen die verlinkte
+        Originalquelle geprüft. Trotz sorgfältiger Kontrollen können wir keine Gewähr für die
+        Richtigkeit jedes Details übernehmen — bitte vor wichtigen Entscheidungen die
+        Originalquelle konsultieren. Korrekturen gerne an{' '}
+        <a href="mailto:corrections@byte-pulse.net">corrections@byte-pulse.net</a>.
       </p>
 
       <h2>Haftungsausschluss</h2>

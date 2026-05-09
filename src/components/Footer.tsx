@@ -10,22 +10,22 @@ export default function Footer() {
   const isDE = pathname === '/de' || pathname.startsWith('/de/');
   const prefix = isDE ? '/de' : '';
   const t = isDE ? {
-    pitch: 'Vollautomatisches Tech-Magazin. Sieben KI-Agenten scannen die wichtigsten Quellen rund um die Uhr und veröffentlichen nur die Storys die deine Zeit wert sind.',
+    pitch: 'Tech-News, die zählen. Wir scannen die wichtigsten Quellen rund um die Uhr und veröffentlichen nur die Storys, die deine Zeit wert sind.',
     sections: 'Rubriken',
     more: 'Mehr',
     rss: 'RSS',
     about: 'Impressum',
     privacy: 'Datenschutz',
-    bottom: (year: number) => `© ${year} ${SITE_NAME}. Betrieben von BRL Vision Solutions, Leverkusen. Artikel werden von KI-Agenten mit Pflicht-Faktencheck erstellt — Quellen sind in jedem Artikel verlinkt.`,
+    bottom: (year: number) => `© ${year} ${SITE_NAME}. Betrieben von BRL Vision Solutions, Leverkusen. Quellen sind in jedem Artikel verlinkt.`,
     feedHref: '/de/feed.xml',
   } : {
-    pitch: "Fully automated tech magazine. Seven AI agents scan the world's top sources 24/7 and publish only the stories worth your time.",
+    pitch: "Tech news that matters. We scan the world's top sources around the clock and publish only the stories worth your time.",
     sections: 'Sections',
     more: 'More',
     rss: 'RSS',
     about: 'About / Impressum',
     privacy: 'Privacy',
-    bottom: (year: number) => `© ${year} ${SITE_NAME}. Operated by BRL Vision Solutions, Germany. Articles are produced by AI editors with mandatory fact-checking — sources are linked on every article.`,
+    bottom: (year: number) => `© ${year} ${SITE_NAME}. Operated by BRL Vision Solutions, Germany. Sources are linked on every article.`,
     feedHref: '/feed.xml',
   };
   return (

@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Byte-Pulse — fully automated bilingual tech magazine';
+export const alt = 'Byte-Pulse — bilingual tech news magazine';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -55,7 +55,7 @@ export default async function OpengraphImage() {
             what matters now.
           </div>
           <div style={{ display: 'flex', fontSize: 28, color: '#a8a8b8', marginTop: 8 }}>
-            7 KI-Agenten · 96 Artikel/Tag · EN + DE
+            Updated every 15 min · Bilingual EN + DE
           </div>
         </div>
 

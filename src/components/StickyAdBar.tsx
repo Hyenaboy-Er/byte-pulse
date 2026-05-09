@@ -4,7 +4,10 @@ import AdSlot from './AdSlot';
 
 export default function StickyAdBar() {
   const [closed, setClosed] = useState(false);
-  if (closed) return null;
+  // Hide the entire sticky bar (including chrome) in prod when ads aren't configured —
+  // otherwise visitors see an empty "Ad" rail at the bottom of every page.
+  const adsenseEnabled = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  if (closed || !adsenseEnabled) return null;
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-bg/95 backdrop-blur">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3">

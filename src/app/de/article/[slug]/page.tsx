@@ -22,16 +22,24 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const tr = await prisma.translation.findUnique({ where: { articleId_lang: { articleId: a.id, lang: 'de' } } });
   const title = tr?.title ?? a.title;
   const description = tr?.excerpt ?? a.excerpt;
-  const ogImage = a.imageUrl ?? `/api/og/${a.slug}`;
+  const path = `/de/article/${a.slug}`;
+  const ogImage = a.imageUrl ? `/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}` : `/api/og/${a.slug}`;
   return {
     title,
     description,
-    alternates: { languages: { 'en-US': `/article/${a.slug}`, 'de-DE': `/de/article/${a.slug}` } },
+    alternates: {
+      canonical: path,
+      languages: { 'en-US': `/article/${a.slug}`, 'de-DE': path },
+    },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
     openGraph: {
       type: 'article',
+      siteName: 'Byte-Pulse',
       title,
       description,
+      url: path,
       publishedTime: a.publishedAt?.toISOString(),
+      modifiedTime: a.updatedAt.toISOString(),
       images: [{ url: ogImage }],
       locale: 'de_DE',
     },

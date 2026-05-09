@@ -1,6 +1,9 @@
 export default function AdSlot({ slot, label = 'Ad' }: { slot: string; label?: string }) {
   const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
   if (!client) {
+    // In production we hide the slot entirely so visitors never see scaffolding text.
+    // In dev, show a placeholder so we know where ads will land.
+    if (process.env.NODE_ENV === 'production') return null;
     return (
       <div className="my-6 rounded-xl border border-dashed border-white/10 bg-bg-card/50 px-4 py-8 text-center text-xs text-muted">
         {label} · AdSense slot „{slot}" (visible once NEXT_PUBLIC_ADSENSE_CLIENT is set)

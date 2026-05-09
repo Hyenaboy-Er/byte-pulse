@@ -11,7 +11,19 @@ export const revalidate = 60;
 export const metadata = {
   title: 'Aktuelle Tech-News, KI, Gaming, Hardware — Byte-Pulse',
   description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 15 Minuten neu.',
-  alternates: { languages: { 'en-US': '/', 'de-DE': '/de' } },
+  alternates: {
+    canonical: '/de',
+    languages: { 'en-US': '/', 'de-DE': '/de' },
+    types: { 'application/rss+xml': '/de/feed.xml' },
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Byte-Pulse',
+    locale: 'de_DE',
+    url: '/de',
+    title: 'Aktuelle Tech-News, KI, Gaming, Hardware — Byte-Pulse',
+    description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 15 Minuten neu.',
+  },
 };
 
 export default async function HomePageDE() {

@@ -16,16 +16,25 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const a = await prisma.article.findUnique({ where: { slug } });
   if (!a) return {};
-  const ogImage = a.imageUrl ?? `/api/og/${a.slug}`;
+  const path = `/article/${a.slug}`;
+  // Self-hosted OG image so social embeds don't break when source removes its image.
+  const ogImage = a.imageUrl ? `/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}` : `/api/og/${a.slug}`;
   return {
     title: a.title,
     description: a.excerpt,
-    alternates: { languages: { 'en-US': `/article/${a.slug}`, 'de-DE': `/de/article/${a.slug}` } },
+    alternates: {
+      canonical: path,
+      languages: { 'en-US': path, 'de-DE': `/de/article/${a.slug}` },
+    },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
     openGraph: {
       type: 'article',
+      siteName: 'Byte-Pulse',
       title: a.title,
       description: a.excerpt,
+      url: path,
       publishedTime: a.publishedAt?.toISOString(),
+      modifiedTime: a.updatedAt.toISOString(),
       images: [{ url: ogImage }],
       locale: 'en_US',
     },

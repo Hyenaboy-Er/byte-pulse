@@ -63,6 +63,20 @@ model AgentLog {
   @@index([createdAt])
 }
 
+// Tracks which inbound emails the Email-Watcher agent has already processed so
+// it never double-alerts on Telegram. Keyed on Gmail's stable Message-ID header.
+model EmailSeen {
+  id         String   @id @default(cuid())
+  messageId  String   @unique
+  fromAddr   String
+  subject    String
+  category   String   // 'critical' | 'monetization' | 'seo' | 'platform' | 'other'
+  seenAt     DateTime @default(now())
+
+  @@index([seenAt])
+  @@index([category, seenAt])
+}
+
 model Translation {
   id          String   @id @default(cuid())
   articleId   String

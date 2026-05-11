@@ -74,6 +74,41 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : null}
       </head>
       <body className="min-h-screen flex flex-col">
+        {/* Organization + WebSite JSON-LD — global trust signal. Google
+            picks this up for rich-results, AdSense uses it as a publisher
+            identity signal, and bing.com/news uses it for inclusion. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: SITE_NAME,
+                url: SITE_URL,
+                logo: `${SITE_URL}/icon.svg`,
+                sameAs: ['https://twitter.com/bytePulsenew'],
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  contactType: 'editorial',
+                  email: process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'hello@byte-pulse.net',
+                  availableLanguage: ['en', 'de'],
+                },
+              },
+              {
+                '@context': 'https://schema.org',
+                '@type': 'WebSite',
+                name: SITE_NAME,
+                url: SITE_URL,
+                potentialAction: {
+                  '@type': 'SearchAction',
+                  target: `${SITE_URL}/search?q={search_term_string}`,
+                  'query-input': 'required name=search_term_string',
+                },
+              },
+            ]),
+          }}
+        />
         <Header />
         <main className="flex-1 pb-24">{children}</main>
         <Footer />

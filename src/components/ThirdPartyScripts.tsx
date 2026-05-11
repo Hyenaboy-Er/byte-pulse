@@ -1,10 +1,10 @@
-// Loads third-party scripts (Skimlinks, OneSignal, Adsterra Social Bar) AFTER
-// user consent. Reads consent from the same localStorage key the CookieBanner
-// writes (bp_consent_v1 = { value: 'accept' | 'reject' }).
+// Loads third-party scripts (Skimlinks, OneSignal) AFTER user consent. Reads
+// consent from the same localStorage key the CookieBanner writes
+// (bp_consent_v1 = { value: 'accept' | 'reject' }).
 //
-// When NO ad network is configured we have no banner — in that case we still
-// load Skimlinks (it's affiliate routing under legitimate interest) but defer
-// OneSignal and Adsterra which use cookies for ad tracking.
+// Adsterra Social Bar was removed entirely (was an aggressive popunder, hurt
+// UX + Lighthouse). Adsterra Native Banner (in-article, contextual) is loaded
+// by src/components/AdsterraNative.tsx on per-article pages.
 'use client';
 import { useEffect, useState } from 'react';
 
@@ -22,10 +22,9 @@ function readConsent(): 'accept' | 'reject' | null {
 export default function ThirdPartyScripts() {
   const skimId = process.env.NEXT_PUBLIC_SKIMLINKS_ID;
   const oneSignalId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-  const adsterraSocialUrl = process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_URL;
   const adsenseEnabled = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
-  // We show the consent banner whenever ANY ad/tracking network is configured.
-  const trackingActive = adsenseEnabled || !!adsterraSocialUrl || !!oneSignalId;
+  // Show consent banner whenever ANY ad/tracking network is configured.
+  const trackingActive = adsenseEnabled || !!oneSignalId;
   const [consent, setConsent] = useState<'accept' | 'reject' | null>(null);
 
   useEffect(() => {
@@ -40,14 +39,6 @@ export default function ThirdPartyScripts() {
   const loadSkim = !!skimId && (!trackingActive || consent === 'accept');
   // OneSignal: web push uses a Service Worker + a subscription cookie → consent required.
   const loadOneSignal = !!oneSignalId && (!trackingActive || consent === 'accept');
-  // Adsterra Social Bar: DISABLED in production. The Adsterra Social Bar is an
-  // aggressive popunder/sticky-ad unit that loads before page paint, shows
-  // low-quality / NSFW-adjacent creatives, and hurts both UX and Lighthouse
-  // scores. We were getting visible mobile complaints. Native Banner stays
-  // (in-article, contextual). Re-enable here only if a cleaner Adsterra unit
-  // type is approved later.
-  const loadAdsterra = false;
-  void adsterraSocialUrl;
 
   return (
     <>
@@ -72,9 +63,6 @@ export default function ThirdPartyScripts() {
             }}
           />
         </>
-      )}
-      {loadAdsterra && (
-        <script async src={adsterraSocialUrl} />
       )}
     </>
   );

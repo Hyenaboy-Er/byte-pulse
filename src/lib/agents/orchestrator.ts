@@ -10,6 +10,7 @@ import { translateArticle } from './translator';
 import { tgError } from '../telegram';
 import { injectAmazonLinks } from '../affiliate';
 import { broadcastNewArticle } from '../social';
+import { pingIndexNow } from '../indexnow';
 
 export type RunReport = {
   startedAt: string;
@@ -382,6 +383,15 @@ export async function runOnce(): Promise<RunReport> {
 
     report.published = { slug };
     await logAgent('orchestrator', 'published', 'success', slug, { score: review.score });
+
+    // Ping IndexNow (Bing/Yandex) with both EN and DE URLs so they're crawled
+    // within minutes instead of waiting for the next bot pass. Non-fatal on
+    // failure — Google doesn't use IndexNow yet but Bing does, and Bing-indexed
+    // pages also show on DuckDuckGo / Ecosia.
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+    pingIndexNow([`${SITE_URL}/article/${slug}`, `${SITE_URL}/de/article/${slug}`])
+      .then((r) => logAgent('indexnow', 'ping', r.ok ? 'success' : 'warn', `status=${r.status} urls=${r.submitted}`))
+      .catch(() => null);
 
     // 6. Immediate DE translation so /de/* pages show the article in German right away.
     try {

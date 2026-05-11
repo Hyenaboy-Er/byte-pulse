@@ -220,7 +220,11 @@ export async function runOnce(): Promise<RunReport> {
     // wastes a full cron slot (picker stuck on the top trending item, dedup
     // rejects it, return). Cap attempts at 3 to keep the request under the
     // 60-second Vercel limit; if nothing fresh passes, the next cron retries.
-    const MAX_PICK_ATTEMPTS = 3;
+    // 2 attempts (was 3): one to skip the dominant trending dup, one to actually
+    // pick. More than that pushes a full writer cycle past Vercel's 60s timeout
+    // when the OpenAI fallback is active (every call is +5-10s slower than
+    // Gemini direct).
+    const MAX_PICK_ATTEMPTS = 2;
     const localSeen = new Set(seenHashes);
     let pick: FeedItem | null = null;
     let pickBoost = 0;

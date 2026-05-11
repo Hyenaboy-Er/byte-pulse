@@ -70,7 +70,7 @@ Translate to German per the rules.`;
     model: MODELS.writer,
     system: SYSTEM_DE,
     user: userPrompt,
-    maxTokens: 6000,
+    maxTokens: 4000,
     json: true,
   });
 

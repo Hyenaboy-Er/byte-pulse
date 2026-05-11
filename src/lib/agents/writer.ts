@@ -85,10 +85,11 @@ Write a standalone English article from this source.`;
     model: MODELS.writer,
     system: SYSTEM,
     user: userPrompt,
-    // Gemini 2.5 Flash counts internal reasoning tokens against the output budget,
-    // so a 1000-1500-word JSON article needs ~6k headroom. GPT-4o was fine at 2400
-    // but the new budget is also safe for it — pure ceiling, billed per actual token.
-    maxTokens: 6000,
+    // 6000 was overkill — caused 60s Vercel timeouts when EVERY agent fell back
+    // to OpenAI (slower than Gemini per token). 4000 still covers a 1500-word
+    // JSON article on either provider; we trade theoretical headroom for actual
+    // pipeline completion.
+    maxTokens: 4000,
     json: true,
   });
 

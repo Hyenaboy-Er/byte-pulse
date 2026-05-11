@@ -139,7 +139,15 @@ export async function runOnce(): Promise<RunReport> {
       await logAgent('keyword-research', 'fetched', 'success', `topics=${trends.topics.length}`, { topTopics: trends.topics.slice(0, 15) });
     }
 
-    const seen = await prisma.seenSource.findMany({ select: { hash: true }, take: 5000 });
+    // CRITICAL: orderBy fetchedAt desc — without it, Turso returns rows in storage
+    // order and recently-inserted hashes can fall outside the take limit, causing
+    // the orchestrator to re-pick the same trending story every iteration even
+    // though it was just marked seen seconds ago.
+    const seen = await prisma.seenSource.findMany({
+      select: { hash: true },
+      orderBy: { fetchedAt: 'desc' },
+      take: 10000,
+    });
     const seenHashes = new Set(seen.map((s) => s.hash));
     const fresh = items.filter((i) => !seenHashes.has(i.hash));
     report.freshCandidates = fresh.length;

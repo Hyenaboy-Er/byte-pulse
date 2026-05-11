@@ -26,6 +26,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const description = tr?.excerpt ?? a.excerpt;
   const path = `/de/article/${a.slug}`;
   const ogImage = a.imageUrl ? `/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}` : `/api/og/${a.slug}`;
+  // If German translation hasn't completed yet, this page is serving English fallback content.
+  // Google flags that as "Duplikat – vom Nutzer nicht als kanonisch festgelegt" because the
+  // /de URL has identical text to the /en URL. NOINDEX until the German version exists.
+  const hasGerman = !!tr;
   return {
     title,
     description,
@@ -33,7 +37,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       canonical: path,
       languages: { 'en-US': `/article/${a.slug}`, 'de-DE': path },
     },
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
+    robots: hasGerman
+      ? { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } }
+      : { index: false, follow: true, googleBot: { index: false, follow: true } },
     openGraph: {
       type: 'article',
       siteName: 'Byte-Pulse',

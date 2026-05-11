@@ -7,27 +7,45 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await prisma.article.findMany({
     where: { status: 'published' },
-    select: { slug: true, updatedAt: true },
+    select: { id: true, slug: true, updatedAt: true },
     orderBy: { publishedAt: 'desc' },
     take: 1000,
   });
 
-  const articleUrls = articles.flatMap((a) => [
-    {
-      url: `${SITE_URL}/article/${a.slug}`,
-      lastModified: a.updatedAt,
-      changeFrequency: 'hourly' as const,
-      priority: 0.8,
-      alternates: { languages: { en: `${SITE_URL}/article/${a.slug}`, de: `${SITE_URL}/de/article/${a.slug}` } },
-    },
-    {
-      url: `${SITE_URL}/de/article/${a.slug}`,
-      lastModified: a.updatedAt,
-      changeFrequency: 'hourly' as const,
-      priority: 0.7,
-      alternates: { languages: { en: `${SITE_URL}/article/${a.slug}`, de: `${SITE_URL}/de/article/${a.slug}` } },
-    },
-  ]);
+  // Look up which articles have a German translation. We only emit /de/article/<slug>
+  // into the sitemap once the translation exists — otherwise Google indexes the
+  // English fallback content under the /de URL and flags it as a duplicate.
+  const translated = await prisma.translation.findMany({
+    where: { lang: 'de', articleId: { in: articles.map((a) => a.id) } },
+    select: { articleId: true },
+  });
+  const hasGerman = new Set(translated.map((t) => t.articleId));
+
+  const articleUrls = articles.flatMap((a) => {
+    const enAlt = `${SITE_URL}/article/${a.slug}`;
+    const deAlt = `${SITE_URL}/de/article/${a.slug}`;
+    const entries: MetadataRoute.Sitemap = [
+      {
+        url: enAlt,
+        lastModified: a.updatedAt,
+        changeFrequency: 'hourly' as const,
+        priority: 0.8,
+        alternates: hasGerman.has(a.id)
+          ? { languages: { en: enAlt, de: deAlt } }
+          : { languages: { en: enAlt } },
+      },
+    ];
+    if (hasGerman.has(a.id)) {
+      entries.push({
+        url: deAlt,
+        lastModified: a.updatedAt,
+        changeFrequency: 'hourly' as const,
+        priority: 0.7,
+        alternates: { languages: { en: enAlt, de: deAlt } },
+      });
+    }
+    return entries;
+  });
 
   const categoryUrls = CATEGORIES.flatMap((c) => [
     { url: `${SITE_URL}/category/${c.slug}`,    lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.6 },

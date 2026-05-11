@@ -124,13 +124,23 @@ export async function runOnce(): Promise<RunReport> {
     // Semantic dedup: hash-based dedup catches identical URLs, but RSS feeds publish
     // multiple articles about the same event ("Discord outage" 3x in 3h from Engadget).
     // Compare picked title against recently published article titles via Jaccard similarity.
+    // Window widened to 7 days because Google flags near-duplicates as "Duplikat – vom
+    // Nutzer nicht als kanonisch festgelegt" even when published days apart.
     const recentPublished = await prisma.article.findMany({
-      where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 12 * 3600_000) } },
-      select: { title: true },
-      take: 200,
+      where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 7 * 24 * 3600_000) } },
+      select: { title: true, slug: true },
+      take: 500,
     });
     const pickSig = titleSignature(pick.title);
-    const dupTitle = recentPublished.find((p) => jaccard(pickSig, titleSignature(p.title)) >= 0.55);
+    const pickSlugPrefix = pick.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+    // Two-tier dedup: (a) classic Jaccard 0.55 within the broad window; (b) slug-prefix
+    // exact match (first 40 chars) — catches the case where two different RSS items
+    // yield the same first-40-char headline (e.g. "iPhone 17 Pro Max launches in fall").
+    const dupTitle = recentPublished.find((p) => {
+      if (jaccard(pickSig, titleSignature(p.title)) >= 0.55) return true;
+      const prefix = p.slug.slice(0, 40);
+      return prefix.length >= 30 && prefix === pickSlugPrefix.slice(0, prefix.length);
+    });
     if (dupTitle) {
       await logAgent('orchestrator', 'dedup', 'info', `near-duplicate of ${dupTitle.title.slice(0, 80)}`, { picked: pick.title.slice(0, 120) });
       // Mark as seen so we don't pick it again next run

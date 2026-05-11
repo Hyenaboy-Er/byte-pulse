@@ -12,7 +12,7 @@ import { join } from 'node:path';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const ALLOWED_FILES = new Set(['email-seen']);
+const ALLOWED_FILES = new Set(['email-seen', 'article-original-title']);
 
 export async function GET(req: Request) {
   const url = new URL(req.url);

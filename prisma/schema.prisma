@@ -9,24 +9,29 @@ datasource db {
 }
 
 model Article {
-  id           String    @id @default(cuid())
-  slug         String    @unique
-  title        String
-  subtitle     String?
-  excerpt      String
-  content      String
-  category     String
-  tags         String    @default("[]")
-  imageUrl     String?
-  imageCredit  String?
-  sourceUrl    String
-  sourceName   String
-  qualityScore Int       @default(0)
-  status       String    @default("draft")
-  views        Int       @default(0)
-  publishedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  title         String
+  subtitle      String?
+  excerpt       String
+  content       String
+  category      String
+  tags          String    @default("[]")
+  imageUrl      String?
+  imageCredit   String?
+  sourceUrl     String
+  sourceName    String
+  // Source-language title from the RSS pick (German for Heise/Golem/t3n,
+  // English for The Verge / Engadget / TechCrunch). Used by the dedup gate
+  // to compare cross-language stories — comparing the picked German title
+  // against ALREADY-translated English titles produces false negatives.
+  originalTitle String?
+  qualityScore  Int       @default(0)
+  status        String    @default("draft")
+  views         Int       @default(0)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([status, publishedAt])
   @@index([category, status, publishedAt])

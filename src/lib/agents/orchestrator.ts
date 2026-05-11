@@ -57,12 +57,47 @@ function titleSignature(title: string): Set<string> {
   );
 }
 
+// Cross-language stem signature: takes the first 4 characters of every
+// substantive word ≥4 chars. Catches German/English pairs like
+// "reproduzierbare"/"reproducible" (both → "repr"), "Pakete"/"packages"
+// (both → "pake"/"pack" — won't match on these but on others). Plus tech
+// proper nouns ("debian", "ubuntu", "kubernetes") match literally.
+// Lossy on purpose: false positives are OK because we have a second
+// confirmation (Jaccard on full-word signature with high threshold).
+function stemSignature(title: string): Set<string> {
+  return new Set(
+    title.toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 4 && !STOPWORDS.has(w))
+      .map((w) => w.slice(0, 4))
+  );
+}
+
 function jaccard(a: Set<string>, b: Set<string>): number {
   if (!a.size || !b.size) return 0;
   let intersect = 0;
   for (const t of a) if (b.has(t)) intersect++;
   const union = a.size + b.size - intersect;
   return union > 0 ? intersect / union : 0;
+}
+
+// Best-of cross-comparison between a picked RSS item and a published article.
+// Returns the highest similarity across the three legitimate comparisons:
+//   1. picked.title vs published.title         (English picked vs English published)
+//   2. picked.title vs published.originalTitle (same-language vs same-language)
+//   3. stem-3 picked.title vs stem-3 published.{title, originalTitle}
+function bestSim(pickedTitle: string, p: { title: string; originalTitle: string | null }): number {
+  const ps = titleSignature(pickedTitle);
+  const sims: number[] = [
+    jaccard(ps, titleSignature(p.title)),
+  ];
+  if (p.originalTitle) sims.push(jaccard(ps, titleSignature(p.originalTitle)));
+  // Stem-based cross-language signal
+  const pStem = stemSignature(pickedTitle);
+  sims.push(jaccard(pStem, stemSignature(p.title)));
+  if (p.originalTitle) sims.push(jaccard(pStem, stemSignature(p.originalTitle)));
+  return Math.max(...sims);
 }
 
 function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnapshot | null): { item: FeedItem; boost: number } | null {
@@ -122,22 +157,25 @@ export async function runOnce(): Promise<RunReport> {
     await logAgent('orchestrator', 'pick', 'info', pick.title, { source: pick.source.name, trendsBoost: result.boost });
 
     // Semantic dedup: hash-based dedup catches identical URLs, but RSS feeds publish
-    // multiple articles about the same event ("Discord outage" 3x in 3h from Engadget).
-    // Compare picked title against recently published article titles via Jaccard similarity.
-    // Window widened to 7 days because Google flags near-duplicates as "Duplikat – vom
-    // Nutzer nicht als kanonisch festgelegt" even when published days apart.
+    // multiple articles about the same event — e.g. Heise + Golem + t3n all post about
+    // "Debian 14 mandates reproducible builds" within hours of each other under different
+    // URLs. Window widened to 7 days because Google flags near-duplicates as "Duplikat –
+    // vom Nutzer nicht als kanonisch festgelegt" even when published days apart.
     const recentPublished = await prisma.article.findMany({
       where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 7 * 24 * 3600_000) } },
-      select: { title: true, slug: true },
+      select: { title: true, slug: true, sourceUrl: true, originalTitle: true },
       take: 500,
     });
-    const pickSig = titleSignature(pick.title);
     const pickSlugPrefix = pick.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
-    // Two-tier dedup: (a) classic Jaccard 0.55 within the broad window; (b) slug-prefix
-    // exact match (first 40 chars) — catches the case where two different RSS items
-    // yield the same first-40-char headline (e.g. "iPhone 17 Pro Max launches in fall").
+    // Four-tier dedup, each tier covers a different failure mode of the previous one:
+    //   1. sourceUrl exact match — same RSS item literally seen before
+    //   2. Cross-language similarity via bestSim() — German pick vs English published
+    //      and stem-3 overlap (catches "reproduzierbar" ↔ "reproducible")
+    //   3. Full-word Jaccard ≥ 0.50 — handles same-language near-rephrasings
+    //   4. Slug-prefix exact match — same first 30+ chars of slug
     const dupTitle = recentPublished.find((p) => {
-      if (jaccard(pickSig, titleSignature(p.title)) >= 0.55) return true;
+      if (p.sourceUrl === pick.link) return true;
+      if (bestSim(pick.title, p) >= 0.45) return true;
       const prefix = p.slug.slice(0, 40);
       return prefix.length >= 30 && prefix === pickSlugPrefix.slice(0, prefix.length);
     });
@@ -254,6 +292,10 @@ export async function runOnce(): Promise<RunReport> {
         imageCredit: researchResult.imageUrl ? `Image source: ${pick.source.name}` : null,
         sourceUrl: pick.link,
         sourceName: pick.source.name,
+        // Stored so future dedup comparisons can match in the SOURCE language —
+        // critical for catching the "Heise + Golem + t3n all publish the same
+        // German story" pattern that previously slipped through.
+        originalTitle: pick.title,
         qualityScore: review.score,
         status: 'published',
         publishedAt: new Date(),

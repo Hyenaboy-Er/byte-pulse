@@ -100,11 +100,36 @@ export function modelForRole(role: LLMRole): string {
   return providerConfig(activeProvider()).defaults[role];
 }
 
-/**
- * Single chat-completion entry point used by every agent. Provider-agnostic.
- * `role` is the agent that's calling, used to pick the right model.
- */
-export async function llmChat(opts: {
+// Rate-limit / quota error detection. Gemini free tier throws 429 with empty
+// body after 10 RPM or 250 RPD; OpenAI throws 429 after monthly quota; DeepSeek
+// returns 429 on burst. All three surface as { status: 429 } from the openai SDK.
+function isRateLimit(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { status?: number; code?: string; message?: string };
+  if (e.status === 429) return true;
+  if (e.code === 'rate_limit_exceeded' || e.code === 'insufficient_quota') return true;
+  const msg = (e.message ?? '').toLowerCase();
+  return msg.includes('429') || msg.includes('rate limit') || msg.includes('quota');
+}
+
+// Track when we last warned about a provider so the Telegram channel doesn't
+// drown in alerts when every request in a cron run trips the same limit.
+const lastFallbackAlert: Partial<Record<LLMProvider, number>> = {};
+async function alertFallback(from: LLMProvider, to: LLMProvider) {
+  const now = Date.now();
+  if ((lastFallbackAlert[from] ?? 0) > now - 30 * 60 * 1000) return; // 30 min cooldown
+  lastFallbackAlert[from] = now;
+  // Lazy-load to avoid circular deps
+  try {
+    const { tgWarn } = await import('./telegram');
+    await tgWarn(`LLM provider ${from} hit rate limit / quota — falling back to ${to}. ` +
+      (from === 'gemini'
+        ? 'Enable billing at https://aistudio.google.com/api-keys → Abrechnung einrichten to lift free-tier limits (still ~12 $/month total at our volume).'
+        : 'Top up the provider account or change LLM_PROVIDER.'));
+  } catch {}
+}
+
+async function callProvider(p: LLMProvider, opts: {
   role: LLMRole;
   system: string;
   user: string;
@@ -112,13 +137,10 @@ export async function llmChat(opts: {
   json?: boolean;
   temperature?: number;
 }): Promise<string> {
-  const provider = activeProvider();
-  const client = clientFor(provider);
-  const model = modelForRole(opts.role);
-
-  // Gemini's OpenAI-compat endpoint accepts `response_format: { type: 'json_object' }`
-  // since 2025; DeepSeek does too. OpenAI requires the system prompt to mention "json"
-  // when json mode is on — we let callers handle that themselves (existing prompts do).
+  const client = clientFor(p);
+  const cfg = providerConfig(p);
+  const envOverride = process.env[`LLM_${opts.role.toUpperCase()}_MODEL`];
+  const model = envOverride && envOverride.length > 0 ? envOverride : cfg.defaults[opts.role];
   const res = await client.chat.completions.create({
     model,
     max_tokens: opts.maxTokens ?? 2000,
@@ -130,6 +152,36 @@ export async function llmChat(opts: {
     temperature: opts.temperature ?? 0.7,
   });
   return res.choices[0]?.message?.content?.trim() ?? '';
+}
+
+/**
+ * Single chat-completion entry point used by every agent. Provider-agnostic
+ * with automatic OpenAI fallback on rate-limit / quota errors so the publish
+ * pipeline survives Gemini free-tier throttling without operator intervention.
+ *
+ * Fallback rule: ANY non-OpenAI provider that throws a 429 / quota error
+ * automatically retries through OpenAI (if OPENAI_API_KEY is set). A
+ * rate-limited Telegram alert fires the first time fallback triggers per
+ * 30-minute window so the operator knows to enable provider billing.
+ */
+export async function llmChat(opts: {
+  role: LLMRole;
+  system: string;
+  user: string;
+  maxTokens?: number;
+  json?: boolean;
+  temperature?: number;
+}): Promise<string> {
+  const primary = activeProvider();
+  try {
+    return await callProvider(primary, opts);
+  } catch (err) {
+    if (primary !== 'openai' && isRateLimit(err) && process.env.OPENAI_API_KEY) {
+      await alertFallback(primary, 'openai');
+      return await callProvider('openai', opts);
+    }
+    throw err;
+  }
 }
 
 export function extractJson<T = unknown>(text: string): T | null {

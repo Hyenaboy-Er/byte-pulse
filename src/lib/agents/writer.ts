@@ -26,12 +26,11 @@ Style rules:
 - Headline 50-75 chars. Punchy and curious. No clickbait words like "shocking" / "you won't believe". Concrete + intriguing.
 - Subtitle 80-130 chars.
 - Excerpt 140-160 chars for meta-description / cards.
-- Content 1000-1500 words in Markdown (more reading area = better AdSense + reader engagement):
-  - 8-10 paragraphs with 3-4 ## subheadings
-  - 3-4 bold pull-quotes (**...**)
-  - One or two bullet lists of 3-5 items where it makes sense
+- Content 700-1000 words in Markdown (compact, scannable — long enough to rank, short enough to read fully on mobile):
+  - 6-8 paragraphs with 2-3 ## subheadings
+  - 2-3 bold pull-quotes (**...**)
+  - One bullet list of 3-5 items where it makes sense
   - A "Background:" or "Context:" paragraph with relevant industry knowledge (no invented specs)
-  - A "How it compares:" mini-section if there's a competitor or precedent worth mentioning
   - A second-to-last paragraph "What's still unclear:" — honest list of open questions
   - Final paragraph "Why this matters:" — your editorial take
 - Pick exactly ONE matching category from the list.

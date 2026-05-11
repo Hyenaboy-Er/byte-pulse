@@ -35,6 +35,14 @@ export async function GET(req: Request) {
     });
     return NextResponse.json({ ok: true, count: rows.length, rows });
   }
+  if (q === 'recent-logs') {
+    const rows = await prisma.agentLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 40,
+      select: { agent: true, action: true, status: true, message: true, meta: true, createdAt: true },
+    });
+    return NextResponse.json({ ok: true, count: rows.length, rows });
+  }
   if (q === 'articles-published-today') {
     const rows = await prisma.article.findMany({
       where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 24 * 3600_000) } },

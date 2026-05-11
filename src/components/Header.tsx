@@ -34,6 +34,12 @@ export default function Header() {
               </Link>
             ))}
             <Link
+              href={`${prefix}/saved`}
+              className="px-3 py-1.5 rounded-full hover:bg-white/5 text-white/80 hover:text-white transition"
+              aria-label={isDE ? 'Gespeichert' : 'Saved'}
+              title={isDE ? 'Gespeichert' : 'Saved'}
+            >♡</Link>
+            <Link
               href="/search"
               className="px-3 py-1.5 rounded-full hover:bg-white/5 text-white/80 hover:text-white transition"
               aria-label={isDE ? 'Suche' : 'Search'}

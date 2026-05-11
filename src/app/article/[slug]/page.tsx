@@ -8,8 +8,9 @@ import AdsterraNative from '@/components/AdsterraNative';
 import ReadingProgress from '@/components/ReadingProgress';
 import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
+import SaveButton from '@/components/SaveButton';
 import { getCategory } from '@/lib/categories';
-import { formatDate, readingTime } from '@/lib/readingTime';
+import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
@@ -113,6 +114,18 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
         {article.publishedAt && <span>{formatDate(article.publishedAt)}</span>}
         <span>·</span>
         <span>{readingTime(article.content)} min read</span>
+        {article.views && article.views >= 50 && (
+          <>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1 text-orange-400">
+              <span>🔥</span>{formatViews(article.views)} reads
+            </span>
+          </>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <SaveButton slug={article.slug} title={article.title} />
       </div>
 
       {article.imageUrl && (

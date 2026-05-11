@@ -24,6 +24,17 @@ const STR = {
   },
 };
 
+// Human-friendly view counter: 1234 → "1.2k", 12345 → "12k", 1234567 → "1.2M".
+// Falls back to the raw number under 1000. The "🔥" prefix is added at render
+// time so we don't bake locale prefs into the formatter.
+export function formatViews(n: number): string {
+  if (!n || n < 0) return '0';
+  if (n < 1000) return String(n);
+  if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  if (n < 1_000_000) return Math.round(n / 1000) + 'k';
+  return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+}
+
 export function relativeTime(date: Date | string, lang: 'en' | 'de' = 'en'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const diff = Date.now() - d.getTime();

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getCategory } from '@/lib/categories';
-import { readingTime, relativeTime } from '@/lib/readingTime';
+import { readingTime, relativeTime, formatViews } from '@/lib/readingTime';
 
 type Article = {
   slug: string;
@@ -13,6 +13,7 @@ type Article = {
   publishedAt: Date | string | null;
   sourceName: string;
   qualityScore: number;
+  views?: number;
 };
 
 type Variant = 'default' | 'hero' | 'compact';
@@ -123,12 +124,18 @@ export function ArticleCard({
           {article.title}
         </h3>
         <p className="mt-2 text-sm text-white/60 line-clamp-2 group-hover:line-clamp-4 transition-all duration-300">{article.excerpt}</p>
-        <div className="mt-4 flex items-center gap-2 text-xs text-muted">
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted flex-wrap">
           <span>{time}</span>
           <span>·</span>
           <span>{readingTime(article.content)} {minLabel}</span>
-          <span>·</span>
-          <span>{article.sourceName}</span>
+          {article.views && article.views >= 50 && (
+            <>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1 text-orange-400/90">
+                <span>🔥</span>{formatViews(article.views)}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </Link>

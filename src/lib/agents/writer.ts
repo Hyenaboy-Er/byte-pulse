@@ -85,11 +85,11 @@ Write a standalone English article from this source.`;
     model: MODELS.writer,
     system: SYSTEM,
     user: userPrompt,
-    // 6000 was overkill — caused 60s Vercel timeouts when EVERY agent fell back
-    // to OpenAI (slower than Gemini per token). 4000 still covers a 1500-word
-    // JSON article on either provider; we trade theoretical headroom for actual
-    // pipeline completion.
-    maxTokens: 4000,
+    // Sweet-spot: 5000. The writer is the single longest output in the pipeline
+    // (1500-word JSON article + Gemini internal reasoning tokens). 4000 was
+    // truncating mid-JSON. 6000 timed out via OpenAI fallback. 5000 is the
+    // empirical "fits under Vercel's 60s AND completes the article cleanly".
+    maxTokens: 5000,
     json: true,
   });
 

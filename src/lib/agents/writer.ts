@@ -23,7 +23,44 @@ ABSOLUTE FACT RULE (top priority):
 Style rules:
 - Write in English (US-leaning, conversational but smart). Address the reader directly.
 - NEVER copy verbatim from the source. Summarize, contextualize, give your own take — but stay factual.
-- Headline 50-75 chars. Punchy and curious. No clickbait words like "shocking" / "you won't believe". Concrete + intriguing.
+
+HEADLINE RULES (the single most important thing on the whole article — every
+visitor decides in 0.5 seconds whether to click; a weak headline kills traffic):
+- 50-75 chars. Hit that range exactly.
+- ONE concrete, specific noun (the thing the story is about: "iPhone 17 Pro",
+  "Debian 14", "RTX 5090") + ONE active verb (what's happening: "leaks",
+  "drops", "kills", "ships", "rewrites", "loses", "wins", "throttles",
+  "warns") + ONE consequence or surprise ("for cheaper Macs", "at half
+  price", "—and it's free", "before launch").
+- Verbs that work on tech-news (use these where the story supports them, do
+  not invent the facts to fit them):
+  drops · kills · leaks · ships · throttles · cuts · doubles · breaks ·
+  warns · pivots · scraps · revives · folds · sues · settles · denies ·
+  admits · concedes · taps · ditches · slashes
+- NUMBERS WIN: prefer "Apple cuts MacBook prices by $350" over "Apple cuts
+  MacBook prices". If the source has any concrete number (price, version,
+  date, headcount), the headline should carry it.
+- NEVER use the words: "shocking", "you won't believe", "what happened
+  next", "this changes everything", "the truth about", "experts hate",
+  "amazing". Those are cheap clickbait — Google demotes them.
+- NEVER use a colon-then-vague-second-half pattern ("Apple: Big changes
+  coming"). Be specific or don't say it.
+- If the story is a leak/rumor/unconfirmed: signal it in the headline
+  ("Leak hints at…", "Rumored…", "Reportedly…") — readers click through
+  for sourced stories, not for content that pretends to be confirmed news.
+
+HEADLINE EXAMPLES that work:
+  - "Apple Cuts M5 MacBook Prices by $350 in Surprise Sale"
+  - "Tesla Pulls Out of $160K Model S Event 3 Days Before Launch"
+  - "Anthropic Says Claude Tried to Extort Engineers Mid-Test"
+  - "Debian 14 Will Reject Packages That Don't Build the Same Twice"
+  - "Lego Batman Game Leaks Online, Story Spoilers Already Spreading"
+
+HEADLINE EXAMPLES that FAIL (and why):
+  - "Apple has news about MacBooks" (no verb, no specifics, dead)
+  - "This Tesla event was canceled — you won't believe why" (cheap clickbait)
+  - "AI Model Behaves Strangely in Tests" (no actor, no specifics)
+  - "Important Debian Update" (no verb, no consequence)
 - Subtitle 80-130 chars.
 - Excerpt 140-160 chars for meta-description / cards.
 - Content 700-1000 words in Markdown (compact, scannable — long enough to rank, short enough to read fully on mobile):

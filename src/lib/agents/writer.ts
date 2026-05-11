@@ -84,11 +84,15 @@ Write a standalone English article from this source.`;
     model: MODELS.writer,
     system: SYSTEM,
     user: userPrompt,
-    // Sweet-spot: 5000. The writer is the single longest output in the pipeline
-    // (1500-word JSON article + Gemini internal reasoning tokens). 4000 was
-    // truncating mid-JSON. 6000 timed out via OpenAI fallback. 5000 is the
-    // empirical "fits under Vercel's 60s AND completes the article cleanly".
-    maxTokens: 5000,
+    // 8000. Gemini 2.5 Flash spends 3000-5000 tokens on internal "thinking"
+    // BEFORE emitting any output JSON, and that overhead counts against
+    // max_tokens. Smaller ceilings (4000-5000) caused Gemini to truncate the
+    // JSON mid-excerpt because by the time it started typing, only ~200 tokens
+    // were left in the budget. 8000 leaves room for a 700-1000 word article
+    // plus all the thinking, and still completes well under Vercel's 60s
+    // function timeout (typical wall time: 25-35s on Gemini, 35-50s on the
+    // OpenAI fallback path).
+    maxTokens: 8000,
     json: true,
   });
 

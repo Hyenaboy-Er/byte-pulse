@@ -100,6 +100,25 @@ function bestSim(pickedTitle: string, p: { title: string; originalTitle: string 
   return Math.max(...sims);
 }
 
+// Persist a "we've seen this story" marker that survives RSS headline rewrites.
+// SeenSource has `url @unique`, but feeds (notably Heise) update the headline of
+// the same article-URL over time. Naive prisma.seenSource.create() therefore
+// fails silently on the URL conflict, the new title-hash never lands in the DB,
+// and the picker keeps re-picking the same trending story every iteration.
+// We fall back to a hash-suffixed URL so multiple title-hashes for the same
+// underlying article coexist as separate rows.
+async function markSeen(item: { link: string; title: string; source: { name: string }; hash: string }) {
+  try {
+    await prisma.seenSource.create({
+      data: { url: item.link, title: item.title, source: item.source.name, hash: item.hash },
+    });
+  } catch {
+    await prisma.seenSource.create({
+      data: { url: `${item.link}#h=${item.hash}`, title: item.title, source: item.source.name, hash: item.hash },
+    }).catch(() => null);
+  }
+}
+
 function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnapshot | null): { item: FeedItem; boost: number } | null {
   const fresh = items.filter((i) => !seenHashes.has(i.hash));
   if (!fresh.length) return null;
@@ -189,18 +208,13 @@ export async function runOnce(): Promise<RunReport> {
     });
     if (dupTitle) {
       await logAgent('orchestrator', 'dedup', 'info', `near-duplicate of ${dupTitle.title.slice(0, 80)}`, { picked: pick.title.slice(0, 120) });
-      // Mark as seen so we don't pick it again next run
-      await prisma.seenSource.create({
-        data: { url: pick.link, title: pick.title, source: pick.source.name, hash: pick.hash },
-      }).catch(() => null);
+      await markSeen(pick);
       report.finishedAt = new Date().toISOString();
       return report;
     }
 
     // mark as seen so we don't loop on a bad input
-    await prisma.seenSource.create({
-      data: { url: pick.link, title: pick.title, source: pick.source.name, hash: pick.hash },
-    }).catch(() => null);
+    await markSeen(pick);
 
     // 1. Research — full-text scrape
     const researchResult = await research(pick);

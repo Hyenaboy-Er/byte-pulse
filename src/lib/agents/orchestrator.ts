@@ -177,43 +177,67 @@ export async function runOnce(): Promise<RunReport> {
       return report;
     }
 
-    const result = pickBest(items, seenHashes, trends);
-    if (!result) { report.finishedAt = new Date().toISOString(); return report; }
-    const pick = result.item;
-    report.picked = { title: pick.title, source: pick.source.name, link: pick.link, trendsBoost: result.boost };
-    await logAgent('orchestrator', 'pick', 'info', pick.title, { source: pick.source.name, trendsBoost: result.boost });
-
-    // Semantic dedup: hash-based dedup catches identical URLs, but RSS feeds publish
-    // multiple articles about the same event — e.g. Heise + Golem + t3n all post about
-    // "Debian 14 mandates reproducible builds" within hours of each other under different
-    // URLs. Window widened to 7 days because Google flags near-duplicates as "Duplikat –
-    // vom Nutzer nicht als kanonisch festgelegt" even when published days apart.
+    // Semantic dedup data — loaded ONCE per runOnce() call, reused across pick retries.
+    // Window widened to 7 days because Google flags near-duplicates as "Duplikat – vom
+    // Nutzer nicht als kanonisch festgelegt" even when published days apart.
     const recentPublished = await prisma.article.findMany({
       where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 7 * 24 * 3600_000) } },
       select: { title: true, slug: true, sourceUrl: true, originalTitle: true },
       take: 500,
     });
-    const pickSlugPrefix = pick.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
-    // Four-tier dedup, each tier covers a different failure mode of the previous one:
-    //   1. sourceUrl exact match — same RSS item literally seen before
-    //   2. Cross-language similarity via bestSim() — German pick vs English published
-    //      and stem-3 overlap (catches "reproduzierbar" ↔ "reproducible")
-    //   3. Full-word Jaccard ≥ 0.50 — handles same-language near-rephrasings
-    //   4. Slug-prefix exact match — same first 30+ chars of slug
-    const dupTitle = recentPublished.find((p) => {
-      if (p.sourceUrl === pick.link) return true;
-      if (bestSim(pick.title, p) >= 0.45) return true;
-      const prefix = p.slug.slice(0, 40);
-      return prefix.length >= 30 && prefix === pickSlugPrefix.slice(0, prefix.length);
-    });
-    if (dupTitle) {
-      await logAgent('orchestrator', 'dedup', 'info', `near-duplicate of ${dupTitle.title.slice(0, 80)}`, { picked: pick.title.slice(0, 120) });
-      await markSeen(pick);
+
+    // Pick-and-dedup loop: when a pick fails the dedup gate (typical for trending
+    // stories that already have coverage), advance to the next-best candidate
+    // WITHIN THE SAME cron call. Without this, every Heise+Golem+t3n cluster
+    // wastes a full cron slot (picker stuck on the top trending item, dedup
+    // rejects it, return). Cap attempts at 3 to keep the request under the
+    // 60-second Vercel limit; if nothing fresh passes, the next cron retries.
+    const MAX_PICK_ATTEMPTS = 3;
+    const localSeen = new Set(seenHashes);
+    let pick: FeedItem | null = null;
+    let pickBoost = 0;
+
+    for (let attempt = 0; attempt < MAX_PICK_ATTEMPTS; attempt++) {
+      const result = pickBest(items, localSeen, trends);
+      if (!result) break;
+      const candidate = result.item;
+      await logAgent('orchestrator', 'pick', 'info', candidate.title, { attempt, source: candidate.source.name, trendsBoost: result.boost });
+
+      const candidateSlugPrefix = candidate.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+      // Four-tier dedup, each tier covers a different failure mode of the previous one:
+      //   1. sourceUrl exact match — same RSS item literally seen before
+      //   2. Cross-language similarity via bestSim() — German pick vs English published
+      //      and stem-3 overlap (catches "reproduzierbar" ↔ "reproducible")
+      //   3. Full-word Jaccard ≥ 0.45 — handles same-language near-rephrasings
+      //   4. Slug-prefix exact match — same first 30+ chars of slug
+      const dupTitle = recentPublished.find((p) => {
+        if (p.sourceUrl === candidate.link) return true;
+        if (bestSim(candidate.title, p) >= 0.45) return true;
+        const prefix = p.slug.slice(0, 40);
+        return prefix.length >= 30 && prefix === candidateSlugPrefix.slice(0, prefix.length);
+      });
+
+      if (dupTitle) {
+        await logAgent('orchestrator', 'dedup', 'info', `near-duplicate of ${dupTitle.title.slice(0, 80)} (attempt ${attempt})`, { picked: candidate.title.slice(0, 120) });
+        await markSeen(candidate);
+        localSeen.add(candidate.hash);
+        continue; // try next best
+      }
+
+      pick = candidate;
+      pickBoost = result.boost;
+      break;
+    }
+
+    if (!pick) {
+      await logAgent('orchestrator', 'idle', 'info', `${MAX_PICK_ATTEMPTS} attempts all dedup-rejected`);
       report.finishedAt = new Date().toISOString();
       return report;
     }
 
-    // mark as seen so we don't loop on a bad input
+    report.picked = { title: pick.title, source: pick.source.name, link: pick.link, trendsBoost: pickBoost };
+
+    // Mark the chosen pick as seen so a writer crash doesn't leave it pickable next cron.
     await markSeen(pick);
 
     // 1. Research — full-text scrape

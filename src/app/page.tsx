@@ -9,12 +9,13 @@ import Link from 'next/link';
 export const revalidate = 60;
 
 export default async function HomePage() {
-  // Pull a fat chunk so we can slot articles into hero, ticker, category
-  // sections without re-querying.
+  // Pull a moderate slice — enough for hero + side stack + main grid + 2-3
+  // category rails. 60 was overkill (full first paint paying for cards no
+  // visitor scrolls past). 30 keeps homepage TTI fast on mobile.
   const articles = await prisma.article.findMany({
     where: { status: 'published' },
     orderBy: { publishedAt: 'desc' },
-    take: 60,
+    take: 30,
   });
 
   if (!articles.length) return <EmptyState />;

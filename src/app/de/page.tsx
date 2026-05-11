@@ -30,7 +30,7 @@ export default async function HomePageDE() {
   const articles = await prisma.article.findMany({
     where: { status: 'published' },
     orderBy: { publishedAt: 'desc' },
-    take: 60,
+    take: 30,
   });
 
   if (!articles.length) {

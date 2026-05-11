@@ -40,8 +40,14 @@ export default function ThirdPartyScripts() {
   const loadSkim = !!skimId && (!trackingActive || consent === 'accept');
   // OneSignal: web push uses a Service Worker + a subscription cookie → consent required.
   const loadOneSignal = !!oneSignalId && (!trackingActive || consent === 'accept');
-  // Adsterra Social Bar: ad-network tracking cookies → consent required.
-  const loadAdsterra = !!adsterraSocialUrl && (!trackingActive || consent === 'accept');
+  // Adsterra Social Bar: DISABLED in production. The Adsterra Social Bar is an
+  // aggressive popunder/sticky-ad unit that loads before page paint, shows
+  // low-quality / NSFW-adjacent creatives, and hurts both UX and Lighthouse
+  // scores. We were getting visible mobile complaints. Native Banner stays
+  // (in-article, contextual). Re-enable here only if a cleaner Adsterra unit
+  // type is approved later.
+  const loadAdsterra = false;
+  void adsterraSocialUrl;
 
   return (
     <>

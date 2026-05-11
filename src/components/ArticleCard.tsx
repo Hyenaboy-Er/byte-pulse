@@ -38,41 +38,45 @@ export function ArticleCard({
     return (
       <Link
         href={articleHref}
-        className="group block rounded-2xl bg-bg-card border border-white/5 hover:border-accent/50 transition relative overflow-hidden"
+        className="group relative block rounded-2xl bg-bg-card border border-white/5 hover:border-accent/50 transition overflow-hidden hover:shadow-2xl hover:shadow-accent/10 duration-300"
       >
-        {article.imageUrl ? (
-          <div className="aspect-[16/8] w-full overflow-hidden bg-bg-elevated">
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-bg-elevated">
+          {article.imageUrl ? (
             <img
               src={article.imageUrl}
               alt=""
               loading="eager"
-              className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-500"
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-700"
             />
+          ) : (
+            <div className="w-full h-full gradient-mesh" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-bg-card/40 to-transparent" />
+          {/* Reading-time pill overlaid on the image — visible without scrolling */}
+          <div className="absolute top-4 right-4 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-black/55 backdrop-blur text-white/90 border border-white/10">
+            <span>⏱</span>
+            {readingTime(article.content)} {minRead}
           </div>
-        ) : (
-          <div className="aspect-[16/8] gradient-mesh" />
-        )}
-        <div className="p-6 md:p-8 relative">
+        </div>
+        <div className="p-6 md:p-8 relative -mt-16 md:-mt-20">
           {cat && (
             <span
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/10"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/10 backdrop-blur"
               style={{ color: cat.color }}
             >
               {cat.emoji} {cat.name}
             </span>
           )}
-          <h2 className="mt-4 text-3xl md:text-5xl font-display font-extrabold tracking-tight leading-[1.1] group-hover:text-accent transition">
+          <h2 className="mt-4 text-2xl md:text-4xl font-display font-extrabold tracking-tight leading-[1.1] group-hover:text-accent transition">
             {article.title}
           </h2>
           {article.subtitle && (
-            <p className="mt-3 text-lg md:text-xl text-white/70 max-w-3xl line-clamp-2">{article.subtitle}</p>
+            <p className="mt-3 text-base md:text-lg text-white/70 max-w-3xl line-clamp-2">{article.subtitle}</p>
           )}
-          <div className="mt-5 flex items-center gap-3 text-sm text-muted">
+          <div className="mt-4 flex items-center gap-3 text-xs text-muted">
             <span>{time}</span>
             <span>·</span>
-            <span>{readingTime(article.content)} {minRead}</span>
-            <span>·</span>
-            <span>{sourceLabel}: {article.sourceName}</span>
+            <span>{sourceLabel} {article.sourceName}</span>
           </div>
         </div>
       </Link>

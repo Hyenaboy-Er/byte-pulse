@@ -1,36 +1,41 @@
-import OpenAI from 'openai';
+// Compatibility shim — agents historically import { chat, MODELS, extractJson }
+// from this file. The actual implementation now lives in src/lib/llm.ts and
+// supports OpenAI, Gemini, and DeepSeek. We forward calls and translate the old
+// model-string API (MODELS.writer etc.) into the role-based llmChat API so no
+// agent had to change.
+//
+// New agents should import from '@/lib/llm' directly.
 
-let client: OpenAI | null = null;
+import { llmChat, extractJson as extractJsonLLM, type LLMRole, modelForRole } from './llm';
 
-export function ai(): OpenAI {
-  if (!client) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY fehlt in .env. Trag den Key ein, dann starten die Agenten.');
-    }
-    client = new OpenAI({ apiKey });
-  }
-  return client;
-}
+export { extractJsonLLM as extractJson };
 
+// Legacy MODELS export — kept so existing import lines still resolve. The
+// strings are advisory; the real model used at runtime is decided by the
+// active LLM_PROVIDER + LLM_<ROLE>_MODEL env vars.
 export const MODELS = {
-  writer:    'gpt-4o',
-  humanizer: 'gpt-4o',
-  reviewer:  'gpt-4o-mini',
+  writer:    'writer',
+  humanizer: 'humanizer',
+  reviewer:  'reviewer',
+  translator: 'translator',
   image:     'dall-e-3',
 } as const;
 
-export function extractJson<T = unknown>(text: string): T | null {
-  const fenced = text.match(/```json\s*([\s\S]*?)```/i) ?? text.match(/```\s*([\s\S]*?)```/i);
-  const raw = (fenced ? fenced[1] : text).trim();
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  if (start === -1 || end === -1) return null;
-  try {
-    return JSON.parse(raw.slice(start, end + 1)) as T;
-  } catch {
-    return null;
-  }
+const MODEL_TO_ROLE: Record<string, LLMRole | null> = {
+  'writer':     'writer',
+  'humanizer':  'humanizer',
+  'reviewer':   'reviewer',
+  'translator': 'translator',
+  // Real OpenAI model names from older callers — map them to the closest role
+  // so they still flow through the provider abstraction.
+  'gpt-4o':         'writer',
+  'gpt-4o-mini':    'reviewer',
+  'gpt-4-turbo':    'writer',
+  'gpt-3.5-turbo':  'reviewer',
+};
+
+function roleFromModel(model: string): LLMRole {
+  return MODEL_TO_ROLE[model] ?? 'writer';
 }
 
 export async function chat(opts: {
@@ -39,16 +44,35 @@ export async function chat(opts: {
   user: string;
   maxTokens?: number;
   json?: boolean;
+  temperature?: number;
 }): Promise<string> {
-  const res = await ai().chat.completions.create({
-    model: opts.model,
-    max_tokens: opts.maxTokens ?? 2000,
-    messages: [
-      { role: 'system', content: opts.system },
-      { role: 'user', content: opts.user },
-    ],
-    response_format: opts.json ? { type: 'json_object' } : undefined,
-    temperature: 0.7,
+  const role = roleFromModel(opts.model);
+  return llmChat({
+    role,
+    system: opts.system,
+    user: opts.user,
+    maxTokens: opts.maxTokens,
+    json: opts.json,
+    temperature: opts.temperature,
   });
-  return res.choices[0]?.message?.content?.trim() ?? '';
 }
+
+// Some legacy code paths may still call ai() to access raw OpenAI client (e.g.
+// for image generation). Keep a thin instantiation so they don't break — but
+// only when OPENAI_API_KEY is set.
+import OpenAI from 'openai';
+let legacyClient: OpenAI | null = null;
+export function ai(): OpenAI {
+  if (!legacyClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY missing. Image generation requires OpenAI even when LLM_PROVIDER is set to Gemini/DeepSeek.');
+    }
+    legacyClient = new OpenAI({ apiKey });
+  }
+  return legacyClient;
+}
+
+// Convenience helper so /api/admin/* etc. can show which provider is live.
+export { modelForRole };
+export { activeProviderName } from './llm';

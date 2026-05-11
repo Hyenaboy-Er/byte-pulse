@@ -7,6 +7,7 @@ import AffiliateCTA from '@/components/AffiliateCTA';
 import AdsterraNative from '@/components/AdsterraNative';
 import ReadingProgress from '@/components/ReadingProgress';
 import ShareBar from '@/components/ShareBar';
+import ContinueReading from '@/components/ContinueReading';
 import { getCategory } from '@/lib/categories';
 import { formatDate, readingTime } from '@/lib/readingTime';
 import { translateArticle } from '@/lib/agents/translator';
@@ -172,6 +173,8 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
           </div>
         </section>
       )}
+
+      <ContinueReading excludeId={article.id} excludeCategory={article.category} hrefPrefix="/de" />
     </article>
   );
 }

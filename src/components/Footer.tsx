@@ -16,6 +16,7 @@ export default function Footer() {
     rss: 'RSS',
     about: 'Impressum',
     privacy: 'Datenschutz',
+    contact: 'Kontakt',
     bottom: (year: number) => `© ${year} ${SITE_NAME}. Betrieben von BRL Vision Solutions, Leverkusen. Quellen sind in jedem Artikel verlinkt.`,
     feedHref: '/de/feed.xml',
   } : {
@@ -25,6 +26,7 @@ export default function Footer() {
     rss: 'RSS',
     about: 'About / Impressum',
     privacy: 'Privacy',
+    contact: 'Contact',
     bottom: (year: number) => `© ${year} ${SITE_NAME}. Operated by BRL Vision Solutions, Germany. Sources are linked on every article.`,
     feedHref: '/feed.xml',
   };
@@ -52,6 +54,7 @@ export default function Footer() {
           <ul className="space-y-2">
             <li><a href={t.feedHref} className="hover:text-white text-white/80">{t.rss}</a></li>
             <li><Link href={`${prefix}/about`} className="hover:text-white text-white/80">{t.about}</Link></li>
+            <li><Link href={`${prefix}/contact`} className="hover:text-white text-white/80">{t.contact}</Link></li>
             <li><Link href={`${prefix}/privacy`} className="hover:text-white text-white/80">{t.privacy}</Link></li>
           </ul>
         </div>

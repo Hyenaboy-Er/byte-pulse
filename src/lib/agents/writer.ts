@@ -85,7 +85,10 @@ Write a standalone English article from this source.`;
     model: MODELS.writer,
     system: SYSTEM,
     user: userPrompt,
-    maxTokens: 2400,
+    // Gemini 2.5 Flash counts internal reasoning tokens against the output budget,
+    // so a 1000-1500-word JSON article needs ~6k headroom. GPT-4o was fine at 2400
+    // but the new budget is also safe for it — pure ceiling, billed per actual token.
+    maxTokens: 6000,
     json: true,
   });
 

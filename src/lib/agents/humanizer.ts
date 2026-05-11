@@ -116,7 +116,7 @@ ${JSON.stringify({
     model: MODELS.humanizer,
     system: SYSTEM,
     user: userPrompt,
-    maxTokens: 3000,
+    maxTokens: 6000,
     json: true,
   });
 

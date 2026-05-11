@@ -5,6 +5,8 @@ import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import AffiliateCTA from '@/components/AffiliateCTA';
 import AdsterraNative from '@/components/AdsterraNative';
+import ReadingProgress from '@/components/ReadingProgress';
+import ShareBar from '@/components/ShareBar';
 import { getCategory } from '@/lib/categories';
 import { formatDate, readingTime } from '@/lib/readingTime';
 import { translateArticle } from '@/lib/agents/translator';
@@ -103,6 +105,8 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
   return (
     <article className="max-w-3xl mx-auto px-4 py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ReadingProgress />
+      <ShareBar title={title} />
       <Link href="/de" className="text-sm text-muted hover:text-accent">← Startseite</Link>
 
       {cat && (
@@ -126,10 +130,6 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
         {article.publishedAt && <span>{formatDate(article.publishedAt)}</span>}
         <span>·</span>
         <span>{readingTime(content)} Min. Lesezeit</span>
-        <span>·</span>
-        <span className="inline-flex items-center gap-1">
-          <span className="text-green-400">●</span> Qualität {article.qualityScore}/100
-        </span>
         {!de && <><span>·</span><span className="text-yellow-400">⚠ Englisches Original (Übersetzung folgt)</span></>}
       </div>
 

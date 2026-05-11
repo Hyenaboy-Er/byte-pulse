@@ -5,6 +5,8 @@ import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import AffiliateCTA from '@/components/AffiliateCTA';
 import AdsterraNative from '@/components/AdsterraNative';
+import ReadingProgress from '@/components/ReadingProgress';
+import ShareBar from '@/components/ShareBar';
 import { getCategory } from '@/lib/categories';
 import { formatDate, readingTime } from '@/lib/readingTime';
 import Link from 'next/link';
@@ -82,6 +84,8 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
   return (
     <article className="max-w-3xl mx-auto px-4 py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ReadingProgress />
+      <ShareBar title={article.title} />
 
       <Link href="/" className="text-sm text-muted hover:text-accent">← Home</Link>
 
@@ -108,10 +112,6 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
         {article.publishedAt && <span>{formatDate(article.publishedAt)}</span>}
         <span>·</span>
         <span>{readingTime(article.content)} min read</span>
-        <span>·</span>
-        <span className="inline-flex items-center gap-1">
-          <span className="text-green-400">●</span> Quality {article.qualityScore}/100
-        </span>
       </div>
 
       {article.imageUrl && (

@@ -119,8 +119,36 @@ async function markSeen(item: { link: string; title: string; source: { name: str
   }
 }
 
+// Cheap off-topic pre-filter at picker level. Heise/Golem RSS feeds regularly
+// mix politics, crime, and defense news into their tech streams (e.g. "Auf
+// Mallorca verhaftet: BKA beendet …", "Grün-Schwarz streicht den Datenschutz
+// zusammen", "Rheinmetall und die Telekom bauen Drohnen-Schutzschild"). The
+// reviewer agent correctly rejects these, but only AFTER paying for a full
+// writer+humanizer+reviewer cycle. This pre-filter is intentionally narrow —
+// false negatives are fine, the reviewer is still the last line of defense.
+const OFFTOPIC_TERMS = [
+  // German politics / crime
+  'bundestag', 'bundesregierung', 'verfassungsschutz', 'innenminister',
+  'cdu', 'spd', 'grüne', 'fdp', 'afd', 'csu', 'koalition',
+  'baden-württemberg', 'bayern', 'nrw', 'mecklenburg',
+  'verhaftet', 'festnahme', 'razzia', 'staatsanwaltschaft', 'tatverdächtig',
+  'bka', 'bundeswehr', 'rheinmetall', 'rüstung', 'panzer', 'drohnen-schutz',
+  // English politics / crime / war
+  'congress', 'senate', 'parliament', 'white house', 'pentagon',
+  'arrested', 'indicted', 'prosecutor', 'lawsuit settled',
+  'ukraine war', 'gaza', 'hamas', 'israeli forces', 'russian troops',
+  // Sports / celebrity
+  'bundesliga', 'champions league', 'super bowl', 'olympics',
+  'dua lipa', 'kardashian', 'taylor swift', 'beyoncé',
+];
+
+function looksOffTopic(title: string): boolean {
+  const t = title.toLowerCase();
+  return OFFTOPIC_TERMS.some((kw) => t.includes(kw));
+}
+
 function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnapshot | null): { item: FeedItem; boost: number } | null {
-  const fresh = items.filter((i) => !seenHashes.has(i.hash));
+  const fresh = items.filter((i) => !seenHashes.has(i.hash) && !looksOffTopic(i.title));
   if (!fresh.length) return null;
   const trending = findTrending(fresh);
   let best: FeedItem | null = null;

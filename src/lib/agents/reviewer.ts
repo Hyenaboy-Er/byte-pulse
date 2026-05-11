@@ -74,16 +74,26 @@ function localPlagiarismRisk(article: WrittenArticle, research: Research): numbe
 }
 
 export async function reviewArticle(draft: WrittenArticle, research: Research): Promise<Review> {
-  const userPrompt = `Title: ${draft.title}
-Subtitle: ${draft.subtitle}
-Excerpt (${draft.excerpt.length} chars): ${draft.excerpt}
-Category: ${draft.category} (allowed: ${CATEGORY_SLUGS.join(', ')})
-Tags: ${draft.tags.join(', ')}
-Word count: ${draft.content.split(/\s+/).length}
+  // Defensive: humanizer occasionally returns a draft without tags/subtitle on
+  // Gemini retries. Don't crash the whole pipeline over a missing field — fall
+  // back to safe placeholders so the reviewer can still score the article.
+  const safeTitle = draft.title ?? '(no title)';
+  const safeSubtitle = draft.subtitle ?? '';
+  const safeExcerpt = draft.excerpt ?? '';
+  const safeCategory = draft.category ?? 'web';
+  const safeTags: string[] = Array.isArray(draft.tags) ? draft.tags : [];
+  const safeContent = draft.content ?? '';
+
+  const userPrompt = `Title: ${safeTitle}
+Subtitle: ${safeSubtitle}
+Excerpt (${safeExcerpt.length} chars): ${safeExcerpt}
+Category: ${safeCategory} (allowed: ${CATEGORY_SLUGS.join(', ')})
+Tags: ${safeTags.join(', ')}
+Word count: ${safeContent.split(/\s+/).length}
 
 Content:
 """
-${draft.content}
+${safeContent}
 """
 
 Original source (for plagiarism comparison):

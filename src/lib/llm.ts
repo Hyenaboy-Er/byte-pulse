@@ -73,6 +73,16 @@ function activeProvider(): LLMProvider {
   return 'openai';
 }
 
+// Per-role provider override. Reads LLM_<ROLE>_PROVIDER. Useful for split
+// configs like "writer on OpenAI (no reasoning-token waste, fits 5000-token
+// budget cleanly) but reviewer/humanizer/translator on Gemini (much cheaper
+// for those shorter calls)". Falls back to the global LLM_PROVIDER if unset.
+function providerForRole(role: LLMRole): LLMProvider {
+  const raw = (process.env[`LLM_${role.toUpperCase()}_PROVIDER`] ?? '').toLowerCase();
+  if (raw === 'gemini' || raw === 'deepseek' || raw === 'openai') return raw as LLMProvider;
+  return activeProvider();
+}
+
 const clientCache: Partial<Record<LLMProvider, OpenAI>> = {};
 
 function clientFor(p: LLMProvider): OpenAI {
@@ -172,7 +182,7 @@ export async function llmChat(opts: {
   json?: boolean;
   temperature?: number;
 }): Promise<string> {
-  const primary = activeProvider();
+  const primary = providerForRole(opts.role);
   try {
     return await callProvider(primary, opts);
   } catch (err) {

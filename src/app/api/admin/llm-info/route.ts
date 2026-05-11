@@ -5,6 +5,13 @@
 import { NextResponse } from 'next/server';
 import { activeProviderName, modelForRole } from '@/lib/llm';
 
+const ROLE_PROVIDER_ENVS: Record<string, string> = {
+  writer: 'LLM_WRITER_PROVIDER',
+  humanizer: 'LLM_HUMANIZER_PROVIDER',
+  reviewer: 'LLM_REVIEWER_PROVIDER',
+  translator: 'LLM_TRANSLATOR_PROVIDER',
+};
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
@@ -17,7 +24,13 @@ export async function GET(req: Request) {
   }
   return NextResponse.json({
     ok: true,
-    provider: activeProviderName(),
+    defaultProvider: activeProviderName(),
+    perRoleProvider: {
+      writer: process.env.LLM_WRITER_PROVIDER || `(default: ${activeProviderName()})`,
+      humanizer: process.env.LLM_HUMANIZER_PROVIDER || `(default: ${activeProviderName()})`,
+      reviewer: process.env.LLM_REVIEWER_PROVIDER || `(default: ${activeProviderName()})`,
+      translator: process.env.LLM_TRANSLATOR_PROVIDER || `(default: ${activeProviderName()})`,
+    },
     keys: {
       openai: !!process.env.OPENAI_API_KEY,
       gemini: !!process.env.GEMINI_API_KEY,
@@ -31,3 +44,5 @@ export async function GET(req: Request) {
     },
   });
 }
+
+void ROLE_PROVIDER_ENVS;

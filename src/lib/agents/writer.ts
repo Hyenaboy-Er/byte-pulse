@@ -84,15 +84,13 @@ Write a standalone English article from this source.`;
     model: MODELS.writer,
     system: SYSTEM,
     user: userPrompt,
-    // 8000. Gemini 2.5 Flash spends 3000-5000 tokens on internal "thinking"
-    // BEFORE emitting any output JSON, and that overhead counts against
-    // max_tokens. Smaller ceilings (4000-5000) caused Gemini to truncate the
-    // JSON mid-excerpt because by the time it started typing, only ~200 tokens
-    // were left in the budget. 8000 leaves room for a 700-1000 word article
-    // plus all the thinking, and still completes well under Vercel's 60s
-    // function timeout (typical wall time: 25-35s on Gemini, 35-50s on the
-    // OpenAI fallback path).
-    maxTokens: 8000,
+    // 5000 is right for OpenAI (no reasoning-token waste). On Vercel we set
+    // LLM_WRITER_PROVIDER=openai because Gemini Flash's internal "thinking"
+    // tokens at 5000 budget truncate mid-JSON, and at 8000 we hit Vercel's 60s
+    // function timeout when chained with humanizer + reviewer + translator.
+    // Once Gemini Pro (which has explicit thinking-budget control) is
+    // available via OpenAI-compat, we can switch back.
+    maxTokens: 5000,
     json: true,
   });
 

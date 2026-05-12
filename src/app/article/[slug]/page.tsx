@@ -139,7 +139,7 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
 
       {!article.imageUrl && <div className="my-8 h-px bg-white/5" />}
 
-      <ArticleBody content={article.content} />
+      <ArticleBody content={article.content} category={article.category} lang="en" />
 
       <AdsterraNative />
 

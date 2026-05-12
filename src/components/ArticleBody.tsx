@@ -1,9 +1,16 @@
-// Renders the article markdown with native in-content AdSense slots inserted at
+// Renders the article markdown with monetized in-content slots inserted at
 // optimal positions (after paragraph 3 and after paragraph 6). These are the
 // highest-CTR positions per AdSense best-practices and remain fully visible to
 // the user — labelled "Anzeige" as legally required in DE.
+//
+// When AdSense is configured (NEXT_PUBLIC_ADSENSE_CLIENT set), we render
+// AdSense slots. Otherwise — and CRITICALLY while AdSense approval is pending
+// — we render inline Amazon affiliate cards in those exact same positions so
+// the article never has dead monetization real estate. Once AdSense is live,
+// the slots flip back to AdSense automatically with zero code change.
 import Markdown from './Markdown';
 import AdSlot from './AdSlot';
+import InlineAffiliateCard from './InlineAffiliateCard';
 
 const SPLIT_PARAGRAPH_AFTER = [3, 6];
 
@@ -27,15 +34,34 @@ function splitMarkdownByParagraph(md: string): string[] {
   return parts;
 }
 
-export default function ArticleBody({ content }: { content: string }) {
+export default function ArticleBody({
+  content,
+  category,
+  lang = 'en',
+}: {
+  content: string;
+  category?: string;
+  lang?: 'en' | 'de';
+}) {
   const parts = splitMarkdownByParagraph(content);
+  const adsenseLive = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
   return (
     <>
       {parts.map((part, i) => (
         <div key={i}>
           <Markdown>{part}</Markdown>
           {i < parts.length - 1 && (
-            <AdSlot slot={`in-content-${i + 1}`} label="Ad" />
+            adsenseLive ? (
+              <AdSlot slot={`in-content-${i + 1}`} label="Ad" />
+            ) : (
+              category && (
+                <InlineAffiliateCard
+                  category={category}
+                  lang={lang}
+                  variant={i === 0 ? 'compact' : 'callout'}
+                />
+              )
+            )
           )}
         </div>
       ))}

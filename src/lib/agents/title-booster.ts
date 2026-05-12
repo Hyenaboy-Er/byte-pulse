@@ -101,9 +101,14 @@ Rewrite into a click-magnet title following the rules. JSON only.`;
         temperature: 0.7,
       });
 
-      const parsed = extractJson(res) as { title?: string; changed?: boolean; reason?: string } | null;
+      const parsed = extractJson(res) as { title?: string; changed?: boolean | string; reason?: string } | null;
       const newTitle = String(parsed?.title ?? '').trim();
-      const changed = parsed?.changed === true && newTitle.length >= 30 && newTitle.length <= 100 && newTitle !== a.title;
+      // Lenient: accept if the LLM returned a different title that passes length validation,
+      // regardless of how it filled the `changed` flag. The model is unreliable with the
+      // boolean — but if the title text differs from the original, that's the actual signal.
+      const titleDiffers = newTitle && newTitle !== a.title && newTitle.length >= 30 && newTitle.length <= 100;
+      const llmFlaggedChange = parsed?.changed === true || parsed?.changed === 'true';
+      const changed = titleDiffers && (llmFlaggedChange || titleDiffers); // titleDiffers alone is enough
 
       if (changed) {
         await prisma.article.update({ where: { id: a.id }, data: { title: newTitle } });

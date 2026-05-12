@@ -353,6 +353,122 @@ async function postToTelegramChannel(t: BroadcastTarget): Promise<ChannelResult>
   }
 }
 
+// ─── Threads (Meta) — FREE API since 2024 ─────────────────────────────────
+// THREADS_USER_ID = numeric user id from Meta Developer Portal
+// THREADS_ACCESS_TOKEN = long-lived token (Meta gives 60-day tokens, auto-refresh
+//   via /refresh_access_token endpoint we should add on a weekly cron later).
+// Threads is Meta's text-first network — pairs perfectly with our tech-news
+// format. No business verification needed for personal accounts.
+async function postToThreads(t: BroadcastTarget): Promise<ChannelResult> {
+  const userId = process.env.THREADS_USER_ID;
+  const token = process.env.THREADS_ACCESS_TOKEN;
+  if (!userId || !token) return { channel: 'threads', ok: false, error: 'Threads creds missing' };
+
+  const emoji = emojiFor(t.category);
+  const tagBlock = (t.tags ?? []).slice(0, 3).map((s) => `#${s.replace(/\s+/g, '')}`).join(' ');
+  const text = `${emoji} ${t.title}\n\n${t.excerpt}\n\n${t.url}${tagBlock ? '\n\n' + tagBlock : ''}`.slice(0, 500);
+
+  try {
+    // Threads API is two-step: create container → publish container
+    // Step 1: create media container with text + optional image_url
+    const containerBody = new URLSearchParams({
+      media_type: t.imageUrl ? 'IMAGE' : 'TEXT',
+      text,
+      access_token: token,
+      ...(t.imageUrl && { image_url: t.imageUrl.startsWith('/') ? `${SITE_URL}${t.imageUrl}` : t.imageUrl }),
+    });
+    const containerRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads?${containerBody}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!containerRes.ok) return { channel: 'threads', ok: false, error: `container ${containerRes.status} ${(await containerRes.text()).slice(0, 120)}` };
+    const containerData = await containerRes.json() as { id?: string };
+    if (!containerData.id) return { channel: 'threads', ok: false, error: 'no container id' };
+
+    // Step 2: publish the container
+    const publishRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${containerData.id}&access_token=${token}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!publishRes.ok) return { channel: 'threads', ok: false, error: `publish ${publishRes.status} ${(await publishRes.text()).slice(0, 120)}` };
+    return { channel: 'threads', ok: true };
+  } catch (e) {
+    return { channel: 'threads', ok: false, error: (e as Error).message };
+  }
+}
+
+// ─── Pinterest — FREE API ─────────────────────────────────────────────────
+// PINTEREST_ACCESS_TOKEN = OAuth token from developers.pinterest.com
+// PINTEREST_BOARD_ID = the board id (numeric, get via /v5/boards endpoint)
+// Pinterest treats every article as a "pin" with image + title + description
+// + destination URL. Massive evergreen-traffic potential for tech tutorials,
+// product reviews, deal articles (like our viral Gardena post would crush here).
+async function postToPinterest(t: BroadcastTarget): Promise<ChannelResult> {
+  const token = process.env.PINTEREST_ACCESS_TOKEN;
+  const boardId = process.env.PINTEREST_BOARD_ID;
+  if (!token || !boardId) return { channel: 'pinterest', ok: false, error: 'Pinterest creds missing' };
+  // Pinterest requires an image, no exceptions
+  if (!t.imageUrl) return { channel: 'pinterest', ok: false, error: 'no image for pin' };
+
+  const imageUrlAbsolute = t.imageUrl.startsWith('/') ? `${SITE_URL}${t.imageUrl}` : t.imageUrl;
+
+  try {
+    const res = await fetch('https://api.pinterest.com/v5/pins', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        board_id: boardId,
+        title: t.title.slice(0, 100),
+        description: t.excerpt.slice(0, 500),
+        link: t.url,
+        media_source: { source_type: 'image_url', url: imageUrlAbsolute },
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return { channel: 'pinterest', ok: false, error: `${res.status} ${(await res.text()).slice(0, 120)}` };
+    return { channel: 'pinterest', ok: true };
+  } catch (e) {
+    return { channel: 'pinterest', ok: false, error: (e as Error).message };
+  }
+}
+
+// ─── Tumblr — FREE API ────────────────────────────────────────────────────
+// TUMBLR_API_KEY = OAuth2 access token (Tumblr OAuth2 since 2023)
+// TUMBLR_BLOG_ID = the blog identifier (e.g. bytepulse.tumblr.com)
+// Tumblr's tech audience is smaller than X but more loyal. Posts get
+// reblogged for years. The API uses the "neue post format" (NPF) with
+// blocks of content.
+async function postToTumblr(t: BroadcastTarget): Promise<ChannelResult> {
+  const token = process.env.TUMBLR_API_KEY;
+  const blogId = process.env.TUMBLR_BLOG_ID;
+  if (!token || !blogId) return { channel: 'tumblr', ok: false, error: 'Tumblr creds missing' };
+
+  const emoji = emojiFor(t.category);
+  const tagsCsv = (t.tags ?? []).slice(0, 8).map((s) => s.replace(/\s+/g, '')).join(',');
+  const content: Array<Record<string, unknown>> = [
+    { type: 'text', text: `${emoji} ${t.title}`, subtype: 'heading1' },
+    { type: 'text', text: t.excerpt },
+  ];
+  if (t.imageUrl) {
+    const imageUrlAbsolute = t.imageUrl.startsWith('/') ? `${SITE_URL}${t.imageUrl}` : t.imageUrl;
+    content.splice(1, 0, { type: 'image', media: [{ url: imageUrlAbsolute, type: 'image/jpeg' }] });
+  }
+  content.push({ type: 'text', text: `Read more: ${t.url}` });
+
+  try {
+    const res = await fetch(`https://api.tumblr.com/v2/blog/${blogId}/posts`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, tags: tagsCsv, state: 'published' }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return { channel: 'tumblr', ok: false, error: `${res.status} ${(await res.text()).slice(0, 120)}` };
+    return { channel: 'tumblr', ok: true };
+  } catch (e) {
+    return { channel: 'tumblr', ok: false, error: (e as Error).message };
+  }
+}
+
 // ─── Public entry ──────────────────────────────────────────────────────────
 export async function broadcastNewArticle(article: { slug: string; title: string; excerpt: string; category: string; tags?: string[]; imageUrl?: string | null }): Promise<ChannelResult[]> {
   const target: BroadcastTarget = {
@@ -369,9 +485,12 @@ export async function broadcastNewArticle(article: { slug: string; title: string
     postToMastodon(target),
     postToBluesky(target),
     postToTelegramChannel(target),
+    postToThreads(target),
+    postToPinterest(target),
+    postToTumblr(target),
   ]);
   return results.map((r, i) => {
-    const channel = ['x','linkedin','mastodon','bluesky','telegram'][i];
+    const channel = ['x','linkedin','mastodon','bluesky','telegram','threads','pinterest','tumblr'][i];
     return r.status === 'fulfilled'
       ? r.value
       : { channel, ok: false, error: (r.reason as Error)?.message ?? 'rejected' };

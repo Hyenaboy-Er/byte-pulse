@@ -6,10 +6,16 @@
 //   - DE (.de) → bytepulse-21 in EU PartnerNet
 //   - US (.com) → bytepulse01-20 in US Associates
 //   - UK/FR/ES/IT also covered by EU PartnerNet (same EU account, separate tag per region — fill in once IDs arrive by email).
-// Each var is optional. AMAZON_ASSOCIATE_TAG remains as a fallback default.
+// Hardcoded defaults so revenue links always render. Vercel env vars take
+// precedence when present — replace these once the actual PartnerNet IDs are
+// confirmed (planned: bytepulse-21 for DE PartnerNet, bytepulse01-20 for US
+// Associates). Until confirmed, links still drive clicks, attribution kicks in
+// retroactively once the right tag is plugged in via Vercel env.
+const AMAZON_TAG_DE_DEFAULT = 'bytepulse-21';
+const AMAZON_TAG_US_DEFAULT = 'bytepulse01-20';
 const AMAZON_TAGS = {
-  en: process.env.AMAZON_ASSOCIATE_TAG_US ?? process.env.AMAZON_ASSOCIATE_TAG,
-  de: process.env.AMAZON_ASSOCIATE_TAG_DE ?? process.env.AMAZON_ASSOCIATE_TAG,
+  en: process.env.AMAZON_ASSOCIATE_TAG_US ?? process.env.AMAZON_ASSOCIATE_TAG ?? AMAZON_TAG_US_DEFAULT,
+  de: process.env.AMAZON_ASSOCIATE_TAG_DE ?? process.env.AMAZON_ASSOCIATE_TAG ?? AMAZON_TAG_DE_DEFAULT,
 } as const;
 const SKIMLINKS_ID = process.env.NEXT_PUBLIC_SKIMLINKS_ID; // for the loader script
 const NORDVPN_REF = process.env.NORDVPN_AFFILIATE_REF; // Awin link or NordVPN partner code

@@ -15,9 +15,15 @@ function readConsent(): 'accept' | 'reject' | null {
   } catch { return null; }
 }
 
+// Adsterra placement IDs are non-sensitive (they're public anyway once the script
+// loads in the browser). Hardcoding as fallback so the unit works even when env
+// vars aren't set on Vercel — Vercel env still takes precedence when present.
+const ADSTERRA_NATIVE_HOST_DEFAULT = 'pl29398863.profitablecpmratenetwork.com';
+const ADSTERRA_NATIVE_HASH_DEFAULT = '44dab8fc8a109b07271e8445f74db307';
+
 export default function AdsterraNative() {
-  const host = process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_HOST;
-  const hash = process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_HASH;
+  const host = process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_HOST || ADSTERRA_NATIVE_HOST_DEFAULT;
+  const hash = process.env.NEXT_PUBLIC_ADSTERRA_NATIVE_HASH || ADSTERRA_NATIVE_HASH_DEFAULT;
   const adsenseEnabled = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
   const [consent, setConsent] = useState<'accept' | 'reject' | null>(null);
 

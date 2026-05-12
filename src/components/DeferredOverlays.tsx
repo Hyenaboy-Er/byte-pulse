@@ -34,9 +34,13 @@ export default function DeferredOverlays() {
   }, []);
 
   if (!ready) return null;
+  // Newsletter modal is OFF until proper Resend sending domain is configured —
+  // user is providing real business email tomorrow, then we re-enable. Showing
+  // the modal without working bestätigungs-emails leaks visitor trust.
+  // ExitIntent stays — desktop-only, useful for engagement metrics.
   return (
     <>
-      <NewsletterModal />
+      {/* <NewsletterModal /> — paused until newsletter sending is wired up */}
       <ExitIntent />
     </>
   );

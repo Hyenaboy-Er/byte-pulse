@@ -6,6 +6,7 @@ import AdSlot from '@/components/AdSlot';
 import AffiliateCTA from '@/components/AffiliateCTA';
 import AdsterraNative from '@/components/AdsterraNative';
 import ReadingProgress from '@/components/ReadingProgress';
+import ViewCounter from '@/components/ViewCounter';
 import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
@@ -17,7 +18,11 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const revalidate = 3600;
-export const dynamic = 'force-dynamic'; // first translation must run server-side
+// force-dynamic was removed: it disabled CDN caching for every DE page hit.
+// Translator already runs at publish-time (fire-and-forget in orchestrator),
+// so by the time a DE visitor arrives the translation is cached. The on-
+// demand fallback in this page handler still works for edge cases — first
+// visit will block briefly while translating, subsequent hits are cached.
 
 type Params = { slug: string };
 
@@ -81,7 +86,8 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
   const content = de?.content ?? article.content;
   const tags = de?.tags ?? safeTags(article.tags);
 
-  prisma.article.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => null);
+  // View counter is fired client-side via <ViewCounter /> so this page
+  // stays statically cacheable. See /api/view/[slug].
 
   const cat = getCategory(article.category);
 
@@ -132,6 +138,7 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
   return (
     <article className="max-w-3xl mx-auto px-4 py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ViewCounter slug={article.slug} />
       <ReadingProgress />
       <ShareBar title={title} />
       <Link href="/de" className="text-sm text-muted hover:text-accent">← Startseite</Link>

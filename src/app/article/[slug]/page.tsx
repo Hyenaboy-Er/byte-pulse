@@ -9,6 +9,7 @@ import ReadingProgress from '@/components/ReadingProgress';
 import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
+import ViewCounter from '@/components/ViewCounter';
 import { getCategory } from '@/lib/categories';
 import { authorForArticle } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
@@ -62,8 +63,8 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
   const article = await prisma.article.findUnique({ where: { slug } });
   if (!article || article.status !== 'published') notFound();
 
-  // best-effort view tracking
-  prisma.article.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => null);
+  // View counter moved to client-side <ViewCounter /> so this page stays
+  // statically cacheable. Vercel/CDN-cache hits no longer pay a DB write.
 
   const cat = getCategory(article.category);
   const tags: string[] = (() => {
@@ -122,6 +123,7 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
   return (
     <article className="max-w-3xl mx-auto px-4 py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ViewCounter slug={article.slug} />
       <ReadingProgress />
       <ShareBar title={article.title} />
 

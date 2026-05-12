@@ -130,7 +130,21 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
 
       {article.imageUrl && (
         <div className="my-8 rounded-xl overflow-hidden bg-bg-card border border-white/5">
-          <img src={article.imageUrl} alt={article.title} className="w-full h-auto object-cover" />
+          {/* Hero image proxied via /api/og-proxy → cached at Vercel edge for
+              7 days. First visitor pays the external fetch cost; everyone else
+              gets it from the CDN in ~50ms. Explicit width/height prevents
+              layout shift. fetchPriority="high" tells the browser to prioritize
+              this image over scripts — critical for mobile LCP. */}
+          <img
+            src={`/api/og-proxy?url=${encodeURIComponent(article.imageUrl)}`}
+            alt={article.title}
+            width={1200}
+            height={675}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
           {article.imageCredit && (
             <div className="px-4 py-2 text-xs text-muted">{article.imageCredit}</div>
           )}

@@ -149,7 +149,16 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
 
       {article.imageUrl && (
         <div className="my-8 rounded-xl overflow-hidden bg-bg-card border border-white/5">
-          <img src={article.imageUrl} alt={title} className="w-full h-auto object-cover" />
+          <img
+            src={`/api/og-proxy?url=${encodeURIComponent(article.imageUrl)}`}
+            alt={title}
+            width={1200}
+            height={675}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
           {article.imageCredit && <div className="px-4 py-2 text-xs text-muted">{article.imageCredit}</div>}
         </div>
       )}

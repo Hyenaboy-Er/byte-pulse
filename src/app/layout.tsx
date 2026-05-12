@@ -58,6 +58,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={isDE ? 'de' : 'en'} className="dark">
       <head>
+        {/* DNS-preconnect to image hosts so the first article click doesn't
+            wait ~150ms TLS-handshake per host on mobile. Top hosts in our
+            article corpus: heise.cloudimg.io, golem.de, techcrunch.com, etc.
+            We also preconnect to own origin for the /api/og-proxy hop. */}
+        <link rel="preconnect" href="https://heise.cloudimg.io" />
+        <link rel="dns-prefetch" href="https://heise.cloudimg.io" />
+        <link rel="dns-prefetch" href="https://techcrunch.com" />
+        <link rel="dns-prefetch" href="https://www.golem.de" />
+        <link rel="dns-prefetch" href="https://stadt-bremerhaven.de" />
+        <link rel="dns-prefetch" href="https://assets-prd.ignimgs.com" />
+        <link rel="dns-prefetch" href="https://static0.anpoimages.com" />
+        <link rel="dns-prefetch" href="https://www.engadget.com" />
         {adsenseClient ? (
           <>
             <script

@@ -13,21 +13,32 @@ import { pingIndexNow } from '../indexnow';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
 
-const BOOSTER_SYSTEM = `You are the headline editor for Byte-Pulse, a tech news magazine. Your ONLY job: rewrite a weak title into a stronger CLICK-MAGNET title that follows strict factuality rules.
+const BOOSTER_SYSTEM = `You are the headline editor for Byte-Pulse, a tech news magazine. Your ONLY job: produce a STRONGER click-magnet rewrite of the given title. ALWAYS rewrite — even if the original is decent, find a punchier angle.
 
 ABSOLUTE FACT RULE:
 - NEVER invent numbers, products, dates, or claims that aren't in the original excerpt/subtitle.
 - If the original says "Samsung faces 18-day strike threat" you can use "18-day" but not "30-day".
 - If unsure about a number, leave it out — don't fabricate.
 
-CLICK-MAGNET RULES:
+CLICK-MAGNET RULES (force a rewrite that follows these):
 - 50-75 chars (count carefully).
-- Lead with a NUMBER or CONCRETE NOUN whenever the source supports it ("$350 cut", "18-day strike", "Samsung").
-- Use ONE strong active verb: drops, kills, leaks, ships, throttles, cuts, doubles, breaks, warns, pivots, scraps, revives, folds, sues, settles, denies, admits, concedes, taps, ditches, slashes, wipes, threatens, scrambles.
-- Add a STAKE or CONSEQUENCE for the reader: "for cheaper Macs", "at half price", "—and it's free", "before launch", "could spike SSD prices".
-- AVOID: "shocking", "you won't believe", "what happened next", "experts hate", "this changes everything", "the truth about", colons followed by vague phrases.
-- AVOID generic corporate phrasing: "Threatens Stability", "Transforms Industry", "Leverages Opportunities" — use what regular readers actually search.
-- If the original title is already strong, return it UNCHANGED. Better to keep a decent title than to make one worse.
+- Lead with a NUMBER or CONCRETE NOUN whenever the source supports it.
+- Use ONE strong active verb: drops, kills, leaks, ships, throttles, cuts, doubles, breaks, warns, pivots, scraps, revives, folds, sues, settles, denies, admits, concedes, taps, ditches, slashes, wipes, threatens, scrambles, sparks, jolts, blocks, halts, exposes, hits.
+- Add a STAKE or CONSEQUENCE for the reader: "for cheaper Macs", "at half price", "—and it's free", "before launch", "could spike SSD prices", "could hit your next SSD".
+- Reader-facing language. Replace abstract enterprise phrasing with what people actually search.
+- BANNED phrases: "Threatens Stability", "Transforms Industry", "Leverages Opportunities", "shocking", "you won't believe", "what happened next", "experts hate", "this changes everything", "the truth about", colons followed by vague phrases.
+
+REWRITE EXAMPLES (showing exactly the level of upgrade I want):
+- "Samsung Labor Strike Threatens Memory Market Stability"
+  → "Samsung 18-Day Strike Could Spike SSD and RAM Prices"
+- "Sony Leverages AI to Transform Game Development"
+  → "Sony Says AI Will Speed Up PS5 Game Builds for Players"
+- "Apple Gets Court OK to Seek Samsung Docs in Antitrust Fight"
+  → "Apple Wins Court Subpoena for Samsung Files in Antitrust Case"
+- "Checkmarx Jenkins Plugin Compromised by TeamPCP Malware"
+  → "TeamPCP Malware Hits Checkmarx Jenkins Plugin — Devs At Risk"
+
+Only return changed=false if the original literally cannot be improved without inventing facts.
 
 Reply with strict JSON: {"title": "...", "changed": true|false, "reason": "<1-sentence why>"}`;
 
@@ -38,9 +49,10 @@ export type TitleBoosterReport = {
   examples: { slug: string; oldTitle: string; newTitle: string }[];
 };
 
-export async function runTitleBooster(opts?: { limit?: number; minViews?: number }): Promise<TitleBoosterReport> {
+export async function runTitleBooster(opts?: { limit?: number; minViews?: number; force?: boolean }): Promise<TitleBoosterReport> {
   const limit = Math.max(1, Math.min(60, opts?.limit ?? 25));
   const minViews = Math.max(0, opts?.minViews ?? 5);
+  const force = opts?.force === true;
 
   // Articles eligible for boost: published, not-already-boosted, sorted by views DESC.
   // We use the agentLog as the boosted-flag store so we don't need a schema change.
@@ -51,7 +63,9 @@ export async function runTitleBooster(opts?: { limit?: number; minViews?: number
     select: { id: true, slug: true, title: true, subtitle: true, excerpt: true, category: true },
   });
 
-  const boostedSlugs = new Set(
+  // When force=true we skip the dedupe so already-boosted titles get a second pass.
+  // This is useful after tightening the booster prompt.
+  const boostedSlugs = force ? new Set<string>() : new Set(
     (await prisma.agentLog.findMany({
       where: { agent: 'title-booster', action: 'boost', status: 'success' },
       select: { message: true },

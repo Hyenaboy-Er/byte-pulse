@@ -17,9 +17,11 @@ export async function GET(req: Request) {
   }
   const limit = url.searchParams.get('limit');
   const minViews = url.searchParams.get('minViews');
+  const force = url.searchParams.get('force') === '1';
   const report = await runTitleBooster({
     limit: limit ? Number(limit) : 25,
     minViews: minViews ? Number(minViews) : 5,
+    force,
   });
   return NextResponse.json({ ok: true, report });
 }

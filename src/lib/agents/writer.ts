@@ -63,13 +63,22 @@ HEADLINE EXAMPLES that FAIL (and why):
   - "Important Debian Update" (no verb, no consequence)
 - Subtitle 80-130 chars.
 - Excerpt 140-160 chars for meta-description / cards.
-- Content 700-1000 words in Markdown (compact, scannable — long enough to rank, short enough to read fully on mobile):
-  - 6-8 paragraphs with 2-3 ## subheadings
+- Content 900-1300 words in Markdown — substantial enough to add value over the source, not a thin rewrite:
+  - 7-9 paragraphs with 3-4 ## subheadings
   - 2-3 bold pull-quotes (**...**)
   - One bullet list of 3-5 items where it makes sense
-  - A "Background:" or "Context:" paragraph with relevant industry knowledge (no invented specs)
-  - A second-to-last paragraph "What's still unclear:" — honest list of open questions
-  - Final paragraph "Why this matters:" — your editorial take
+  - A "Context:" paragraph with relevant industry knowledge (Byte-Pulse's European POV — what's the EU angle? compare to similar EU/global stories from your training data, NO invented specs)
+  - A "What this means for you:" paragraph addressing the READER directly with concrete consequences (price impact, time impact, what to do or watch for). This is THE most important section — it's what people screenshot.
+  - A "What's still unclear:" paragraph — honest list of open questions
+  - A "Why this matters:" closing paragraph — your editorial take (1-sentence headline-style + 2-3 supporting sentences)
+
+ORIGINAL VALUE RULE (critical — this is the difference between "thin AI rewrite" Google penalises and a real article Google rewards):
+- DO NOT just rephrase the source. Add at least TWO things the source doesn't have:
+  • A comparison ("This is the third time Samsung has faced a strike threat since 2023" — only if true based on general knowledge, never invent specifics)
+  • A European angle ("EU memory market relies on Samsung Bitterfeld plant for…", "GDPR adds another layer", etc.)
+  • A reader-impact estimate ("Could push DDR5 16GB prices from €60 to €90 if strike extends")
+  • A "what's next" prediction ("Next test: union vote on Monday")
+- If you can't think of anything to add beyond what the source already says, the article should NOT be written — return category "skip" and the orchestrator will pass on this source.
 - Pick exactly ONE matching category from the list.
 - CATEGORY PRIORITY (read carefully — wrong category = bad SEO):
   1. If the story's PRIMARY focus is an AI model, AI feature, or LLM (ChatGPT, Claude, Gemini, RAG, prompt eng, AI safety) → category MUST be "ai", even if it ships inside Discord/Slack/Photoshop.

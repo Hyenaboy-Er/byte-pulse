@@ -53,7 +53,7 @@ export default async function HomePage() {
         {lastUpdated && (
           <div className="flex items-center gap-2 text-xs text-muted mb-5">
             <span className="relative inline-flex w-2 h-2 rounded-full bg-green-400 live-dot" />
-            <span>Last update {relativeTime(lastUpdated)} · Updated every 15 min</span>
+            <span>Last update {relativeTime(lastUpdated)} · Updated every 30 min</span>
           </div>
         )}
 

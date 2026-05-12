@@ -10,7 +10,7 @@ import Link from 'next/link';
 export const revalidate = 60;
 export const metadata = {
   title: 'Aktuelle Tech-News, KI, Gaming, Hardware — Byte-Pulse',
-  description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 15 Minuten neu.',
+  description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 30 Minuten neu.',
   alternates: {
     canonical: '/de',
     languages: { 'en-US': '/', 'de-DE': '/de' },
@@ -22,7 +22,7 @@ export const metadata = {
     locale: 'de_DE',
     url: '/de',
     title: 'Aktuelle Tech-News, KI, Gaming, Hardware — Byte-Pulse',
-    description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 15 Minuten neu.',
+    description: 'Byte-Pulse berichtet über KI, Gaming, Hardware, Mobile, Software und Cybersecurity. Bilingual EN/DE, faktengeprüft, alle 30 Minuten neu.',
   },
 };
 
@@ -85,7 +85,7 @@ export default async function HomePageDE() {
         {lastUpdated && (
           <div className="flex items-center gap-2 text-xs text-muted mb-5">
             <span className="relative inline-flex w-2 h-2 rounded-full bg-green-400 live-dot" />
-            <span>Letztes Update {relativeTime(lastUpdated, 'de')} · alle 15 Min aktualisiert</span>
+            <span>Letztes Update {relativeTime(lastUpdated, 'de')} · alle 30 Min aktualisiert</span>
           </div>
         )}
 

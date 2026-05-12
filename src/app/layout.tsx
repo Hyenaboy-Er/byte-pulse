@@ -15,7 +15,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 const HOME_TITLE = 'Latest tech news, AI, gaming, hardware — Byte-Pulse';
 const HOME_DESCRIPTION =
-  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Bilingual EN/DE, fact-checked, updated every 15 minutes.';
+  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Bilingual EN/DE, fact-checked, updated every 30 minutes.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

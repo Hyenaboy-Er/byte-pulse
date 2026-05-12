@@ -394,12 +394,24 @@ export async function runOnce(): Promise<RunReport> {
       .catch(() => null);
 
     // 6. Immediate DE translation so /de/* pages show the article in German right away.
-    try {
-      await translateArticle(created.id, 'de');
-      await logAgent('translator', 'translated', 'success', slug, { lang: 'de' });
-    } catch (err) {
-      await logAgent('translator', 'translated', 'error', (err as Error).message);
-    }
+    // Fire-and-forget: don't block the rest of the orchestrator (social broadcast etc.)
+    // on translation. If it fails or times out, /de/article/[slug] falls back to
+    // on-demand translation on first visit. Translator result is DB-cached so
+    // subsequent visits to either path are instant.
+    translateArticle(created.id, 'de')
+      .then(async (result) => {
+        if (result) {
+          await logAgent('translator', 'translated', 'success', slug, { lang: 'de' });
+          // Revalidate the DE article page so cached EN-fallback (if any) is purged.
+          try {
+            const { revalidatePath } = await import('next/cache');
+            revalidatePath(`/de/article/${slug}`);
+          } catch { /* dev only */ }
+        }
+      })
+      .catch(async (err) => {
+        await logAgent('translator', 'translated', 'error', (err as Error).message).catch(() => null);
+      });
 
     // 7. Social broadcast — fan out to X / LinkedIn / Mastodon / Bluesky / Telegram channel.
     // Each channel silently no-ops if its env creds aren't set, so it stays safe during onboarding.

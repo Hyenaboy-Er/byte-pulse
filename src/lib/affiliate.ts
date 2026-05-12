@@ -108,12 +108,59 @@ export function injectAmazonLinks(markdown: string, lang: Lang = 'en'): { conten
 
 // Affiliate CTAs — one per article when relevant. The orchestrator picks the
 // best CTA based on category, the writer doesn't have to think about it.
+// Amazon category fallback covers ALL categories so every article gets at
+// least ONE monetized CTA — VPN/Hosting take precedence when configured.
 export type AffiliateCTA = {
-  kind: 'nordvpn' | 'surfshark' | 'protonvpn' | 'hostinger';
+  kind: 'nordvpn' | 'surfshark' | 'protonvpn' | 'hostinger' | 'amazon';
   ref: string;
   title: string;
   body: string;
   cta: string;
+};
+
+// Per-category Amazon search query + tagline. Drives clicks even when the
+// article doesn't mention a specific PRODUCT_KEYWORDS item.
+const AMAZON_BY_CATEGORY: Record<string, { en: { q: string; title: string; body: string; cta: string }; de: { q: string; title: string; body: string; cta: string } }> = {
+  ai: {
+    en: { q: 'AI productivity tools', title: 'Boost your AI workflow', body: 'Top-rated mics, webcams and accessories AI creators use daily.', cta: 'Shop AI gear' },
+    de: { q: 'KI Produktivität Zubehör', title: 'AI-Workflow aufrüsten', body: 'Mikrofone, Webcams und Zubehör, die KI-Creator täglich nutzen.', cta: 'AI-Gear ansehen' },
+  },
+  gaming: {
+    en: { q: 'best gaming accessories 2026', title: 'Level up your setup', body: 'Best-selling controllers, headsets and storage for your next session.', cta: 'Shop gaming gear' },
+    de: { q: 'gaming zubehör 2026', title: 'Setup aufrüsten', body: 'Bestseller bei Controllern, Headsets und Speicher für die nächste Session.', cta: 'Gaming-Gear ansehen' },
+  },
+  hardware: {
+    en: { q: 'NVMe SSD 2TB', title: 'Upgrade your hardware', body: 'Trending SSDs, keyboards and PC parts at competitive prices.', cta: 'Shop hardware' },
+    de: { q: 'NVMe SSD 2TB', title: 'Hardware aufrüsten', body: 'Beliebte SSDs, Tastaturen und PC-Teile zu starken Preisen.', cta: 'Hardware ansehen' },
+  },
+  mobile: {
+    en: { q: 'wireless charger fast', title: 'Mobile must-haves', body: 'Cases, chargers and AirPods alternatives the editors actually use.', cta: 'Shop mobile gear' },
+    de: { q: 'wireless charger schnellladen', title: 'Mobile Must-haves', body: 'Hüllen, Ladegeräte und AirPods-Alternativen, die wir täglich nutzen.', cta: 'Mobile-Gear ansehen' },
+  },
+  software: {
+    en: { q: 'best programming books 2026', title: 'Sharpen your skills', body: 'The bestselling tech books, courses and dev tools right now.', cta: 'Shop dev resources' },
+    de: { q: 'beste Programmierbücher 2026', title: 'Skills aufbauen', body: 'Die meistverkauften Tech-Bücher und Dev-Tools des Jahres.', cta: 'Dev-Resources' },
+  },
+  security: {
+    en: { q: 'YubiKey 5C NFC', title: 'Lock down your accounts', body: 'Hardware keys and password managers used by security pros.', cta: 'Shop security gear' },
+    de: { q: 'YubiKey 5C NFC', title: 'Konten absichern', body: 'Hardware-Keys und Passwort-Manager, die Security-Profis nutzen.', cta: 'Security-Tools' },
+  },
+  crypto: {
+    en: { q: 'Ledger Nano hardware wallet', title: 'Self-custody your crypto', body: 'Cold-storage hardware wallets and accessories.', cta: 'Shop wallets' },
+    de: { q: 'Ledger Nano Hardware Wallet', title: 'Crypto sicher verwahren', body: 'Cold-Storage Hardware-Wallets und Zubehör.', cta: 'Wallets ansehen' },
+  },
+  science: {
+    en: { q: 'best science books 2026', title: 'Dive deeper', body: 'Top-rated science books and tools to keep learning.', cta: 'Shop books' },
+    de: { q: 'beste Wissenschaftsbücher 2026', title: 'Tiefer eintauchen', body: 'Top-bewertete Wissenschaftsbücher und Tools fürs Weiterlernen.', cta: 'Bücher ansehen' },
+  },
+  ev: {
+    en: { q: 'Type 2 EV charging cable', title: 'EV essentials', body: 'Charging cables, adapters and gear every EV owner needs.', cta: 'Shop EV gear' },
+    de: { q: 'Typ 2 Ladekabel E-Auto', title: 'E-Auto-Zubehör', body: 'Ladekabel, Adapter und Gear, das jeder E-Auto-Fahrer braucht.', cta: 'EV-Zubehör' },
+  },
+  web: {
+    en: { q: 'usb c hub macbook', title: 'Dev-friendly accessories', body: 'USB-C hubs, docking stations and webdev gear.', cta: 'Shop accessories' },
+    de: { q: 'usb c hub macbook', title: 'Dev-Zubehör', body: 'USB-C Hubs, Docking-Stationen und WebDev-Gear.', cta: 'Zubehör ansehen' },
+  },
 };
 
 export function affiliateCtaFor(category: string, lang: Lang = 'en'): AffiliateCTA | null {
@@ -158,6 +205,24 @@ export function affiliateCtaFor(category: string, lang: Lang = 'en'): AffiliateC
         : 'Hostinger from $2.99/month — solid for side projects.',
       cta: lang === 'de' ? 'Hostinger ansehen' : 'See Hostinger',
     };
+  }
+
+  // Universal Amazon fallback: every category gets a curated Amazon search CTA.
+  // This is what was missing — articles without iPhone/RTX/PS5 keywords previously
+  // returned null and showed nothing. Now every article shows an Amazon CTA.
+  const amazonCat = AMAZON_BY_CATEGORY[category];
+  if (amazonCat) {
+    const copy = amazonCat[lang] ?? amazonCat.en;
+    const url = amazonSearchUrl(copy.q, lang);
+    if (url) {
+      return {
+        kind: 'amazon',
+        ref: url,
+        title: copy.title,
+        body: copy.body,
+        cta: copy.cta,
+      };
+    }
   }
   return null;
 }

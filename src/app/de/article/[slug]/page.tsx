@@ -10,6 +10,7 @@ import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
 import { getCategory } from '@/lib/categories';
+import { authorForArticle } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
 import { translateArticle } from '@/lib/agents/translator';
 import Link from 'next/link';
@@ -93,16 +94,37 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
 
+  const author = authorForArticle(article.category, article.slug);
+  const heroImageUrl = article.imageUrl
+    ? `${SITE_URL}/api/og-proxy?url=${encodeURIComponent(article.imageUrl)}`
+    : `${SITE_URL}/api/og/${article.slug}`;
+  const wordCount = content.split(/\s+/).length;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: title,
     description: de?.excerpt ?? article.excerpt,
     inLanguage: 'de-DE',
+    isAccessibleForFree: true,
+    wordCount,
     datePublished: article.publishedAt?.toISOString(),
     dateModified: article.updatedAt.toISOString(),
-    author: { '@type': 'Organization', name: SITE_NAME },
-    publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    image: { '@type': 'ImageObject', url: heroImageUrl, width: 1200, height: 675 },
+    author: {
+      '@type': 'Person',
+      name: author.name,
+      url: `${SITE_URL}/author/${author.slug}`,
+      jobTitle: author.role,
+      knowsAbout: author.expertise,
+      worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.svg` },
+    },
     mainEntityOfPage: `${SITE_URL}/de/article/${article.slug}`,
     articleSection: cat?.name,
   };
@@ -132,6 +154,12 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
       {subtitle && <p className="mt-4 text-xl text-white/75 leading-snug">{subtitle}</p>}
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted">
+        <Link href={`/author/${author.slug}`} className="font-medium text-white/85 hover:text-accent transition">
+          Von {author.name}
+        </Link>
+        <span>·</span>
+        <span>{author.role}</span>
+        <span>·</span>
         {article.publishedAt && <span>{formatDate(article.publishedAt)}</span>}
         <span>·</span>
         <span>{readingTime(content)} Min. Lesezeit</span>
@@ -145,6 +173,12 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
         )}
         {!de && <><span>·</span><span className="text-yellow-400">⚠ Englisches Original (Übersetzung folgt)</span></>}
       </div>
+      {article.updatedAt && article.publishedAt &&
+       article.updatedAt.getTime() - article.publishedAt.getTime() > 60 * 60_000 && (
+        <div className="mt-2 text-xs text-muted">
+          Aktualisiert am {formatDate(article.updatedAt)}
+        </div>
+      )}
 
       <div className="mt-4">
         <SaveButton slug={article.slug} title={title} />

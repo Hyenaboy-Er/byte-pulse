@@ -10,6 +10,7 @@ import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
 import { getCategory } from '@/lib/categories';
+import { authorForArticle } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -78,6 +79,17 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'TechPuls';
 
+  const author = authorForArticle(article.category, article.slug);
+  const heroImageUrl = article.imageUrl
+    ? `${SITE_URL}/api/og-proxy?url=${encodeURIComponent(article.imageUrl)}`
+    : `${SITE_URL}/api/og/${article.slug}`;
+  const wordCount = article.content.split(/\s+/).length;
+
+  // Schema.org NewsArticle with named Person author + Organization publisher.
+  // This is the structured E-E-A-T signal Google looks for: real author with
+  // bio + expertise area, transparent dateModified, image with dimensions,
+  // wordCount as quality indicator. Combined with the visible byline on the
+  // page itself, this satisfies the 'Who wrote this?' question Google asks.
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -85,8 +97,24 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
     description: article.excerpt,
     datePublished: article.publishedAt?.toISOString(),
     dateModified: article.updatedAt.toISOString(),
-    author: { '@type': 'Organization', name: SITE_NAME },
-    publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    inLanguage: 'en',
+    isAccessibleForFree: true,
+    wordCount,
+    image: { '@type': 'ImageObject', url: heroImageUrl, width: 1200, height: 675 },
+    author: {
+      '@type': 'Person',
+      name: author.name,
+      url: `${SITE_URL}/author/${author.slug}`,
+      jobTitle: author.role,
+      knowsAbout: author.expertise,
+      worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.svg` },
+    },
     mainEntityOfPage: `${SITE_URL}/article/${article.slug}`,
     articleSection: cat?.name,
   };
@@ -119,6 +147,12 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
       )}
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted">
+        <Link href={`/author/${author.slug}`} className="font-medium text-white/85 hover:text-accent transition">
+          By {author.name}
+        </Link>
+        <span>·</span>
+        <span>{author.role}</span>
+        <span>·</span>
         {article.publishedAt && <span>{formatDate(article.publishedAt)}</span>}
         <span>·</span>
         <span>{readingTime(article.content)} min read</span>
@@ -131,6 +165,12 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           </>
         )}
       </div>
+      {article.updatedAt && article.publishedAt &&
+       article.updatedAt.getTime() - article.publishedAt.getTime() > 60 * 60_000 && (
+        <div className="mt-2 text-xs text-muted">
+          Updated {formatDate(article.updatedAt)}
+        </div>
+      )}
 
       <div className="mt-4">
         <SaveButton slug={article.slug} title={article.title} />

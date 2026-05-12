@@ -14,7 +14,10 @@ import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
-export const revalidate = 300;
+// Article content rarely changes after publish — cache hard at the Next.js
+// ISR layer. Content-Refresher and Affiliate-Optimizer agents call revalidate
+// on the specific slug when they mutate it, so this doesn't block updates.
+export const revalidate = 3600;
 
 type Params = { slug: string };
 

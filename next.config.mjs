@@ -41,7 +41,22 @@ const nextConfig = {
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
     ];
+    // Aggressive CDN cache for article pages: content rarely changes after
+    // publish, and the writer re-pings IndexNow when it does. 1h browser
+    // cache + 24h CDN cache + 7d stale-while-revalidate means the SECOND
+    // visit to any article loads instantly from the browser disk cache,
+    // and Vercel Edge handles subsequent first-visits from cache without
+    // a cold start. Massive mobile speed win.
+    const articleCache = [
+      ...security,
+      { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800' },
+    ];
     return [
+      { source: '/article/:slug*', headers: articleCache },
+      { source: '/de/article/:slug*', headers: articleCache },
+      // Static asset routes (Next.js images, RSS feeds): long browser cache.
+      { source: '/feed.xml', headers: [...security, { key: 'Cache-Control', value: 'public, max-age=600, s-maxage=3600' }] },
+      { source: '/de/feed.xml', headers: [...security, { key: 'Cache-Control', value: 'public, max-age=600, s-maxage=3600' }] },
       { source: '/:path*', headers: security },
     ];
   },

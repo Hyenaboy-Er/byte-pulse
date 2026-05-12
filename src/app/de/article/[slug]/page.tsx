@@ -15,7 +15,7 @@ import { translateArticle } from '@/lib/agents/translator';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
-export const revalidate = 300;
+export const revalidate = 3600;
 export const dynamic = 'force-dynamic'; // first translation must run server-side
 
 type Params = { slug: string };

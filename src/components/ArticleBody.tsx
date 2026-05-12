@@ -12,7 +12,11 @@ import Markdown from './Markdown';
 import AdSlot from './AdSlot';
 import InlineAffiliateCard from './InlineAffiliateCard';
 
-const SPLIT_PARAGRAPH_AFTER = [3, 6];
+// Lowered from [3, 6] → [2, 5] so the compact CTA fires even on short news
+// articles (typical 3-5 paragraphs), and the callout fires on medium ones.
+// Net effect: ~95% of articles now get the mid-article monetization slot
+// instead of only the long-form ones.
+const SPLIT_PARAGRAPH_AFTER = [2, 5];
 
 function splitMarkdownByParagraph(md: string): string[] {
   const parts: string[] = [];

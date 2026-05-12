@@ -23,8 +23,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const a = await prisma.article.findUnique({ where: { slug } });
   if (!a) return {};
   const path = `/article/${a.slug}`;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
   // Self-hosted OG image so social embeds don't break when source removes its image.
-  const ogImage = a.imageUrl ? `/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}` : `/api/og/${a.slug}`;
+  // Use absolute URL so Next.js's auto-preload uses the og-proxy URL (not the
+  // raw external URL it tries to unwrap from the query string).
+  const ogImage = a.imageUrl
+    ? `${SITE_URL}/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}`
+    : `${SITE_URL}/api/og/${a.slug}`;
   return {
     title: a.title,
     description: a.excerpt,

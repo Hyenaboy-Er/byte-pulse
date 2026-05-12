@@ -29,7 +29,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const title = tr?.title ?? a.title;
   const description = tr?.excerpt ?? a.excerpt;
   const path = `/de/article/${a.slug}`;
-  const ogImage = a.imageUrl ? `/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}` : `/api/og/${a.slug}`;
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+  const ogImage = a.imageUrl
+    ? `${SITE_URL}/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}`
+    : `${SITE_URL}/api/og/${a.slug}`;
   // If German translation hasn't completed yet, this page is serving English fallback content.
   // Google flags that as "Duplikat – vom Nutzer nicht als kanonisch festgelegt" because the
   // /de URL has identical text to the /en URL. NOINDEX until the German version exists.

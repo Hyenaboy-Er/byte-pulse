@@ -65,6 +65,20 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
       <Link href="/" className="text-sm text-muted hover:text-accent">← Home</Link>
 
       <div className="mt-6 rounded-2xl bg-bg-card border border-white/5 p-8">
+        {/* Gradient placeholder avatar — same recipe as the team page so brand
+            identity is consistent. Real photos plug in here when we have them. */}
+        <div
+          className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-display font-extrabold text-white mb-5"
+          style={{
+            background:
+              author.slug === 'serhat-kalender' ? 'linear-gradient(135deg, #ff3366 0%, #8b1538 100%)' :
+              author.slug === 'leah-becker' ? 'linear-gradient(135deg, #6366f1 0%, #1e1b4b 100%)' :
+              'linear-gradient(135deg, #10b981 0%, #064e3b 100%)',
+          }}
+          aria-hidden
+        >
+          {author.name.split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase()}
+        </div>
         <div className="text-xs uppercase tracking-wider text-accent font-bold">{author.role}</div>
         <h1 className="mt-1 font-display font-extrabold text-4xl tracking-tight">{author.name}</h1>
         <p className="mt-4 text-base text-white/80 leading-relaxed">{author.bioEn}</p>

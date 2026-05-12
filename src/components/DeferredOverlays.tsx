@@ -34,12 +34,9 @@ export default function DeferredOverlays() {
   }, []);
 
   if (!ready) return null;
-  // NewsletterModal disabled 2026-05-12: user feedback says it annoys mobile
-  // visitors. Newsletter form lives in the footer instead — non-intrusive,
-  // visitors who want it find it. ExitIntent still useful for desktop where
-  // mouse-leave is a real signal.
   return (
     <>
+      <NewsletterModal />
       <ExitIntent />
     </>
   );

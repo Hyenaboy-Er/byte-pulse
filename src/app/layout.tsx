@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
@@ -9,6 +8,7 @@ import StickyAdBar from '@/components/StickyAdBar';
 import CookieBanner from '@/components/CookieBanner';
 import ThirdPartyScripts from '@/components/ThirdPartyScripts';
 import DeferredOverlays from '@/components/DeferredOverlays';
+import LangSetter from '@/components/LangSetter';
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -50,13 +50,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
-  const h = await headers();
-  const pathname = h.get('x-pathname') || '/';
-  const isDE = pathname === '/de' || pathname.startsWith('/de/');
+  // lang is set to 'en' here at SSR time; the LangSetter client component
+  // below switches it to 'de' on /de/* routes after hydration. This keeps
+  // the root layout STATIC (no `await headers()`), which is the prerequisite
+  // for Next.js / Vercel CDN caching to actually apply Cache-Control headers
+  // on article pages. SEO impact is none — hreflang in metadata is the
+  // authoritative language signal for Google.
   return (
-    <html lang={isDE ? 'de' : 'en'} className="dark">
+    <html lang="en" className="dark">
       <head>
         {/* DNS-preconnect to image hosts so the first article click doesn't
             wait ~150ms TLS-handshake per host on mobile. Top hosts in our
@@ -126,6 +129,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Footer />
         <StickyAdBar />
         <CookieBanner />
+        <LangSetter />
         <DeferredOverlays />
         <ThirdPartyScripts />
         <Analytics />

@@ -52,6 +52,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  // Brave Creators verification — required for Brave-browser users to send us
+  // BAT tips passively as they read. Verification token comes from
+  // creators.brave.com once we register the domain there. Zero-cost passive
+  // income source — no minimum traffic.
+  const braveCreatorToken = process.env.NEXT_PUBLIC_BRAVE_VERIFICATION_TOKEN;
   // lang is set to 'en' here at SSR time; the LangSetter client component
   // below switches it to 'de' on /de/* routes after hydration. This keeps
   // the root layout STATIC (no `await headers()`), which is the prerequisite
@@ -73,6 +78,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://assets-prd.ignimgs.com" />
         <link rel="dns-prefetch" href="https://static0.anpoimages.com" />
         <link rel="dns-prefetch" href="https://www.engadget.com" />
+        {/* Brave Creators verification meta-tag. Once verified at
+            creators.brave.com, Brave-browser users can tip via BAT — and Brave
+            also pays revenue share for ads its users see on this site. */}
+        {braveCreatorToken && (
+          <meta name="brave-rewards-verification" content={braveCreatorToken} />
+        )}
         {adsenseClient ? (
           <>
             <script

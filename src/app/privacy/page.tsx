@@ -38,7 +38,7 @@ export default function Privacy() {
         Germany<br />
         Managing director: Serhat Er<br />
         Phone: +49 2143 3014059<br />
-        Email: <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>
+        Email: <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>
       </p>
       <p>
         We have not appointed a Data Protection Officer because we fall below the statutory thresholds of
@@ -120,7 +120,7 @@ export default function Privacy() {
 
       <h3>3.5 Contact email</h3>
       <p>
-        If you email us at hello@byte-pulse.net (or any byte-pulse.net address), we store your email and
+        If you email us at editorial@byte-pulse.net (or any byte-pulse.net address), we store your email and
         message contents only as long as needed to handle your enquiry, plus statutory retention (typically
         6 months for general correspondence, 6 years where commercial-tax law applies).
       </p>
@@ -271,7 +271,7 @@ export default function Privacy() {
       </ul>
       <p>
         To exercise any of these rights, write to{' '}
-        <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>. We will respond within 30 days
+        <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>. We will respond within 30 days
         (extendable by 60 days for complex requests, with notice).
       </p>
 
@@ -307,7 +307,7 @@ export default function Privacy() {
       <h2>10. Contact</h2>
       <p>
         Privacy enquiries:{' '}
-        <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>
+        <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>
       </p>
     </div>
   );

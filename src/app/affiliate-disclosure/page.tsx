@@ -94,7 +94,7 @@ export default function AffiliateDisclosure() {
       <p>
         If you spot an affiliate link that isn&apos;t clearly labelled, or you have any other
         question about our commercial relationships, email{' '}
-        <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>. We&apos;ll investigate and
+        <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>. We&apos;ll investigate and
         respond.
       </p>
     </div>

@@ -33,7 +33,7 @@ export default function DatenschutzDE() {
         Deutschland<br />
         Geschäftsführer: Serhat Er<br />
         Telefon: +49 2143 3014059<br />
-        E-Mail: <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>
+        E-Mail: <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>
       </p>
       <p>
         Ein Datenschutzbeauftragter ist nicht bestellt, da die Schwellenwerte nach § 38 BDSG nicht
@@ -115,7 +115,7 @@ export default function DatenschutzDE() {
 
       <h3>3.5 Kontakt per E-Mail</h3>
       <p>
-        Wenn Sie uns unter hello@byte-pulse.net (oder einer anderen byte-pulse.net-Adresse) schreiben,
+        Wenn Sie uns unter editorial@byte-pulse.net (oder einer anderen byte-pulse.net-Adresse) schreiben,
         speichern wir Ihre E-Mail-Adresse und den Nachrichteninhalt nur so lange, wie es zur Bearbeitung
         nötig ist, zzgl. gesetzlicher Aufbewahrungsfristen (i.d.R. 6 Monate für allgemeine Korrespondenz,
         6 Jahre soweit handels-/steuerrechtliche Pflichten bestehen).
@@ -265,7 +265,7 @@ export default function DatenschutzDE() {
       </ul>
       <p>
         Zur Ausübung Ihrer Rechte schreiben Sie an{' '}
-        <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>. Wir antworten innerhalb von 30
+        <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>. Wir antworten innerhalb von 30
         Tagen (verlängerbar um 60 Tage bei komplexen Anfragen, mit Mitteilung).
       </p>
 
@@ -303,7 +303,7 @@ export default function DatenschutzDE() {
       <h2>10. Kontakt</h2>
       <p>
         Datenschutzanfragen:{' '}
-        <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>
+        <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>
       </p>
     </div>
   );

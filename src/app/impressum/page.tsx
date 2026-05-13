@@ -28,7 +28,7 @@ export default function Impressum() {
       <h2>Kontakt</h2>
       <p>
         Telefon: +49 2143 3014059<br />
-        E-Mail: <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>
+        E-Mail: <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>
       </p>
 
       <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>

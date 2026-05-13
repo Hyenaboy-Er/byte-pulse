@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
-const SITE_EMAIL = process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'hello@byte-pulse.net';
+const SITE_EMAIL = process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'editorial@byte-pulse.net';
 
 export const metadata: Metadata = {
   title: `Kontakt · ${SITE_NAME}`,

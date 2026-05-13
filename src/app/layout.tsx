@@ -117,7 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 contactPoint: {
                   '@type': 'ContactPoint',
                   contactType: 'editorial',
-                  email: process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'hello@byte-pulse.net',
+                  email: process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'editorial@byte-pulse.net',
                   availableLanguage: ['en', 'de'],
                 },
               },

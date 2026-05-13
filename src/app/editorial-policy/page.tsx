@@ -127,7 +127,7 @@ export default function EditorialPolicy() {
       <p>
         If you have a complaint about an article that goes beyond a simple factual correction —
         defamation concern, copyright claim, takedown request — email{' '}
-        <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>. We follow German Telemedia
+        <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>. We follow German Telemedia
         and EU Digital Services Act standards for complaint handling.
       </p>
 
@@ -135,7 +135,7 @@ export default function EditorialPolicy() {
       <p>
         Press / partnership enquiries: <a href="mailto:press@byte-pulse.net">press@byte-pulse.net</a><br />
         Factual corrections: <a href="mailto:corrections@byte-pulse.net">corrections@byte-pulse.net</a><br />
-        Privacy / legal: <a href="mailto:hello@byte-pulse.net">hello@byte-pulse.net</a>
+        Privacy / legal: <a href="mailto:editorial@byte-pulse.net">editorial@byte-pulse.net</a>
       </p>
     </div>
   );

@@ -1,15 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-// 1. Trailing-slash stripping: keep exactly one URL shape per page.
-// 2. Pass request pathname to server components via x-pathname header so
-//    RootLayout can set <html lang="de"> on /de routes.
+// Middleware does ONE thing: trailing-slash stripping. Anything else (host
+// normalization, lang detection, cache headers) is handled elsewhere.
 //
-// HOST NORMALIZATION (www vs non-www) IS DELIBERATELY HANDLED BY VERCEL'S
-// EDGE LAYER, NOT THIS MIDDLEWARE. Vercel's project settings declare
-// byte-pulse.net (non-www) as primary and 308-redirect www.byte-pulse.net to
-// it. If we ALSO redirect inside middleware (e.g. non-www → www), the two
-// systems fight each other and produce an infinite redirect loop. Don't
-// add host logic here unless you've first updated Vercel domain settings.
+// HOST NORMALIZATION (www vs non-www) is handled by VERCEL'S edge layer, not
+// here. Vercel declares byte-pulse.net (non-www) as primary and 308-redirects
+// www → it. Adding host logic here would fight Vercel and produce loops.
+//
+// PATHNAME-INJECTING HEADERS (e.g. x-pathname for the RootLayout) were
+// REMOVED on 2026-05-14: even though we never read that header anymore,
+// calling `NextResponse.next({ request: { headers } })` was enough to mark
+// every matched route as dynamic in Next 15, which kicked Cache-Control over
+// to `private, no-store` and disabled the CDN edge cache. Article pages now
+// stream from cache as intended.
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
@@ -20,9 +23,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
-  const requestHeaders = new Headers(req.headers);
-  requestHeaders.set('x-pathname', req.nextUrl.pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return NextResponse.next();
 }
 
 export const config = {

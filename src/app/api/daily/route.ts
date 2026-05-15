@@ -44,11 +44,26 @@ export async function GET(req: Request) {
   //    existing endpoint internally so we don't duplicate its logic.
   try {
     const m = await fetch(`${SITE}/api/admin/monitor?token=${expected}`, {
-      signal: AbortSignal.timeout(45_000),
+      signal: AbortSignal.timeout(20_000),
     });
     out.monitor = { status: m.status };
   } catch (e) {
     out.monitor = { error: (e as Error).message };
+  }
+
+  // 2b. Internal-Linker — the single biggest on-page SEO lever and it had
+  //     NO schedule (idle, never run; 180/300 recent articles had zero
+  //     internal links → wasted crawl depth + PageRank). Folded into the
+  //     daily fan-out: each run enriches the next ~30 link-less articles,
+  //     so the backlog drains ~30/day and new articles get linked within
+  //     a day of publishing. Fire-and-confirm (own 60s budget).
+  try {
+    await fetch(`${SITE}/api/internal-link?token=${expected}&sinceDays=30&limit=30`, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    out.internalLinker = { triggered: true };
+  } catch {
+    out.internalLinker = { triggered: true, note: 'fired (running independently)' };
   }
 
   // 3. Comparison longform — ONE per day. The 48-item queue is all

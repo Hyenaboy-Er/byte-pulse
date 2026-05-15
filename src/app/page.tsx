@@ -151,6 +151,12 @@ export default async function HomePage() {
           </aside>
         </div>
 
+        {/* Newsletter — placed right after the top stories + trending, the
+            highest-visibility scroll position on the homepage (users have
+            engaged with content, haven't yet left). NOT buried at the
+            bottom before the footer. */}
+        <NewsletterSection />
+
         {/* PER-CATEGORY rails — keeps visitors clicking through to a 2nd / 3rd article */}
         {sections.map(([catSlug, items]) => {
           const cat = CATEGORIES.find((c) => c.slug === catSlug);
@@ -176,8 +182,6 @@ export default async function HomePage() {
             </section>
           );
         })}
-
-        <NewsletterSection />
       </div>
     </>
   );

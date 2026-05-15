@@ -18,7 +18,6 @@
 
 import { prisma } from '../db';
 import { chat, MODELS, extractJson } from '../openai';
-import { humanize } from './humanizer';
 import { slugify } from '../slugify';
 import { CATEGORIES } from '../categories';
 import { tg } from '../telegram';
@@ -194,30 +193,17 @@ ${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.
     } catch { /* keep the original draft — non-fatal */ }
   }
 
-  // Voice pass. The humanizer is now length-preserving (see humanizer.ts
-  // fix) so it won't gut the 1500-word piece down to a stub.
-  let finalTitle = draft.title;
-  let finalSubtitle = draft.subtitle;
-  let finalExcerpt = draft.excerpt;
-  let finalContent = draft.content;
-  let finalTags = draft.tags ?? [];
-  try {
-    const h = await humanize({
-      title: draft.title,
-      subtitle: draft.subtitle,
-      excerpt: draft.excerpt,
-      content: draft.content,
-      category,
-      tags: draft.tags ?? [],
-    });
-    if (h.content && wc(h.content) >= wc(draft.content) * 0.7) {
-      finalTitle = h.title || finalTitle;
-      finalSubtitle = h.subtitle || finalSubtitle;
-      finalExcerpt = h.excerpt || finalExcerpt;
-      finalContent = h.content;
-      finalTags = h.tags?.length ? h.tags : finalTags;
-    }
-  } catch { /* keep the draft — non-fatal */ }
+  // NO separate humanizer pass for comparisons. The writer SYSTEM prompt
+  // already enforces the warm, neutral, plainspoken voice very strongly,
+  // and dropping the extra LLM call keeps the whole run inside Vercel
+  // Hobby's hard 60s function cap (writer + optional expand only) — the
+  // humanizer was also a corruption surface (it once gutted length and
+  // could re-introduce verdict language). Voice is the writer's job here.
+  const finalTitle = draft.title;
+  const finalSubtitle = draft.subtitle;
+  const finalExcerpt = draft.excerpt;
+  const finalContent = draft.content;
+  const finalTags = draft.tags ?? [];
 
   const words = wc(finalContent);
   // 750 floor: a tight 800w comparison with a specs table + committed

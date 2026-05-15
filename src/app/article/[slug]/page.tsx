@@ -20,6 +20,28 @@ import type { Metadata } from 'next';
 // ISR layer. Content-Refresher and Affiliate-Optimizer agents call revalidate
 // on the specific slug when they mutate it, so this doesn't block updates.
 export const revalidate = 3600;
+// New on 2026-05-15: declare the dynamic param ahead of time. Without this,
+// Next 15 falls back to fully-dynamic rendering ('ƒ' in build output) which
+// forces Cache-Control: private, no-store on every response and disables
+// Vercel Edge caching. Pre-rendering the slugs flips the route to ISR ('●'
+// in build output) so the headers config in next.config.mjs actually
+// applies and articles get a 24h CDN cache + 7d stale-while-revalidate.
+// We cap at 300 most-recent slugs to keep build time bounded; older
+// articles fall through to on-demand-ISR (still cached for 1h).
+export const dynamicParams = true;
+export async function generateStaticParams() {
+  try {
+    const recent = await prisma.article.findMany({
+      where: { status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      take: 300,
+      select: { slug: true },
+    });
+    return recent.map((a) => ({ slug: a.slug }));
+  } catch {
+    return []; // fail-open: if DB is unreachable at build, fall back to on-demand-ISR
+  }
+}
 
 type Params = { slug: string };
 

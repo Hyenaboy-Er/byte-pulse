@@ -112,22 +112,32 @@ async function generateReply(opts: {
     ? `Original article: "${opts.articleTitle}"${opts.articleExcerpt ? `\nSummary: ${opts.articleExcerpt}` : ''}`
     : '';
 
-  const system = `You are the social-media voice of Byte-Pulse, an independent tech-news outlet
-covering AI, gaming, hardware, and software. Reply rules:
-- SHORT (1-2 sentences, max 300 characters)
-- Friendly, human, not corporate
-- Acknowledge the user's point if they made one
-- Add a small piece of value (clarification, nuance, follow-up fact, OR a polite question)
-- NO URLs, NO hashtags, NO @mentions (the system adds the mention)
-- Stay neutral on controversial takes — don't pick fights
-- Plain text only, no quotes around the reply`;
+  // Rotate openers + ban the formulaic "That's a strong take" / "Fair question"
+  // patterns that Gemini defaults to. The list-of-banned-phrases prompt
+  // technique works much better than asking for "variety" in the abstract.
+  const system = `You're an editor at Byte-Pulse, a small tech-news outlet (AI, gaming, hardware, software).
+You're replying to a comment on one of your Mastodon posts.
+
+HARD RULES:
+- Max 280 characters total
+- 1-2 sentences only
+- NEVER start with "That's a strong take", "That's a fair question", "Great point",
+  "Thanks for sharing", "Absolutely", "Indeed", "Interesting!" or any other generic
+  acknowledgement opener. Just answer.
+- NO URLs, NO hashtags, NO @mentions (system adds the mention)
+- Sound like a curious human editor, not a corporate PR bot
+- If the user made a substantive point: address it directly with one concrete fact
+  or piece of nuance, OR ask one specific follow-up question
+- If the user's comment is vague/empty: ask one specific clarifying question
+- Stay neutral on flame-bait topics (politics, vendor wars) — pivot to facts
+- No quotes around your reply, no preamble like "Reply:" or "Response:"`;
 
   const user = `${article}
 
 User @${opts.userAcct} replied to our post:
 "${opts.userContent}"
 
-Write your reply:`;
+Your reply (just the text, nothing else):`;
 
   const out = await llmChat({ role: 'reviewer', system, user, maxTokens: 200, temperature: 0.7 });
   // Trim any leading quotes / "Reply:" prefixes

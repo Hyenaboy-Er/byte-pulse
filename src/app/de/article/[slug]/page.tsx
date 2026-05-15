@@ -23,6 +23,23 @@ export const revalidate = 3600;
 // so by the time a DE visitor arrives the translation is cached. The on-
 // demand fallback in this page handler still works for edge cases — first
 // visit will block briefly while translating, subsequent hits are cached.
+// Pre-rendering the slugs is required in Next 15 for the route to be treated
+// as ISR — without it the symbol in the build output is 'ƒ' (fully dynamic)
+// and Cache-Control falls back to no-store. See EN article page for details.
+export const dynamicParams = true;
+export async function generateStaticParams() {
+  try {
+    const recent = await prisma.article.findMany({
+      where: { status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      take: 300,
+      select: { slug: true },
+    });
+    return recent.map((a) => ({ slug: a.slug }));
+  } catch {
+    return [];
+  }
+}
 
 type Params = { slug: string };
 

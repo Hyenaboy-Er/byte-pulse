@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getCategory } from '@/lib/categories';
+import { authorForArticle } from '@/lib/authors';
 import { readingTime, relativeTime, formatViews } from '@/lib/readingTime';
 
 type Article = {
@@ -28,6 +29,7 @@ export function ArticleCard({
   hrefPrefix?: string;
 }) {
   const cat = getCategory(article.category);
+  const author = authorForArticle(article.category, article.slug);
   const isDE = hrefPrefix === '/de';
   const time = article.publishedAt ? relativeTime(article.publishedAt, isDE ? 'de' : 'en') : '';
   const articleHref = `${hrefPrefix}/article/${article.slug}`;
@@ -75,6 +77,8 @@ export function ArticleCard({
             <p className="mt-3 text-base md:text-lg text-white/70 max-w-3xl line-clamp-2">{article.subtitle}</p>
           )}
           <div className="mt-4 flex items-center gap-3 text-xs text-muted">
+            <span className="text-white/75 font-medium">{isDE ? 'Von' : 'By'} {author.name}</span>
+            <span>·</span>
             <span>{time}</span>
             <span>·</span>
             <span>{sourceLabel} {article.sourceName}</span>
@@ -125,6 +129,8 @@ export function ArticleCard({
         </h3>
         <p className="mt-2 text-sm text-white/60 line-clamp-2 group-hover:line-clamp-4 transition-all duration-300">{article.excerpt}</p>
         <div className="mt-4 flex items-center gap-2 text-xs text-muted flex-wrap">
+          <span className="text-white/75 font-medium">{isDE ? 'Von' : 'By'} {author.name}</span>
+          <span>·</span>
           <span>{time}</span>
           <span>·</span>
           <span>{readingTime(article.content)} {minLabel}</span>

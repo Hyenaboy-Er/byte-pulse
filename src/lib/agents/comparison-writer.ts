@@ -273,6 +273,16 @@ ${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.
     });
   }
 
+  // Bust the ISR cache for the touched paths so a regenerate-in-place
+  // (or a fresh publish) is visible immediately, not after the 1h
+  // revalidate window. Same pattern the orchestrator uses.
+  try {
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath(`/article/${slug}`);
+    revalidatePath(`/de/article/${slug}`);
+    revalidatePath('/');
+  } catch { /* revalidate is best-effort */ }
+
   await prisma.agentLog.create({
     data: {
       agent: 'comparison',

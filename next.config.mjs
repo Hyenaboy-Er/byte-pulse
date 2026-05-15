@@ -24,6 +24,15 @@ const nextConfig = {
       { source: '/rss.xml', destination: '/feed.xml', permanent: true },
       { source: '/de/rss', destination: '/de/feed.xml', permanent: true },
       { source: '/de/rss.xml', destination: '/de/feed.xml', permanent: true },
+      // Category-slug aliases. External sites + AI-generated SEO audits often
+      // assume canonical English names ('cybersecurity', 'tech') that don't
+      // match our internal taxonomy. Redirect them to the real category
+      // (or home for non-existent ones) so we don't drop the backlink juice
+      // or cause confusing 404s.
+      { source: '/category/cybersecurity', destination: '/category/security', permanent: true },
+      { source: '/de/category/cybersecurity', destination: '/de/category/security', permanent: true },
+      { source: '/category/tech', destination: '/', permanent: true },
+      { source: '/de/category/tech', destination: '/de', permanent: true },
       // Apex byte-pulse.net → www (permanent for SEO PageRank consolidation).
       {
         source: '/:path*',

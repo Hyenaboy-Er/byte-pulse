@@ -43,6 +43,15 @@ export const AUTHORS: Author[] = [
     sameAs: [],
   },
   {
+    slug: 'serhat-er',
+    name: 'Serhat Er',
+    role: 'Founder & Editor',
+    bioEn: "Serhat Er is the founder of Byte-Pulse and writes its in-depth buying guides and head-to-head comparisons. He digs through spec sheets, pricing and real-world trade-offs so readers don't have to — and always ends with a clear, opinionated recommendation. Based in Germany.",
+    bioDe: "Serhat Er ist Gründer von Byte-Pulse und schreibt die ausführlichen Kaufberatungen und Direktvergleiche. Er gräbt sich durch Datenblätter, Preise und Praxis-Kompromisse, damit die Leser es nicht müssen — und endet immer mit einer klaren, meinungsstarken Empfehlung. Basiert in Deutschland.",
+    expertise: ['Buying guides', 'Hardware comparisons', 'Consumer tech'],
+    sameAs: [],
+  },
+  {
     slug: 'leah-becker',
     name: 'Leah Becker',
     role: 'Software & Web Lead',
@@ -71,7 +80,13 @@ const CATEGORY_TO_AUTHOR: Record<string, string> = {
   crypto: 'leah-becker',
 };
 
-export function authorForArticle(category: string, _slug?: string): Author {
+export function authorForArticle(category: string, slug?: string): Author {
+  // Head-to-head comparisons + buying guides are the founder's flagship
+  // longform — they carry his real-name byline (slug pattern: "x-vs-y"
+  // or a "comparison"/"buying-guide" marker the comparison agent sets).
+  if (slug && /(?:^|-)vs-|comparison|buying-guide|best-/.test(slug)) {
+    return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[1];
+  }
   const wanted = CATEGORY_TO_AUTHOR[category] ?? 'byte-pulse-newsroom';
   return AUTHOR_BY_SLUG[wanted] ?? AUTHORS[1];
 }

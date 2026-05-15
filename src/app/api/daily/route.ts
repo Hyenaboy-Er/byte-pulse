@@ -85,6 +85,20 @@ export async function GET(req: Request) {
     out.comparison = { triggered: true, note: 'fired (running independently)' };
   }
 
+  // 3b. Quality-Upgrade — rewrites the next batch of thin pre-fix articles
+  //     (avg 364w) into substantial 900-1300w pieces. The AdSense-readiness
+  //     lever: drains the thin backlog ~4/day so the site's quality average
+  //     climbs toward something a reviewer + Google's HCU reward. Own 60s
+  //     budget, fire-and-confirm.
+  try {
+    await fetch(`${SITE}/api/quality-upgrade?token=${expected}`, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    out.qualityUpgrade = { triggered: true };
+  } catch {
+    out.qualityUpgrade = { triggered: true, note: 'fired (running independently)' };
+  }
+
   // 4. GSC-Monitor — now that the service-account auth works, run it daily
   //    so it surfaces SEO opportunities (page-2 articles to push, high-
   //    impression/low-CTR queries) the moment Search Console accumulates

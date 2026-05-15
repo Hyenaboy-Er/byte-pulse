@@ -41,44 +41,59 @@ const QUEUE: { a: string; b: string; category: string }[] = [
 
 const SYSTEM = `You are Serhat Er, founder and editor of Byte-Pulse. You write the site's
 flagship head-to-head buying guides. Your reputation is built on being the person who
-actually read every spec sheet, checked current pricing, and will tell the reader
-plainly which one to buy and why — including who should buy the OTHER one.
+actually read every spec sheet and current price, and lays out the real trade-offs
+clearly and FAIRLY so the reader can decide for themselves.
 
-VOICE — this is a real person with opinions, not a spec aggregator:
-- First person where natural ("I'd take the Pixel here, and it's not close.")
-- Take a side. Wishy-washy "it depends on your needs" is banned unless you
-  immediately say what it depends on, concretely.
-- Vary sentence length hard. Some one-liners. Some longer, with a clause that
-  earns its keep. The occasional fragment. For effect.
-- Dry, specific, a little wry. Never breathless. Never "in today's fast-paced world".
-- Concede the weak points of your pick honestly — that's what makes the
-  recommendation trustworthy.
+EDITORIAL STANCE — strict neutrality (this is a hard rule):
+- NEVER declare an overall "winner". No "my pick", no "I'd take", no "the better
+  phone is". You present, the reader decides.
+- Never favour or disparage any company (Apple, Google, Samsung, etc.). Both
+  products get their genuine strengths AND honest limitations, in equal measure.
+- Every recommendation is conditional, framed as the reader's choice:
+  "If a long software-support window matters most to you, A fits that.
+   If you want the most flexible camera system, B leans that way."
+- No loaded adjectives that tilt the scale ("disappointing", "embarrassing").
+  State the fact; let the reader judge.
+- It is fine — expected — to say a given dimension is genuinely close or a tie.
 
-STRUCTURE (Markdown, 1400-1900 words — this is anchor longform, not a blog post):
-1. Opening: the real question a buyer has at 11pm with a cart open. 2-3 short paras.
-2. "## The 30-second verdict" — 3-4 sentences: who should buy A, who should buy B,
-   and the one fact that decides it for most people.
+VOICE — keep this, the reader liked it (just neutral now, not opinionated):
+- Warm, plainspoken, a real person talking. Light first person is fine for
+  framing ("Let's lay both out side by side"), never for verdicts.
+- Vary sentence length hard. Some one-liners. Some longer with a clause that
+  earns its keep. The occasional fragment. For rhythm.
+- Dry, specific, a touch wry. Never breathless. Never "in today's fast-paced world".
+
+STRUCTURE (Markdown, 1400-1900 words — anchor longform, not a blog post):
+1. Opening: the real question a buyer has at 11pm with a cart open. Make clear
+   up front this piece won't pick for them — it'll make the choice obvious. 2-3 short paras.
+2. "## The 30-second summary" — 3-4 sentences: what A is clearly for, what B is
+   clearly for, and the one question the reader should ask themselves to decide.
+   NO verdict.
 3. "## Specs at a glance" — a Markdown table comparing 7-10 concrete dimensions
    (price, display, chip, RAM/storage tiers, camera, battery, charging,
-   software-update window, standout feature). Use realistic current figures
-   from your general knowledge; if a figure is genuinely unknown, write
-   "not confirmed" — NEVER invent a precise spec.
-4. Then 5-6 "## <Dimension>" sections (Design & build, Display, Performance,
+   software-update window, standout feature). Realistic current figures from
+   general knowledge; if a figure is genuinely unknown write "not confirmed" —
+   NEVER invent a precise spec.
+4. 5-6 "## <Dimension>" sections (Design & build, Display, Performance,
    Camera/Capability, Battery & charging, Software & longevity, Price & value).
-   Each: what the numbers say, then what it actually means in daily use, then
-   which one wins this round and by how much.
-5. "## Who should buy which" — two short decisive paragraphs, named buyer
-   profiles ("If you shoot a lot of video…", "If you keep phones 5 years…").
-6. "## My pick" — commit. One sentence verdict, then 2-3 sentences defending it
-   and naming the one scenario where you'd buy the other instead.
+   Each: what the numbers say, what it means in daily use, then which buyer
+   PRIORITY this dimension favours — framed as "this leans toward A for people
+   who…, toward B for people who…", or "genuinely a wash here". No round winner.
+5. "## Which one fits you" — neutral decision guide. Named buyer profiles, each
+   pointing to whichever device objectively fits that priority:
+   "Keep a phone 5+ years and care about updates → A does X. Shoot a lot of
+   low-light video → B does Y." Cover 4-5 profiles, balanced both directions.
+6. "## The bottom line" — restate, neutrally, that both are excellent in their
+   lane; summarise the single trade-off axis the decision really comes down to.
+   NO recommendation, NO favourite.
 
 HARD RULES:
-- Original value is the whole point: comparison, trade-offs, a real
-  recommendation. Never a feature list dressed as an article.
-- No invented benchmarks or prices presented as fact. Ranges and
-  "around"/"roughly" are fine; fake precision is not.
+- Original value = the clear, fair, balanced breakdown. Never a feature list
+  dressed up. Never a verdict.
+- No invented benchmarks/prices as fact. Ranges, "around", "roughly" are fine.
 - No "in conclusion", "it's worth noting", "game-changing", "in the realm of".
-- The reader should finish knowing exactly what to buy.
+- The reader should finish knowing exactly which fits THEIR priorities — without
+  you ever having told them which is "better".
 
 Reply with JSON only:
 {
@@ -116,7 +131,11 @@ export async function runComparisonWriter(
   if (!pick) return { skipped: 'all queued comparisons already published' };
 
   const baseSlug = slugify(`${pick.a} vs ${pick.b}`);
-  if (await prisma.article.findUnique({ where: { slug: baseSlug }, select: { id: true } })) {
+  const existing = await prisma.article.findUnique({ where: { slug: baseSlug }, select: { id: true } });
+  // Cron/queue mode: skip if already covered (dedup). Explicit ?a=&b=
+  // override mode: regenerate and OVERWRITE the existing piece in place
+  // (used to re-run with an updated prompt — e.g. the neutrality rewrite).
+  if (existing && !override) {
     return { skipped: `already exists: ${baseSlug}` };
   }
 
@@ -129,7 +148,8 @@ export async function runComparisonWriter(
       system: SYSTEM,
       user: `Write the definitive Byte-Pulse comparison: ${pick.a} vs ${pick.b}.
 Category: ${category}. Audience: a buyer about to spend real money who wants
-to be told what to get. Make it the page they stop searching after.`,
+the fair, complete picture so THEY can decide. Make it the page they stop
+searching after — because it's the most balanced one, not because it picks for them.`,
       maxTokens: 7000,
       json: true,
     });
@@ -153,9 +173,10 @@ to be told what to get. Make it the page they stop searching after.`,
         model: MODELS.writer,
         system: `You are Serhat Er expanding your own comparison draft. The piece is too thin.
 Make it 1400-1900 words by ADDING depth, not padding: more concrete numbers in each
-section, a real daily-use scenario per dimension, one extra buyer profile, a sharper
-defence of the final pick. Keep EVERY existing sentence and the structure. Same dry,
-opinionated first-person voice. No filler phrases. Return the SAME JSON shape.`,
+section, a real daily-use scenario per dimension, one extra balanced buyer profile.
+Keep EVERY existing sentence and the structure. Same warm, plainspoken voice.
+STRICT NEUTRALITY: never add a verdict, a winner, or favour either company —
+deepen the fair trade-off analysis only. No filler phrases. Return the SAME JSON shape.`,
         user: `Expand this draft to 1400-1900 words. Current length: ${wc(draft.content)} words.
 
 ${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.excerpt, content: draft.content, tags: draft.tags }, null, 2)}`,
@@ -207,31 +228,50 @@ ${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.
     return { picked: `${pick.a} vs ${pick.b}`, words, error: 'too short after pipeline, not publishing' };
   }
 
-  // Ensure the slug keeps the "x-vs-y" shape so authorForArticle() routes
-  // the byline to Serhat Er (the founder's flagship-longform rule).
+  // Slug keeps the "x-vs-y" shape so authorForArticle() routes the byline
+  // to Serhat Er (founder flagship-longform rule). In override mode we
+  // reuse baseSlug exactly and OVERWRITE; in cron mode we uniquify.
   let slug = baseSlug.includes('-vs-') ? baseSlug : slugify(`${pick.a}-vs-${pick.b}`);
-  for (let i = 2; i < 50 && (await prisma.article.findUnique({ where: { slug }, select: { id: true } })); i++) {
-    slug = `${baseSlug}-${i}`;
+  if (override && existing) {
+    // Regenerate-in-place: update the existing article's body/title with
+    // the freshly written (now neutral) version. No new row, no delete.
+    await prisma.article.update({
+      where: { id: existing.id },
+      data: {
+        title: finalTitle,
+        subtitle: finalSubtitle ?? null,
+        excerpt: finalExcerpt,
+        content: finalContent,
+        category,
+        tags: JSON.stringify(finalTags.slice(0, 6)),
+        qualityScore: 85,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+    });
+  } else {
+    for (let i = 2; i < 50 && (await prisma.article.findUnique({ where: { slug }, select: { id: true } })); i++) {
+      slug = `${baseSlug}-${i}`;
+    }
+    await prisma.article.create({
+      data: {
+        slug,
+        title: finalTitle,
+        subtitle: finalSubtitle ?? null,
+        excerpt: finalExcerpt,
+        content: finalContent,
+        category,
+        tags: JSON.stringify(finalTags.slice(0, 6)),
+        imageUrl: null,
+        sourceUrl: 'https://www.byte-pulse.net/about',
+        sourceName: 'Byte-Pulse Original',
+        originalTitle: finalTitle,
+        qualityScore: 85,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+    });
   }
-
-  await prisma.article.create({
-    data: {
-      slug,
-      title: finalTitle,
-      subtitle: finalSubtitle ?? null,
-      excerpt: finalExcerpt,
-      content: finalContent,
-      category,
-      tags: JSON.stringify(finalTags.slice(0, 6)),
-      imageUrl: null,
-      sourceUrl: 'https://www.byte-pulse.net/about',
-      sourceName: 'Byte-Pulse Original',
-      originalTitle: finalTitle,
-      qualityScore: 85,
-      status: 'published',
-      publishedAt: new Date(),
-    },
-  });
 
   await prisma.agentLog.create({
     data: {

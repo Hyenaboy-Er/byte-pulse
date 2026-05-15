@@ -29,7 +29,7 @@ export function ArticleCard({
   hrefPrefix?: string;
 }) {
   const cat = getCategory(article.category);
-  const author = authorForArticle(article.category, article.slug);
+  const author = authorForArticle(article.category, article.slug, article.sourceName);
   const isDE = hrefPrefix === '/de';
   const time = article.publishedAt ? relativeTime(article.publishedAt, isDE ? 'de' : 'en') : '';
   const articleHref = `${hrefPrefix}/article/${article.slug}`;

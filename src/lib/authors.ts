@@ -80,11 +80,18 @@ const CATEGORY_TO_AUTHOR: Record<string, string> = {
   crypto: 'leah-becker',
 };
 
-export function authorForArticle(category: string, slug?: string): Author {
-  // Head-to-head comparisons + buying guides are the founder's flagship
-  // longform — they carry his real-name byline (slug pattern: "x-vs-y"
-  // or a "comparison"/"buying-guide" marker the comparison agent sets).
-  if (slug && /(?:^|-)vs-|comparison|buying-guide|best-/.test(slug)) {
+export function authorForArticle(
+  category: string,
+  _slug?: string,
+  sourceName?: string,
+): Author {
+  // The founder's real-name byline is reserved for the comparison agent's
+  // flagship buying guides ONLY. Those are the single thing on the site
+  // that sets sourceName='Byte-Pulse Original' — a precise, unambiguous
+  // marker. The old "slug contains -vs-" heuristic was too broad: news
+  // stories like "Elon Musk vs OpenAI" or "Umbrellas vs Drones" wrongly
+  // got the Founder & Editor byline, which hurts credibility/E-E-A-T.
+  if (sourceName === 'Byte-Pulse Original') {
     return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[1];
   }
   const wanted = CATEGORY_TO_AUTHOR[category] ?? 'byte-pulse-newsroom';

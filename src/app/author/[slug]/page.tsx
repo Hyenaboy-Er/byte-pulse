@@ -41,7 +41,7 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
     orderBy: { publishedAt: 'desc' },
     take: 60,
   });
-  const articles = allRecent.filter((a) => authorForArticle(a.category).slug === author.slug).slice(0, 12);
+  const articles = allRecent.filter((a) => authorForArticle(a.category, a.slug, a.sourceName).slug === author.slug).slice(0, 12);
 
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
   const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';

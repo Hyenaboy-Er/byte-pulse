@@ -118,7 +118,7 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
 
-  const author = authorForArticle(article.category, article.slug);
+  const author = authorForArticle(article.category, article.slug, article.sourceName);
   const heroImageUrl = article.imageUrl
     ? `${SITE_URL}/api/og-proxy?url=${encodeURIComponent(article.imageUrl)}`
     : `${SITE_URL}/api/og/${article.slug}`;

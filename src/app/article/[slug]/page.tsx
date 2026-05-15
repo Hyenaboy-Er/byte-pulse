@@ -10,6 +10,7 @@ import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
 import ViewCounter from '@/components/ViewCounter';
+import NewsletterForm from '@/components/NewsletterForm';
 import { getCategory } from '@/lib/categories';
 import { authorForArticle } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
@@ -252,6 +253,24 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           ))}
         </div>
       )}
+
+      {/* Inline newsletter CTA — placed at the natural stopping point (reader
+          finished the piece, before they bounce to related links). Audit
+          item #5: every article needs a subscribe prompt, not just the
+          one-time modal. This is the single highest-converting newsletter
+          slot on a content site. */}
+      <section className="mt-12 rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 to-transparent p-6 sm:p-8">
+        <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tight">
+          Get the 5 stories that matter — every morning
+        </div>
+        <p className="mt-2 text-sm text-white/70 max-w-lg">
+          One short email. The most important {cat?.name ?? 'tech'} news, fact-checked,
+          no fluff. Free, unsubscribe anytime.
+        </p>
+        <div className="mt-4 max-w-md">
+          <NewsletterForm />
+        </div>
+      </section>
 
       {!!related.length && (
         <section className="mt-14">

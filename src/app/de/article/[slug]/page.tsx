@@ -10,6 +10,7 @@ import ViewCounter from '@/components/ViewCounter';
 import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
+import NewsletterForm from '@/components/NewsletterForm';
 import { getCategory } from '@/lib/categories';
 import { authorForArticle } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
@@ -247,6 +248,21 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
           ))}
         </div>
       )}
+
+      {/* Inline-Newsletter-CTA — höchstkonvertierender Slot (Leser hat den
+          Artikel beendet, bevor er zu Related abspringt). Audit-Item #5. */}
+      <section className="mt-12 rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 to-transparent p-6 sm:p-8">
+        <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tight">
+          Die 5 wichtigsten Tech-News — jeden Morgen
+        </div>
+        <p className="mt-2 text-sm text-white/70 max-w-lg">
+          Eine kurze Mail. Die wichtigsten {cat?.name ?? 'Tech'}-Nachrichten,
+          faktengeprüft, ohne Fülltext. Kostenlos, jederzeit abbestellbar.
+        </p>
+        <div className="mt-4 max-w-md">
+          <NewsletterForm />
+        </div>
+      </section>
 
       {!!related.length && (
         <section className="mt-14">

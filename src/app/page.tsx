@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import TrendingTicker from '@/components/TrendingTicker';
+import NewsletterSection from '@/components/NewsletterSection';
 import { CATEGORIES } from '@/lib/categories';
 import { relativeTime, readingTime } from '@/lib/readingTime';
 import Link from 'next/link';
@@ -175,6 +176,8 @@ export default async function HomePage() {
             </section>
           );
         })}
+
+        <NewsletterSection />
       </div>
     </>
   );

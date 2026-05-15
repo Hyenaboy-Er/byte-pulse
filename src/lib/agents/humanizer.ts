@@ -74,6 +74,19 @@ KEEP:
 - the source attribution
 - markdown formatting (## headings, **bold**, bullet lists)
 
+LENGTH — THIS IS A HARD RULE, NOT A SUGGESTION:
+- You are rewriting the VOICE, not summarising. The output MUST be within
+  10% of the input's word count. If the draft is 1100 words, your rewrite
+  is 1000-1200 words. NEVER shorter.
+- Keep EVERY section, EVERY subheading, EVERY example, EVERY data point,
+  EVERY paragraph. "Punchy" means varied sentence rhythm WITHIN the same
+  amount of content — it does NOT mean cutting paragraphs or compressing
+  the piece into a summary.
+- If you find yourself deleting whole sentences of substance to sound
+  punchy, you're doing it wrong. Rephrase them human, don't remove them.
+- A short, tight 350-word rewrite of a 1100-word draft is a FAILURE even
+  if it sounds great. Length parity is mandatory.
+
 Reply with JSON only:
 {
   "title": "...",
@@ -116,7 +129,13 @@ ${JSON.stringify({
     model: MODELS.humanizer,
     system: SYSTEM,
     user: userPrompt,
-    maxTokens: 4000,
+    // 6000 (was 4000): a 1300-word article is ~1700 content tokens, and
+    // the model must re-emit the FULL JSON (title+subtitle+excerpt+content
+    // +tags+changes) with escaping. 4000 truncated long pieces mid-content,
+    // which the JSON parser then salvaged as a short article — a hidden
+    // cause of the 360-word average. 6000 leaves headroom; still well
+    // under the Vercel 60s budget for the humanizer step alone.
+    maxTokens: 6000,
     json: true,
   });
 
@@ -126,5 +145,21 @@ ${JSON.stringify({
   parsed.category = draft.category;
   parsed.tags = parsed.tags?.length ? parsed.tags : draft.tags;
   parsed.changes = parsed.changes ?? [];
+
+  // GUARDRAIL: if the humanizer over-compressed (it loves to, despite the
+  // prompt), keep the writer's longer draft body instead of shipping a
+  // gutted 350-word version. Voice < length. The reviewer still runs after
+  // this and catches AI-smell on the draft if the humanizer truly failed.
+  const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+  const draftWords = wc(draft.content);
+  const humanWords = wc(parsed.content ?? '');
+  if (draftWords >= 400 && humanWords < draftWords * 0.7) {
+    parsed.content = draft.content;
+    parsed.changes = [
+      ...(parsed.changes ?? []),
+      `length-guard: humanizer cut ${draftWords}→${humanWords} words; reverted to draft body`,
+    ];
+  }
+
   return parsed;
 }

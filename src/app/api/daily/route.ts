@@ -85,8 +85,22 @@ export async function GET(req: Request) {
     out.comparison = { triggered: true, note: 'fired (running independently)' };
   }
 
+  // 4. GSC-Monitor — now that the service-account auth works, run it daily
+  //    so it surfaces SEO opportunities (page-2 articles to push, high-
+  //    impression/low-CTR queries) the moment Search Console accumulates
+  //    enough query data. No-op (rowsAnalyzed:0) on a young site; self-
+  //    activates as impressions grow. Fire-and-confirm, own budget.
+  try {
+    await fetch(`${SITE}/api/gsc-monitor?token=${expected}`, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    out.gscMonitor = { triggered: true };
+  } catch {
+    out.gscMonitor = { triggered: true, note: 'fired (running independently)' };
+  }
+
   await tg(
-    `Daily-ops: newsletter=${JSON.stringify(out.newsletter)} monitor=${JSON.stringify(out.monitor)} comparison=${JSON.stringify(out.comparison)}`,
+    `Daily-ops: newsletter=${JSON.stringify(out.newsletter)} monitor=${JSON.stringify(out.monitor)} comparison=${JSON.stringify(out.comparison)} gsc=${JSON.stringify(out.gscMonitor)}`,
     { silent: true },
   ).catch(() => null);
 

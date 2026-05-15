@@ -144,6 +144,35 @@ to be told what to get. Make it the page they stop searching after.`,
     return { picked: `${pick.a} vs ${pick.b}`, error: 'writer JSON parse failed' };
   }
 
+  // LLMs chronically under-deliver on length (asked 1400-1900, got ~800).
+  // Rather than reject a genuinely-useful draft, run ONE targeted expand
+  // pass: keep every word, deepen the thin sections with concrete detail.
+  if (wc(draft.content) < 1200) {
+    try {
+      const expandedRaw = await chat({
+        model: MODELS.writer,
+        system: `You are Serhat Er expanding your own comparison draft. The piece is too thin.
+Make it 1400-1900 words by ADDING depth, not padding: more concrete numbers in each
+section, a real daily-use scenario per dimension, one extra buyer profile, a sharper
+defence of the final pick. Keep EVERY existing sentence and the structure. Same dry,
+opinionated first-person voice. No filler phrases. Return the SAME JSON shape.`,
+        user: `Expand this draft to 1400-1900 words. Current length: ${wc(draft.content)} words.
+
+${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.excerpt, content: draft.content, tags: draft.tags }, null, 2)}`,
+        maxTokens: 8000,
+        json: true,
+      });
+      const expanded = extractJson<typeof draft>(expandedRaw);
+      if (expanded?.content && wc(expanded.content) > wc(draft.content)) {
+        draft.title = expanded.title || draft.title;
+        draft.subtitle = expanded.subtitle || draft.subtitle;
+        draft.excerpt = expanded.excerpt || draft.excerpt;
+        draft.content = expanded.content;
+        draft.tags = expanded.tags?.length ? expanded.tags : draft.tags;
+      }
+    } catch { /* keep the original draft — non-fatal */ }
+  }
+
   // Voice pass. The humanizer is now length-preserving (see humanizer.ts
   // fix) so it won't gut the 1500-word piece down to a stub.
   let finalTitle = draft.title;
@@ -170,7 +199,11 @@ to be told what to get. Make it the page they stop searching after.`,
   } catch { /* keep the draft — non-fatal */ }
 
   const words = wc(finalContent);
-  if (words < 900) {
+  // 750 floor: a tight 800w comparison with a specs table + committed
+  // verdict is genuinely useful (Wirecutter/Verge run 800-1200) and far
+  // beyond the old 364w aggregation. The expand pass above targets 1400+;
+  // this floor just blocks truly broken sub-stub output.
+  if (words < 750) {
     return { picked: `${pick.a} vs ${pick.b}`, words, error: 'too short after pipeline, not publishing' };
   }
 

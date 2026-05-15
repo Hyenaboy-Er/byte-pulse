@@ -30,8 +30,14 @@ import { pingIndexNow } from '../indexnow';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
 const WORD_FLOOR = 700;        // below this = "thin", needs upgrade
-const TARGET_MIN = 900;        // don't ship an upgrade that's still thin
+const TARGET_MIN = 820;        // don't ship an upgrade that's still thin
 const SCAN_WINDOW = 50;        // oldest-N published scanned per run
+// Vercel Hobby hard-caps functions at 60s. A 6000-token writer call blew
+// past it (504) even for ONE article. An ~850-1050w body is ~1400 output
+// tokens; 3200 leaves JSON headroom and generates fast enough to finish
+// one upgrade well inside 60s. One per daily run — slow but reliable;
+// the backlog drains steadily and never times out.
+const MAX_TOKENS = 3200;
 
 const SYSTEM = `You are a veteran tech editor rewriting a thin, AI-sounding article into a
 substantial, genuinely useful piece for Byte-Pulse. You are EXPANDING and DEEPENING,
@@ -42,7 +48,7 @@ HARD RULES:
 - Keep the core thesis and the headline's promise. Do NOT change the topic.
 - NEVER invent specifics (no fake benchmarks, prices, dates, or "Apple confirmed X").
   If you don't know a detail, add analysis/context instead of fabricating.
-- Output 900-1300 words of Markdown: 6-9 paragraphs, 3-4 ## subheadings,
+- Output 850-1050 words of Markdown: 6-8 paragraphs, 3 ## subheadings,
   one short bullet list where it fits, plus these sections woven in:
   • a "Context" paragraph (industry background, EU angle where relevant)
   • a "What this means for you" paragraph (concrete reader impact)
@@ -68,7 +74,7 @@ export type QualityUpgradeReport = {
 };
 
 export async function runQualityUpgrade(opts?: { maxPerRun?: number }): Promise<QualityUpgradeReport> {
-  const maxPerRun = Math.max(1, Math.min(6, opts?.maxPerRun ?? 4));
+  const maxPerRun = Math.max(1, Math.min(6, opts?.maxPerRun ?? 1));
   const report: QualityUpgradeReport = {
     scanned: 0, thinFound: 0, upgraded: 0, skipped: 0, errors: [], examples: [],
   };
@@ -113,8 +119,8 @@ Current body:
 ${a.content}
 """
 
-Rewrite it into the substantial 900-1300 word version per the rules. Same facts, deeper.`,
-        maxTokens: 6000,
+Rewrite into a substantial 850-1050 word version per the rules. Same facts, deeper.`,
+        maxTokens: MAX_TOKENS,
         json: true,
       });
       const parsed = extractJson<{ content: string }>(raw);

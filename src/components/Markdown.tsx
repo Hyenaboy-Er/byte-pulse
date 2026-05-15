@@ -1,6 +1,21 @@
 // Minimal, dependency-free Markdown renderer for the article content.
-// Handles: ## headings, **bold**, *italic*, `code`, lists, paragraphs, > quotes.
+// Handles: ## headings, **bold**, *italic*, `code`, lists, paragraphs,
+// > quotes, and GFM pipe tables (added 2026-05-15 — the comparison agent
+// emits spec tables and they were rendering as raw "| a | b |" text).
 import React from 'react';
+
+function splitRow(row: string): string[] {
+  // "| a | b | c |" → ["a","b","c"]  (tolerate missing outer pipes)
+  let s = row.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|')) s = s.slice(0, -1);
+  return s.split('|').map((c) => c.trim());
+}
+
+// A separator row is the |---|:--:|---| line right under the header.
+function isTableSeparator(line: string): boolean {
+  return /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(line);
+}
 
 function inline(text: string): React.ReactNode[] {
   const out: React.ReactNode[] = [];
@@ -26,6 +41,52 @@ export default function Markdown({ children }: { children: string }) {
   const blocks: React.ReactNode[] = [];
   let buf: string[] = [];
   let listBuf: string[] | null = null;
+  let tableBuf: string[] | null = null;
+
+  const flushTable = () => {
+    if (!tableBuf) return;
+    // Valid GFM table needs a header + separator line at index 1. If that's
+    // missing, it wasn't really a table — render the lines as a paragraph
+    // so we never silently drop content.
+    if (tableBuf.length < 2 || !isTableSeparator(tableBuf[1])) {
+      const text = tableBuf.join(' ');
+      blocks.push(<p key={blocks.length}>{inline(text)}</p>);
+      tableBuf = null;
+      return;
+    }
+    const header = splitRow(tableBuf[0]);
+    const bodyRows = tableBuf.slice(2).map(splitRow); // row 1 is the separator
+    blocks.push(
+      <div key={blocks.length} className="overflow-x-auto my-6">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr>
+              {header.map((h, i) => (
+                <th
+                  key={i}
+                  className="text-left font-semibold px-3 py-2 border-b border-white/15 text-white/90"
+                >
+                  {inline(h)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {bodyRows.map((cells, r) => (
+              <tr key={r} className="border-b border-white/5">
+                {cells.map((c, ci) => (
+                  <td key={ci} className="px-3 py-2 align-top text-white/75">
+                    {inline(c)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+    tableBuf = null;
+  };
 
   const flushPara = () => {
     if (buf.length) {
@@ -44,9 +105,22 @@ export default function Markdown({ children }: { children: string }) {
     }
   };
 
+  // A table row: starts with "|" and has at least two cells. We also
+  // accept the separator line. Anything else closes an open table.
+  const isTableRow = (l: string) => /^\s*\|.*\|\s*$/.test(l) || isTableSeparator(l);
+
   for (const raw of lines) {
     const line = raw.trimEnd();
-    if (!line.trim()) { flushPara(); flushList(); continue; }
+    if (!line.trim()) { flushPara(); flushList(); flushTable(); continue; }
+
+    if (isTableRow(line)) {
+      flushPara(); flushList();
+      tableBuf = tableBuf ?? [];
+      tableBuf.push(line);
+      continue;
+    }
+    // Non-table line ends any table in progress.
+    if (tableBuf) flushTable();
 
     if (line.startsWith('## ')) {
       flushPara(); flushList();
@@ -69,7 +143,7 @@ export default function Markdown({ children }: { children: string }) {
       buf.push(line);
     }
   }
-  flushPara(); flushList();
+  flushPara(); flushList(); flushTable();
 
   return <div className="prose-tech">{blocks}</div>;
 }

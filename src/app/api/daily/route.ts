@@ -51,28 +51,23 @@ export async function GET(req: Request) {
     out.monitor = { error: (e as Error).message };
   }
 
-  // 3. Comparison longform — Mon/Wed/Fri only (~3/week). Evergreen anchor
-  //    content; daily would dilute quality and look like scaled output.
+  // 3. Comparison longform — ONE per day. The 48-item queue is all
+  //    genuinely-different products (Wirecutter-style; one solid buying
+  //    guide a day is normal editorial volume, not scaled-content abuse).
   //    TRIGGERED as a separate /api/comparison invocation (not inline):
   //    it needs its own ~50s budget and Vercel Hobby hard-caps every
   //    function at 60s, so running it inside this fan-out would risk a
   //    timeout that also kills the newsletter. We fire the request and
   //    only wait a few seconds to confirm the function spun up — it then
-  //    runs to completion independently. The agent dedups its queue.
-  const dow = new Date().getUTCDay(); // 0=Sun … 6=Sat
-  if ([1, 3, 5].includes(dow)) {
-    try {
-      await fetch(`${SITE}/api/comparison?token=${expected}`, {
-        signal: AbortSignal.timeout(5_000),
-      });
-      out.comparison = { triggered: true };
-    } catch {
-      // Abort after 5s is expected — the comparison function keeps
-      // running in its own invocation. Only a real network error matters.
-      out.comparison = { triggered: true, note: 'fired (running independently)' };
-    }
-  } else {
-    out.comparison = { skipped: 'not a Mon/Wed/Fri' };
+  //    runs to completion independently. The agent dedups its queue and
+  //    self-stops once every matchup is covered.
+  try {
+    await fetch(`${SITE}/api/comparison?token=${expected}`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    out.comparison = { triggered: true };
+  } catch {
+    out.comparison = { triggered: true, note: 'fired (running independently)' };
   }
 
   await tg(

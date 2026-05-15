@@ -25,17 +25,72 @@ import { tg } from '../telegram';
 // High-intent evergreen matchups. Ordered by rough search demand. The
 // agent walks this list and writes the first one it hasn't covered yet.
 // Add freely — keep them genuinely comparable (same category, same buyer).
+// Broad, high-search-volume matchups across everything people actually
+// shop for — including UPCOMING / rumored flagships (those "X vs Y"
+// queries spike hard months before release and we want to own them
+// early). Kept genuinely comparable (same buyer, same category). The
+// agent walks this top-to-bottom and writes the first one not yet
+// covered, so order ≈ priority. Add freely.
 const QUEUE: { a: string; b: string; category: string }[] = [
+  // ── Smartphones: current flagships ──
   { a: 'iPhone 17 Pro Max', b: 'Google Pixel 9 Pro XL', category: 'mobile' },
   { a: 'iPhone 17 Pro', b: 'Samsung Galaxy S25 Ultra', category: 'mobile' },
+  { a: 'Samsung Galaxy S25 Ultra', b: 'Google Pixel 9 Pro XL', category: 'mobile' },
+  { a: 'iPhone 17', b: 'Samsung Galaxy S25', category: 'mobile' },
+  { a: 'iPhone 17 Pro Max', b: 'Samsung Galaxy S25 Ultra', category: 'mobile' },
+  { a: 'Google Pixel 9 Pro', b: 'Samsung Galaxy S25', category: 'mobile' },
+  { a: 'iPhone 16 Pro Max', b: 'iPhone 17 Pro Max', category: 'mobile' },
+  { a: 'OnePlus 13', b: 'Samsung Galaxy S25 Ultra', category: 'mobile' },
+  { a: 'Nothing Phone 3', b: 'Google Pixel 9', category: 'mobile' },
+  { a: 'Xiaomi 15 Ultra', b: 'iPhone 17 Pro Max', category: 'mobile' },
+  // ── Smartphones: upcoming / rumored (own the query early) ──
+  { a: 'iPhone 18 Pro Max', b: 'Google Pixel 10 Pro XL', category: 'mobile' },
+  { a: 'iPhone 18 Pro Max', b: 'Samsung Galaxy S26 Ultra', category: 'mobile' },
+  { a: 'Samsung Galaxy S26 Ultra', b: 'Google Pixel 10 Pro XL', category: 'mobile' },
+  { a: 'iPhone 18', b: 'iPhone 17', category: 'mobile' },
+  { a: 'Samsung Galaxy Z Fold 7', b: 'Google Pixel 10 Pro Fold', category: 'mobile' },
+  // ── Foldables ──
+  { a: 'Samsung Galaxy Z Flip 7', b: 'Motorola Razr 2025', category: 'mobile' },
+  // ── TVs ──
+  { a: 'LG OLED C5', b: 'Samsung S95F QD-OLED', category: 'hardware' },
+  { a: 'Samsung QN90F Neo QLED', b: 'LG OLED C5', category: 'hardware' },
+  { a: 'Sony Bravia 9', b: 'LG G5 OLED', category: 'hardware' },
+  { a: 'TCL QM8 2025', b: 'Hisense U8N', category: 'hardware' },
+  { a: 'LG G5 OLED', b: 'Samsung S95F QD-OLED', category: 'hardware' },
+  // ── Laptops ──
   { a: 'MacBook Air M4', b: 'Dell XPS 13', category: 'hardware' },
-  { a: 'PlayStation 5 Pro', b: 'Xbox Series X', category: 'gaming' },
+  { a: 'MacBook Pro M4', b: 'ASUS ROG Zephyrus G16', category: 'hardware' },
+  { a: 'MacBook Air M4', b: 'MacBook Pro M4', category: 'hardware' },
+  { a: 'Framework Laptop 13', b: 'Dell XPS 13', category: 'hardware' },
+  // ── GPUs / PC ──
   { a: 'RTX 5080', b: 'RTX 4090', category: 'hardware' },
-  { a: 'ChatGPT Plus', b: 'Claude Pro', category: 'ai' },
-  { a: 'Tesla Model 3', b: 'BYD Seal', category: 'ev' },
-  { a: 'AirPods Pro 3', b: 'Sony WF-1000XM5', category: 'mobile' },
+  { a: 'RTX 5090', b: 'RTX 4090', category: 'hardware' },
+  { a: 'RTX 5070 Ti', b: 'RX 9070 XT', category: 'hardware' },
+  // ── Consoles / handhelds ──
+  { a: 'PlayStation 5 Pro', b: 'Xbox Series X', category: 'gaming' },
+  { a: 'Nintendo Switch 2', b: 'Steam Deck OLED', category: 'gaming' },
   { a: 'Steam Deck OLED', b: 'ASUS ROG Ally X', category: 'gaming' },
+  { a: 'ASUS ROG Ally X', b: 'Lenovo Legion Go', category: 'gaming' },
+  // ── Audio / wearables ──
+  { a: 'AirPods Pro 3', b: 'Sony WF-1000XM5', category: 'mobile' },
+  { a: 'Sony WH-1000XM6', b: 'Bose QuietComfort Ultra', category: 'mobile' },
+  { a: 'Apple Watch Series 11', b: 'Samsung Galaxy Watch 8', category: 'mobile' },
+  { a: 'Apple Watch Ultra 3', b: 'Garmin Fenix 8', category: 'mobile' },
+  // ── Tablets ──
+  { a: 'iPad Pro M4', b: 'Samsung Galaxy Tab S10 Ultra', category: 'mobile' },
+  { a: 'iPad Air M3', b: 'iPad Pro M4', category: 'mobile' },
+  // ── EV / auto ──
+  { a: 'Tesla Model 3', b: 'BYD Seal', category: 'ev' },
+  { a: 'Tesla Model Y', b: 'Hyundai Ioniq 5', category: 'ev' },
+  { a: 'Tesla Model 3', b: 'Polestar 2', category: 'ev' },
+  // ── AI / software services ──
+  { a: 'ChatGPT Plus', b: 'Claude Pro', category: 'ai' },
+  { a: 'ChatGPT Plus', b: 'Google Gemini Advanced', category: 'ai' },
+  { a: 'Claude Pro', b: 'Google Gemini Advanced', category: 'ai' },
+  { a: 'Perplexity Pro', b: 'ChatGPT Plus', category: 'ai' },
   { a: 'Proton Mail', b: 'Gmail', category: 'software' },
+  { a: 'Notion', b: 'Obsidian', category: 'software' },
+  { a: 'Proton VPN', b: 'NordVPN', category: 'software' },
 ];
 
 const SYSTEM = `You are Serhat Er, founder and editor of Byte-Pulse. You write the site's

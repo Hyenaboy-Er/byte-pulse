@@ -31,7 +31,13 @@ import { pingIndexNow } from '../indexnow';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
 const WORD_FLOOR = 700;        // below this = "thin", needs upgrade
 const TARGET_MIN = 820;        // don't ship an upgrade that's still thin
-const SCAN_WINDOW = 50;        // oldest-N published scanned per run
+// Scan the WHOLE published corpus, not just the oldest 50. The thin
+// backlog (~400 pre-humanizer-fix articles) is spread across ALL of them;
+// a 50-window meant once the oldest 50 were upgraded the agent reported
+// thinFound=0 forever and never touched articles 51-400. One findMany of
+// id+slug+content for the corpus is cheap; the loop still does at most
+// maxPerRun LLM calls so the 60s cap is unaffected.
+const SCAN_WINDOW = 1000;      // effectively the whole corpus
 // Vercel Hobby hard-caps functions at 60s. A 6000-token writer call blew
 // past it (504) even for ONE article. An ~850-1050w body is ~1400 output
 // tokens; 3200 leaves JSON headroom and generates fast enough to finish

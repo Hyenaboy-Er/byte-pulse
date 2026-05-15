@@ -82,28 +82,50 @@ export function amazonSearchUrl(query: string, lang: Lang = 'en'): string | null
 export function injectAmazonLinks(markdown: string, lang: Lang = 'en'): { content: string; injected: number } {
   if (!AMAZON_TAGS[lang]) return { content: markdown, injected: 0 };
 
-  let content = markdown;
   let injected = 0;
-  // Build a quick index of regions already inside [..](..) so we don't double-link.
-  const linkRanges: [number, number][] = [];
-  for (const m of content.matchAll(/\[[^\]]*\]\([^)]*\)/g)) {
-    if (m.index !== undefined) linkRanges.push([m.index, m.index + m[0].length]);
-  }
-  const inLink = (idx: number) => linkRanges.some(([a, b]) => idx >= a && idx < b);
+  const linkedQueries = new Set<string>(); // one link per product per article
 
-  for (const { match, query } of PRODUCT_KEYWORDS) {
-    let didReplace = false;
-    content = content.replace(match, (hit, offset: number) => {
-      if (didReplace) return hit;
-      if (typeof offset === 'number' && inLink(offset)) return hit;
-      const url = amazonSearchUrl(query, lang);
-      if (!url) return hit;
-      didReplace = true;
-      injected++;
-      return `[${hit}](${url})`;
-    });
-  }
-  return { content, injected };
+  // Process line by line so we can skip headings entirely (affiliate links
+  // in an <h1>/<h2> look spammy, break comparison titles, and hurt SEO).
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+
+  const out = lines.map((line) => {
+    // Never inject into headings, blockquotes, or table rows.
+    if (/^\s{0,3}#{1,6}\s/.test(line) || /^\s*>/.test(line) || /^\s*\|/.test(line)) {
+      return line;
+    }
+
+    let work = line;
+    for (const { match, query } of PRODUCT_KEYWORDS) {
+      if (linkedQueries.has(query)) continue;
+
+      // Recompute protected ranges on the CURRENT line state every keyword —
+      // this is the fix for the nested-link bug: a freshly injected
+      // [iPhone 17 Pro Max](url) must protect "iPhone 17 Pro" inside it
+      // from the next, shorter keyword. (PRODUCT_KEYWORDS is ordered
+      // longest-first, so the most specific product wins the match.)
+      const ranges: [number, number][] = [];
+      for (const lm of work.matchAll(/\[[^\]]*\]\([^)]*\)/g)) {
+        if (lm.index !== undefined) ranges.push([lm.index, lm.index + lm[0].length]);
+      }
+      const inLink = (idx: number) => ranges.some(([a, b]) => idx >= a && idx < b);
+
+      let replacedThisQuery = false;
+      work = work.replace(match, (hit, offset: number) => {
+        if (replacedThisQuery) return hit;
+        if (typeof offset === 'number' && inLink(offset)) return hit;
+        const url = amazonSearchUrl(query, lang);
+        if (!url) return hit;
+        replacedThisQuery = true;
+        linkedQueries.add(query);
+        injected++;
+        return `[${hit}](${url})`;
+      });
+    }
+    return work;
+  });
+
+  return { content: out.join('\n'), injected };
 }
 
 // Affiliate CTAs — one per article when relevant. The orchestrator picks the

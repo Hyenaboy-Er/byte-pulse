@@ -113,8 +113,27 @@ export async function GET(req: Request) {
     out.gscMonitor = { triggered: true, note: 'fired (running independently)' };
   }
 
+  // 5. Watchdog + auditors that had NO schedule (Vercel Hobby caps at 2
+  //    crons, cron-job.org was never set up, so Sentinel/Quality-Auditor/
+  //    SEO-Auditor reported "never run" — the watchdog wasn't watching).
+  //    Fold them into the daily fan-out: each is fire-and-confirm with its
+  //    own function budget. Daily (not 5-min) is fine for catching
+  //    regressions on a site this size — better than never running.
+  for (const [key, path] of [
+    ['sentinel', '/api/sentinel'],
+    ['qualityAuditor', '/api/quality-audit'],
+    ['seoAuditor', '/api/seo-audit'],
+  ] as const) {
+    try {
+      await fetch(`${SITE}${path}?token=${expected}`, { signal: AbortSignal.timeout(8_000) });
+      out[key] = { triggered: true };
+    } catch {
+      out[key] = { triggered: true, note: 'fired (running independently)' };
+    }
+  }
+
   await tg(
-    `Daily-ops: newsletter=${JSON.stringify(out.newsletter)} monitor=${JSON.stringify(out.monitor)} comparison=${JSON.stringify(out.comparison)} gsc=${JSON.stringify(out.gscMonitor)}`,
+    `Daily-ops: newsletter=${JSON.stringify(out.newsletter)} monitor=${JSON.stringify(out.monitor)} comparison=${JSON.stringify(out.comparison)} gsc=${JSON.stringify(out.gscMonitor)} sentinel=${JSON.stringify(out.sentinel)}`,
     { silent: true },
   ).catch(() => null);
 

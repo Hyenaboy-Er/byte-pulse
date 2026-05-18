@@ -11,13 +11,14 @@
 // verified and editorial@byte-pulse.net was wired up as the sending identity.
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { SITE } from '@/lib/site';
 import { randomBytes } from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
-const FROM = process.env.NEWSLETTER_FROM ?? `${SITE_NAME} <editorial@byte-pulse.net>`;
+const SITE_URL = SITE.url;
+const SITE_NAME = SITE.name;
+const FROM = SITE.newsletterFrom;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
           subject: `Confirm your ${SITE_NAME} subscription`,
           html,
           text,
-          reply_to: 'editorial@byte-pulse.net',
+          reply_to: SITE.email,
           // List-Unsubscribe on the confirm mail too — mailbox providers
           // weight its presence for inbox placement even on transactional
           // mail. Token already exists at signup; one-click removes the row.

@@ -27,13 +27,14 @@
 import { prisma } from '../db';
 import { tg } from '../telegram';
 import { llmChat } from '../llm';
+import { SITE } from '../site';
 
-const INSTANCE = process.env.MASTODON_INSTANCE ?? 'mastodon.social';
+const INSTANCE = SITE.mastodonInstance;
 const TOKEN = process.env.MASTODON_ACCESS_TOKEN;
 // Our own Mastodon account id is needed to filter out our own replies in a
-// thread. The id is stable, so we hardcode it after lookup at deploy time —
-// MUCH cheaper than calling /accounts/verify_credentials on every run.
-const OUR_ACCT = 'BytePulseNet';
+// thread. The id is stable per site (looked up once at deploy) and lives in
+// the central config keystone so a clone needs zero edits here.
+const OUR_ACCT = SITE.mastodonHandle;
 
 type Status = {
   id: string;
@@ -70,18 +71,25 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-// Pulls the URL of the byte-pulse.net article from a status body. Our writer
-// always includes the full URL on its own line — match it.
+// Pulls the URL of the site's article from a status body. Our writer always
+// includes the full URL on its own line — match it. Domain comes from the
+// central config so a clone matches its own URLs.
+const APEX_RE = SITE.apexDomain.replace(/[.]/g, '\\.');
+const ARTICLE_URL_RE = new RegExp(
+  `https:\\/\\/(?:www\\.)?${APEX_RE}\\/article\\/[a-z0-9-]+`,
+  'i',
+);
 function extractArticleUrl(content: string): string | null {
   const text = stripHtml(content);
-  const m = text.match(/https:\/\/(?:www\.)?byte-pulse\.net\/article\/[a-z0-9-]+/i);
+  const m = text.match(ARTICLE_URL_RE);
   return m ? m[0] : null;
 }
 
 async function fetchOurRecentStatuses(): Promise<Status[]> {
-  // 116561836232583594 = our user id on mastodon.social. Looked up once via
-  // /api/v1/accounts/verify_credentials on 2026-05-14.
-  const url = `https://${INSTANCE}/api/v1/accounts/116561836232583594/statuses?limit=30&exclude_replies=true&exclude_reblogs=true`;
+  // Account id looked up once via /api/v1/accounts/verify_credentials and
+  // stored in the central config keystone (MASTODON_ACCOUNT_ID) — MUCH
+  // cheaper than calling verify_credentials on every run.
+  const url = `https://${INSTANCE}/api/v1/accounts/${SITE.mastodonAccountId}/statuses?limit=30&exclude_replies=true&exclude_reblogs=true`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!res.ok) throw new Error(`fetch statuses: ${res.status}`);
   return (await res.json()) as Status[];
@@ -115,7 +123,7 @@ async function generateReply(opts: {
   // Rotate openers + ban the formulaic "That's a strong take" / "Fair question"
   // patterns that Gemini defaults to. The list-of-banned-phrases prompt
   // technique works much better than asking for "variety" in the abstract.
-  const system = `You're an editor at Byte-Pulse, a small tech-news outlet (AI, gaming, hardware, software).
+  const system = `You're an editor at ${SITE.name}, a small ${SITE.niche.split(',')[0].trim()} news outlet.
 You're replying to a comment on one of your Mastodon posts.
 
 HARD RULES:
@@ -228,7 +236,8 @@ export async function runCommunityReplies(): Promise<CommunityReplyReport> {
       }
       report.newReplies++;
 
-      const userText = stripHtml(reply.content).replace(/@BytePulseNet/gi, '').trim();
+      const handleMentionRe = new RegExp(`@${SITE.mastodonHandle}`, 'gi');
+      const userText = stripHtml(reply.content).replace(handleMentionRe, '').trim();
       if (!userText) continue; // empty reply (e.g. just a mention) — skip
 
       let body: string;

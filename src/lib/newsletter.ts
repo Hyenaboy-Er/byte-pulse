@@ -1,9 +1,13 @@
 import { prisma } from './db';
 import { getCategory } from './categories';
+import { SITE } from './site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'TechPuls';
-const FROM = process.env.NEWSLETTER_FROM ?? `${SITE_NAME} <hi@example.com>`;
+// Read from the central per-site config keystone (env-driven, byte-pulse
+// fallbacks) instead of ad-hoc process.env reads with inconsistent
+// fallbacks. A clone sets the env vars once; this file needs zero edits.
+const SITE_URL = SITE.url;
+const SITE_NAME = SITE.name;
+const FROM = SITE.newsletterFrom;
 
 function escape(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

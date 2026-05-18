@@ -9,6 +9,13 @@
 // Author selection per article is deterministic (hash of slug → author) so
 // the same article is always attributed to the same byline, which is what
 // schema.org Person nodes need for trust signals.
+//
+// Brand name + founder identity are pulled from the central config keystone
+// so a clone gets correct bylines/schema with zero edits here.
+
+import { SITE } from './site';
+
+const BRAND = SITE.name;
 
 export type Author = {
   slug: string;
@@ -28,26 +35,26 @@ export const AUTHORS: Author[] = [
     slug: 'serhat-kalender',
     name: 'Serhat Kalender',
     role: 'Editor-in-Chief',
-    bioEn: "Serhat founded Byte-Pulse to cover European tech that US blogs miss. He oversees the editorial direction, reviews coverage of AI and security stories, and signs off on every article before publish. Based in Germany.",
-    bioDe: "Serhat hat Byte-Pulse gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft alle KI- und Security-Stories und gibt jeden Artikel vor Veröffentlichung frei. Basiert in Deutschland.",
+    bioEn: `Serhat founded ${BRAND} to cover European tech that US blogs miss. He oversees the editorial direction, reviews coverage of AI and security stories, and signs off on every article before publish. Based in Germany.`,
+    bioDe: `Serhat hat ${BRAND} gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft alle KI- und Security-Stories und gibt jeden Artikel vor Veröffentlichung frei. Basiert in Deutschland.`,
     expertise: ['AI', 'Security', 'European tech policy'],
     sameAs: [],
   },
   {
     slug: 'byte-pulse-newsroom',
-    name: 'Byte-Pulse Newsroom',
+    name: `${BRAND} Newsroom`,
     role: 'Editorial Team',
-    bioEn: "The Byte-Pulse newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review — before it's published.",
-    bioDe: "Das Byte-Pulse-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review — bevor sie veröffentlicht wird.",
+    bioEn: `The ${BRAND} newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review — before it's published.`,
+    bioDe: `Das ${BRAND}-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review — bevor sie veröffentlicht wird.`,
     expertise: ['Hardware', 'Gaming', 'Mobile'],
     sameAs: [],
   },
   {
     slug: 'serhat-er',
-    name: 'Serhat Er',
-    role: 'Founder & Editor',
-    bioEn: "Serhat Er is the founder of Byte-Pulse and writes its in-depth buying guides and head-to-head comparisons. He digs through spec sheets, pricing and real-world trade-offs so readers don't have to — and always ends with a clear, opinionated recommendation. Based in Germany.",
-    bioDe: "Serhat Er ist Gründer von Byte-Pulse und schreibt die ausführlichen Kaufberatungen und Direktvergleiche. Er gräbt sich durch Datenblätter, Preise und Praxis-Kompromisse, damit die Leser es nicht müssen — und endet immer mit einer klaren, meinungsstarken Empfehlung. Basiert in Deutschland.",
+    name: SITE.founderName,
+    role: SITE.founderRole,
+    bioEn: `${SITE.founderName} is the founder of ${BRAND} and writes its in-depth buying guides and head-to-head comparisons. He digs through spec sheets, pricing and real-world trade-offs so readers don't have to — and always ends with a clear, opinionated recommendation. Based in Germany.`,
+    bioDe: `${SITE.founderName} ist Gründer von ${BRAND} und schreibt die ausführlichen Kaufberatungen und Direktvergleiche. Er gräbt sich durch Datenblätter, Preise und Praxis-Kompromisse, damit die Leser es nicht müssen — und endet immer mit einer klaren, meinungsstarken Empfehlung. Basiert in Deutschland.`,
     expertise: ['Buying guides', 'Hardware comparisons', 'Consumer tech'],
     sameAs: [],
   },
@@ -87,11 +94,13 @@ export function authorForArticle(
 ): Author {
   // The founder's real-name byline is reserved for the comparison agent's
   // flagship buying guides ONLY. Those are the single thing on the site
-  // that sets sourceName='Byte-Pulse Original' — a precise, unambiguous
+  // that sets sourceName=`${SITE.name} Original` — a precise, unambiguous
   // marker. The old "slug contains -vs-" heuristic was too broad: news
   // stories like "Elon Musk vs OpenAI" or "Umbrellas vs Drones" wrongly
   // got the Founder & Editor byline, which hurts credibility/E-E-A-T.
-  if (sourceName === 'Byte-Pulse Original') {
+  // Derived from SITE.name (not imported from the agent) to keep this
+  // page-side module free of the heavy agent graph while staying in sync.
+  if (sourceName === `${BRAND} Original`) {
     return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[1];
   }
   const wanted = CATEGORY_TO_AUTHOR[category] ?? 'byte-pulse-newsroom';

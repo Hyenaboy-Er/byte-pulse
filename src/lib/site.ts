@@ -30,6 +30,7 @@ export const SITE = {
   // External integration IDs (per-domain — looked up once at launch)
   mastodonAccountId: env('MASTODON_ACCOUNT_ID', '116561836232583594'),
   mastodonInstance: env('MASTODON_INSTANCE', 'mastodon.social'),
+  mastodonHandle: env('MASTODON_HANDLE', 'BytePulseNet'),
   resendDomainId: env('RESEND_DOMAIN_ID', ''),
   cloudflareZoneId: env('CLOUDFLARE_ZONE_ID', '02db1dc2dbf6ab755041a60e7d147580'),
   vercelProject: env('VERCEL_PROJECT', 'byte-pulse'),

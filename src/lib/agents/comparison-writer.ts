@@ -21,6 +21,12 @@ import { chat, MODELS, extractJson } from '../openai';
 import { slugify } from '../slugify';
 import { CATEGORIES } from '../categories';
 import { tg } from '../telegram';
+import { SITE } from '../site';
+
+// Stable sentinel that flags a flagship-longform piece as written under the
+// founder byline. Derived from SITE.name so the writer and the byline router
+// (authors.ts) always agree — a clone needs zero edits in either file.
+export const ORIGINAL_SOURCE_NAME = `${SITE.name} Original`;
 
 // High-intent evergreen matchups. Ordered by rough search demand. The
 // agent walks this list and writes the first one it hasn't covered yet.
@@ -93,7 +99,7 @@ const QUEUE: { a: string; b: string; category: string }[] = [
   { a: 'Proton VPN', b: 'NordVPN', category: 'software' },
 ];
 
-const SYSTEM = `You are Serhat Er, founder and editor of Byte-Pulse. You write the site's
+const SYSTEM = `You are ${SITE.founderName}, founder and editor of ${SITE.name}. You write the site's
 flagship head-to-head buying guides. Your reputation is built on being the person who
 actually read every spec sheet and current price, and lays out the real trade-offs
 clearly and FAIRLY so the reader can decide for themselves.
@@ -200,7 +206,7 @@ export async function runComparisonWriter(
     draftRaw = await chat({
       model: MODELS.writer,
       system: SYSTEM,
-      user: `Write the definitive Byte-Pulse comparison: ${pick.a} vs ${pick.b}.
+      user: `Write the definitive ${SITE.name} comparison: ${pick.a} vs ${pick.b}.
 Category: ${category}. Audience: a buyer about to spend real money who wants
 the fair, complete picture so THEY can decide. Make it the page they stop
 searching after — because it's the most balanced one, not because it picks for them.`,
@@ -225,7 +231,7 @@ searching after — because it's the most balanced one, not because it picks for
     try {
       const expandedRaw = await chat({
         model: MODELS.writer,
-        system: `You are Serhat Er expanding your own comparison draft. The piece is too thin.
+        system: `You are ${SITE.founderName} expanding your own comparison draft. The piece is too thin.
 Make it 1400-1900 words by ADDING depth, not padding: more concrete numbers in each
 section, a real daily-use scenario per dimension, one extra balanced buyer profile.
 Keep EVERY existing sentence and the structure. Same warm, plainspoken voice.
@@ -304,8 +310,8 @@ ${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.
         category,
         tags: JSON.stringify(finalTags.slice(0, 6)),
         imageUrl: null,
-        sourceUrl: 'https://www.byte-pulse.net/about',
-        sourceName: 'Byte-Pulse Original',
+        sourceUrl: `${SITE.url}/about`,
+        sourceName: ORIGINAL_SOURCE_NAME,
         originalTitle: finalTitle,
         qualityScore: 85,
         status: 'published',

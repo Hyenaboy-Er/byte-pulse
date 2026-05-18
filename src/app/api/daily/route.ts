@@ -10,6 +10,7 @@
 import { NextResponse } from 'next/server';
 import { buildDailyDigest, sendDigestToAll } from '@/lib/newsletter';
 import { tg } from '@/lib/telegram';
+import { submitUrlsToBing } from '@/lib/bing-submit';
 import { SITE as SITE_CONFIG } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -49,6 +50,24 @@ export async function GET(req: Request) {
     }
   } else {
     out.newsletter = { skipped: 'not a Mon/Wed/Fri send day' };
+  }
+
+  // 1b. Bing URL Submission backfill. The open IndexNow endpoint 422s for
+  //     this site, so per-publish pings never reached Bing (URL Inspection
+  //     showed the top article "not known to Bing"). The Bing Webmaster
+  //     API key path DOES work. Each daily run resubmits the recent
+  //     news-sitemap URLs (now correct www host) up to the remaining
+  //     ~99/day quota — submitUrlsToBing self-caps, so this can't 400.
+  try {
+    const sm = await fetch(`${SITE}/news-sitemap.xml`, { signal: AbortSignal.timeout(10_000) });
+    const xml = await sm.text();
+    const urls = Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g))
+      .map((m) => m[1])
+      .filter((u) => !u.includes('/de/'));
+    const r = await submitUrlsToBing(urls);
+    out.bingSubmit = { submitted: r.submitted, status: r.status, ...(r.skipped ? { skipped: r.skipped } : {}) };
+  } catch (e) {
+    out.bingSubmit = { error: (e as Error).message };
   }
 
   // 2. Site-monitor (was its own Vercel cron; folded in here). Fire the

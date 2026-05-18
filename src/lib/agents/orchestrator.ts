@@ -12,6 +12,7 @@ import { injectAmazonLinks } from '../affiliate';
 import { chat, MODELS, extractJson } from '../openai';
 import { broadcastNewArticle } from '../social';
 import { pingIndexNow } from '../indexnow';
+import { submitUrlsToBing } from '../bing-submit';
 import { SITE } from '../site';
 
 export type RunReport = {
@@ -438,8 +439,15 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // failure — Google doesn't use IndexNow yet but Bing does, and Bing-indexed
     // pages also show on DuckDuckGo / Ecosia.
     const SITE_URL = SITE.url;
-    pingIndexNow([`${SITE_URL}/article/${slug}`, `${SITE_URL}/de/article/${slug}`])
+    const freshUrls = [`${SITE_URL}/article/${slug}`, `${SITE_URL}/de/article/${slug}`];
+    pingIndexNow(freshUrls)
       .then((r) => logAgent('indexnow', 'ping', r.ok ? 'success' : 'warn', `status=${r.status} urls=${r.submitted}`))
+      .catch(() => null);
+    // Bing Webmaster URL Submission API — the channel that actually works
+    // (open IndexNow 422s for this site; Bing had the top article as "not
+    // known"). Runs in parallel, non-fatal.
+    submitUrlsToBing(freshUrls)
+      .then((r) => logAgent('bing-submit', 'submit', r.ok ? 'success' : 'warn', `status=${r.status} urls=${r.submitted}${r.skipped ? ' skipped=' + r.skipped : ''}`))
       .catch(() => null);
 
     // 6. Immediate DE translation so /de/* pages show the article in German right away.

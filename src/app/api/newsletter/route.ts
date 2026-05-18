@@ -62,9 +62,9 @@ export async function POST(req: Request) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <table role="presentation" width="540" cellpadding="0" cellspacing="0" style="max-width:540px;background:#13131a;border-radius:14px;border:1px solid rgba(255,255,255,.06);padding:30px;">
       <tr><td>
-        <div style="font-size:22px;font-weight:900;color:#fff;">${SITE_NAME} <span style="color:#ff3366;">·</span> Daily Tech Briefing</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;">${SITE_NAME} <span style="color:#ff3366;">·</span> The Brief</div>
         <div style="margin-top:14px;font-size:15px;line-height:1.5;color:#e8e8ee;">
-          One last step: click the button below to confirm <strong>${email}</strong> and start receiving the 5 most important tech stories every morning.
+          One last step: click the button below to confirm <strong>${email}</strong> and start receiving our 5 best tech picks three mornings a week (Mon/Wed/Fri).
         </div>
         <div style="margin:24px 0;">
           <a href="${confirmUrl}" style="display:inline-block;padding:12px 22px;background:#ff3366;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Confirm subscription</a>

@@ -48,8 +48,8 @@ export async function buildDailyDigest(): Promise<DailyDigest | null> {
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;">
         <tr><td style="padding-bottom:20px;">
-          <div style="font-size:24px;font-weight:900;color:#fff;">${escape(SITE_NAME)} <span style="color:#ff3366;">·</span> Daily</div>
-          <div style="font-size:13px;color:#7a7a8c;">The ${articles.length} most important tech stories of the last 24 hours.</div>
+          <div style="font-size:24px;font-weight:900;color:#fff;">${escape(SITE_NAME)} <span style="color:#ff3366;">·</span> The Brief</div>
+          <div style="font-size:13px;color:#7a7a8c;">The ${articles.length} best tech stories since the last issue — Mon · Wed · Fri.</div>
         </td></tr>
         ${blocks}
         <tr><td style="padding-top:18px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:#7a7a8c;">
@@ -61,7 +61,7 @@ export async function buildDailyDigest(): Promise<DailyDigest | null> {
   </table>
 </body></html>`;
 
-  const text = `${SITE_NAME} – Daily\n\n` +
+  const text = `${SITE_NAME} – The Brief\n\n` +
     articles.map((a) => `• ${a.title}\n  ${a.excerpt}\n  ${SITE_URL}/article/${a.slug}\n`).join('\n') +
     `\nUnsubscribe: ${SITE_URL}/newsletter`;
 

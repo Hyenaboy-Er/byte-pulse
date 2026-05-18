@@ -1,9 +1,9 @@
 import NewsletterForm from '@/components/NewsletterForm';
 
 export const metadata = {
-  title: 'The Byte-Pulse Daily — tech news that matters, every morning',
+  title: 'The Byte-Pulse Brief — the 5 tech stories worth your time, 3× a week',
   description:
-    'One short email a day: the 5 tech stories worth your time — AI, hardware, gaming, security. Free, fact-checked, unsubscribe anytime.',
+    'Three mornings a week (Mon/Wed/Fri): our 5 best tech picks — AI, hardware, gaming, security. Curated, fact-checked, free, unsubscribe anytime.',
   alternates: { canonical: '/newsletter', languages: { 'en-US': '/newsletter', 'de-DE': '/de/newsletter' } },
 };
 
@@ -13,19 +13,20 @@ export default function NewsletterPage() {
       <div className="text-center">
         <div className="text-5xl mb-4">📬</div>
         <h1 className="font-display font-extrabold text-4xl tracking-tight">
-          The Byte-Pulse Daily
+          The Byte-Pulse Brief
         </h1>
         <p className="text-white/70 mt-3 text-lg">
-          The 5 tech stories that actually matter — in your inbox by 8&nbsp;AM. AI,
-          hardware, gaming, security. Fact-checked, no hype, no 800-word intros.
+          Three mornings a week — Monday, Wednesday, Friday — our 5 best tech
+          picks. AI, hardware, gaming, security. Curated, fact-checked, no hype,
+          no 800-word intros.
         </p>
       </div>
 
       <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-white/60">
         <li className="flex items-center gap-2"><span className="text-accent">✓</span> Free, forever</li>
-        <li className="flex items-center gap-2"><span className="text-accent">✓</span> One email/day, never more</li>
-        <li className="flex items-center gap-2"><span className="text-accent">✓</span> Unsubscribe in one click</li>
-        <li className="flex items-center gap-2"><span className="text-accent">✓</span> No spam, no data selling</li>
+        <li className="flex items-center gap-2"><span className="text-accent">✓</span> 3× a week, never daily spam</li>
+        <li className="flex items-center gap-2"><span className="text-accent">✓</span> Only the 5 best — heavily curated</li>
+        <li className="flex items-center gap-2"><span className="text-accent">✓</span> One-click unsubscribe, no data selling</li>
       </ul>
 
       <div className="mt-8 max-w-md mx-auto">

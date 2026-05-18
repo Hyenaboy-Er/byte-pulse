@@ -261,7 +261,7 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           slot on a content site. */}
       <section className="mt-12 rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 to-transparent p-6 sm:p-8">
         <div className="font-display font-extrabold text-xl sm:text-2xl tracking-tight">
-          Get the 5 stories that matter — every morning
+          Get the 5 tech stories worth your time — 3× a week
         </div>
         <p className="mt-2 text-sm text-white/70 max-w-lg">
           One short email. The most important {cat?.name ?? 'tech'} news, fact-checked,

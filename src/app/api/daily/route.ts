@@ -27,17 +27,25 @@ export async function GET(req: Request) {
 
   const out: Record<string, unknown> = {};
 
-  // 1. Daily newsletter digest → all confirmed subscribers (Resend).
-  try {
-    const digest = await buildDailyDigest();
-    if (!digest) {
-      out.newsletter = { skipped: 'no articles in last 24h' };
-    } else {
-      const r = await sendDigestToAll(digest);
-      out.newsletter = { articleCount: digest.articleCount, sent: r.sent, recipients: r.recipients };
+  // 1. Newsletter digest — Mon/Wed/Fri only (~3×/week, the "5 best
+  //    recommendations"). A curated tri-weekly beats a forced daily:
+  //    higher signal, honest expectation, better open rates, less
+  //    unsubscribe/spam risk. The signup copy promises exactly this.
+  const dow = new Date().getUTCDay(); // 0=Sun … 6=Sat
+  if ([1, 3, 5].includes(dow)) {
+    try {
+      const digest = await buildDailyDigest();
+      if (!digest) {
+        out.newsletter = { skipped: 'no articles in window' };
+      } else {
+        const r = await sendDigestToAll(digest);
+        out.newsletter = { articleCount: digest.articleCount, sent: r.sent, recipients: r.recipients };
+      }
+    } catch (e) {
+      out.newsletter = { error: (e as Error).message };
     }
-  } catch (e) {
-    out.newsletter = { error: (e as Error).message };
+  } else {
+    out.newsletter = { skipped: 'not a Mon/Wed/Fri send day' };
   }
 
   // 2. Site-monitor (was its own Vercel cron; folded in here). Fire the
@@ -123,6 +131,9 @@ export async function GET(req: Request) {
     ['sentinel', '/api/sentinel'],
     ['qualityAuditor', '/api/quality-audit'],
     ['seoAuditor', '/api/seo-audit'],
+    ['titleBooster', '/api/title-boost'],
+    ['trendReactor', '/api/trend-react'],
+    ['socialRetry', '/api/social-retry'],
   ] as const) {
     try {
       await fetch(`${SITE}${path}?token=${expected}`, { signal: AbortSignal.timeout(8_000) });

@@ -73,3 +73,19 @@ lügt.
 
 Alles Kontrollierbare ist jetzt erledigt. Der Rest ist Zeit + die zwei
 Anmeldungen oben.
+
+## 6. LIVE verifiziert (nicht nur behauptet)
+
+Direkt von der Live-Seite geprüft, nachdem die Fixes deployt waren:
+
+- Homepage-Canonical: `https://www.byte-pulse.net` ✅ (vorher: redirectende
+  Apex `byte-pulse.net` — der Indexierungs-Blocker, jetzt weg)
+- robots.txt Sitemap-Direktiven: beide `https://www.byte-pulse.net/...` ✅
+- news-sitemap `<loc>`: `https://www.byte-pulse.net/...` ✅
+- Bing-API: 80 www-URLs eingereicht, HTTP 200, im Code automatisiert ✅
+- Pipeline gesund: 568 Artikel, Writer lief vor < 1 h ✅
+
+Der Canonical-/Robots-Fix wirkte sofort live (Vercel-Env
+`NEXT_PUBLIC_SITE_URL` gesetzt) — die Code-Migration macht es nur dauerhaft
+robust. Heißt: der größte technische Indexierungs-Blocker ist **jetzt**
+behoben, nicht erst nach dem nächsten Deploy.

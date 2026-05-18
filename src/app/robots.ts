@@ -1,6 +1,10 @@
 import type { MetadataRoute } from 'next';
+import { SITE } from '@/lib/site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+// Single-sourced from the keystone. robots.txt's Sitemap: directive is
+// how crawlers discover the sitemaps — the old `?? 'http://localhost:3000'`
+// broke on empty env and pointed crawlers at the apex (redirecting) host.
+const SITE_URL = SITE.url;
 
 export default function robots(): MetadataRoute.Robots {
   return {

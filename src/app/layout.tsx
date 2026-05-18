@@ -9,9 +9,17 @@ import CookieBanner from '@/components/CookieBanner';
 import ThirdPartyScripts from '@/components/ThirdPartyScripts';
 import DeferredOverlays from '@/components/DeferredOverlays';
 import LangSetter from '@/components/LangSetter';
+import { SITE } from '@/lib/site';
 
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+// Single-sourced from the keystone. Critical: this drives metadataBase →
+// canonical/OG/hreflang for the WHOLE site. The old
+// `?? 'http://localhost:3000'` broke on Vercel where NEXT_PUBLIC_SITE_URL
+// was '' (empty ≠ undefined, so `??` did NOT fall back) — canonical
+// resolved to the apex byte-pulse.net which 308-redirects to www. A
+// canonical pointing at a redirecting URL suppresses indexing on Google
+// AND Bing. site.ts's env() treats '' as missing → correct www host.
+const SITE_NAME = SITE.name;
+const SITE_URL = SITE.url;
 
 const HOME_TITLE = 'Latest tech news, AI, gaming, hardware — Byte-Pulse';
 const HOME_DESCRIPTION =
@@ -117,7 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 contactPoint: {
                   '@type': 'ContactPoint',
                   contactType: 'editorial',
-                  email: process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'editorial@byte-pulse.net',
+                  email: SITE.email,
                   availableLanguage: ['en', 'de'],
                 },
               },

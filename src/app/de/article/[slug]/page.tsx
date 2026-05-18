@@ -116,8 +116,8 @@ export default async function ArticlePageDE({ params }: { params: Promise<Params
     take: 4,
   });
 
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
+  const SITE_URL = SITE.url;
+  const SITE_NAME = SITE.name;
 
   const author = authorForArticle(article.category, article.slug, article.sourceName);
   const heroImageUrl = article.imageUrl

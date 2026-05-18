@@ -1,9 +1,12 @@
 import { prisma } from '@/lib/db';
+import { SITE } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'TechPuls';
+// Single-sourced from the keystone (fixes empty-env localhost fallback +
+// the stale 'TechPuls' brand fallback).
+const SITE_URL = SITE.url;
+const SITE_NAME = SITE.name;
 const TAGLINE = process.env.NEXT_PUBLIC_SITE_TAGLINE ?? 'Tech-News, Gaming, KI – alles was heute zählt.';
 
 function escape(s: string) {

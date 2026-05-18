@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/db';
+import { SITE } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
+// Single-sourced from the keystone (fixes empty-env localhost fallback).
+const SITE_URL = SITE.url;
+const SITE_NAME = SITE.name;
 
 function escape(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

@@ -180,8 +180,8 @@ const AMAZON_BY_CATEGORY: Record<string, { en: { q: string; title: string; body:
     de: { q: 'Typ 2 Ladekabel E-Auto', title: 'E-Auto-Zubehör', body: 'Ladekabel, Adapter und Gear, das jeder E-Auto-Fahrer braucht.', cta: 'EV-Zubehör' },
   },
   web: {
-    en: { q: 'usb c hub macbook', title: 'Dev-friendly accessories', body: 'USB-C hubs, docking stations and webdev gear.', cta: 'Shop accessories' },
-    de: { q: 'usb c hub macbook', title: 'Dev-Zubehör', body: 'USB-C Hubs, Docking-Stationen und WebDev-Gear.', cta: 'Zubehör ansehen' },
+    en: { q: 'best tech deals 2026', title: "Today's top tech deals", body: 'Editor-tracked discounts on the gadgets and gear worth buying right now.', cta: 'See the deals' },
+    de: { q: 'tech angebote 2026', title: 'Top Tech-Deals heute', body: 'Von der Redaktion verfolgte Rabatte auf Gadgets und Gear, die sich lohnen.', cta: 'Deals ansehen' },
   },
 };
 

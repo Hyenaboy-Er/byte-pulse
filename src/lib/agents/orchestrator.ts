@@ -9,6 +9,7 @@ import { getCurrentTrends, trendsBoost, type TrendsSnapshot } from './keyword-re
 import { translateArticle } from './translator';
 import { tgError } from '../telegram';
 import { injectAmazonLinks } from '../affiliate';
+import { chat, MODELS, extractJson } from '../openai';
 import { broadcastNewArticle } from '../social';
 import { pingIndexNow } from '../indexnow';
 
@@ -348,6 +349,47 @@ export async function runOnce(): Promise<RunReport> {
     const tooLow = review.score < 50;
     const shouldPublish = !blockedByPlagiarism && !blockedByFactuality && !tooLow;
     if (!shouldPublish) {
+      report.finishedAt = new Date().toISOString();
+      return report;
+    }
+
+    // 4c. LENGTH GATE — the core quality fix. The writer targets 900-1300w
+    // but models chronically under-deliver; site avg had sunk to ~713
+    // because fresh articles averaged ~550w. Guarantee every NEW article
+    // is substantial: if thin, run ONE expand pass; if it still can't
+    // reach a real floor, DON'T publish it (this also throttles volume —
+    // weak sources that can't sustain 750+ words of real value are
+    // dropped instead of flooding the site with thin filler).
+    const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+    let bodyWords = wc(humanized.content);
+    if (bodyWords < 800) {
+      try {
+        const exp = await chat({
+          model: MODELS.writer,
+          system: `You are a senior tech editor. Expand this article to 900-1200 words by
+ADDING depth — more concrete numbers, a real daily-use scenario, a "what this means
+for you" angle, an honest "what's still unclear", a closing take. Keep EVERY existing
+fact/number/name/quote and the structure. NEVER invent specifics. Same warm,
+plainspoken voice, varied sentence length, no "in conclusion"/"game-changing".
+Return JSON only: { "content": "<expanded markdown>" }`,
+          user: `Title: ${humanized.title}\nCurrent length: ${bodyWords}w (too thin).\n\nBody:\n"""\n${humanized.content}\n"""\n\nExpand to 900-1200w, same facts, deeper.`,
+          maxTokens: 3400,
+          json: true,
+        });
+        const parsed = extractJson<{ content: string }>(exp);
+        if (parsed?.content && wc(parsed.content) > bodyWords) {
+          humanized = { ...humanized, content: parsed.content };
+          bodyWords = wc(parsed.content);
+          await logAgent('writer', 'length-expand', 'success', `${humanized.title}: →${bodyWords}w`);
+        }
+      } catch (err) {
+        await logAgent('writer', 'length-expand', 'error', (err as Error).message);
+      }
+    }
+    if (bodyWords < 700) {
+      // Could not make it substantial — skip rather than publish thin
+      // filler. Fewer, better articles beat 50 thin ones/day for HCU.
+      await logAgent('orchestrator', 'skip-thin', 'info', `${humanized.title}: ${bodyWords}w < 700, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

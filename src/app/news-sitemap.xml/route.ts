@@ -3,12 +3,18 @@
 // Only articles published in the last 48 hours, with <news:news> markup.
 
 import { prisma } from '@/lib/db';
+import { SITE } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
+// Single-sourced from the keystone. The old `process.env.X ?? '...'`
+// reads broke on Vercel where NEXT_PUBLIC_SITE_URL/NAME are '' (empty
+// string ≠ undefined, so `??` did NOT fall back): the news sitemap
+// emitted apex URLs that 308-redirect to www AND an empty <news:name>.
+// site.ts's env() helper treats '' as missing → correct www + brand.
+const SITE_URL = SITE.url;
+const SITE_NAME = SITE.name;
 
 function escape(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');

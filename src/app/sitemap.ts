@@ -1,8 +1,13 @@
 import { prisma } from '@/lib/db';
 import { CATEGORIES } from '@/lib/categories';
+import { SITE } from '@/lib/site';
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+// Single-sourced from the keystone. site.ts's env() helper correctly
+// handles an empty NEXT_PUBLIC_SITE_URL (falls back), unlike the old
+// `?? 'http://localhost:3000'` which `??` does NOT trigger on '' —
+// that produced broken/redirecting URLs in the live sitemap.
+const SITE_URL = SITE.url;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await prisma.article.findMany({

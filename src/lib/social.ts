@@ -6,6 +6,8 @@
 // fires them all in parallel after publish; failures are logged but never block
 // the publish flow.
 
+import { SITE } from './site';
+
 export type BroadcastTarget = {
   url: string;        // canonical article URL incl. https://
   title: string;
@@ -17,7 +19,7 @@ export type BroadcastTarget = {
 
 type ChannelResult = { channel: string; ok: boolean; error?: string };
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 // Category emoji map — gives every post a visual hook on the first character.
 // Engagement on social platforms is 2-3x higher with emoji-led posts per their

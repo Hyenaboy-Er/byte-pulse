@@ -19,8 +19,9 @@
 import { prisma } from '../db';
 import { tg } from '../telegram';
 import { pingIndexNow } from '../indexnow';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 const MAX_LINKS_PER_ARTICLE = 4;
 const MIN_ANCHOR_LENGTH = 8; // skip short anchors that match too easily
 

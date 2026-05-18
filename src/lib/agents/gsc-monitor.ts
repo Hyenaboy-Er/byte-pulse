@@ -20,8 +20,9 @@
 
 import { prisma } from '../db';
 import { tg } from '../telegram';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 type GSCRow = {
   keys: string[]; // [page-url]

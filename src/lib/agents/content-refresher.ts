@@ -25,8 +25,9 @@
 import { prisma } from '../db';
 import { llmChat, extractJson } from '../llm';
 import { pingIndexNow } from '../indexnow';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 const SYSTEM = `You write short follow-up "Update" paragraphs for tech-news articles published earlier.
 The article was published <X> days ago. Add ONE paragraph (60-120 words) describing what's developed since then.

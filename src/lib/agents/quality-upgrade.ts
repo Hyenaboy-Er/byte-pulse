@@ -27,8 +27,9 @@
 import { prisma } from '../db';
 import { llmChat, extractJson } from '../llm';
 import { pingIndexNow } from '../indexnow';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 const WORD_FLOOR = 700;        // below this = "thin", needs upgrade
 const TARGET_MIN = 820;        // don't ship an upgrade that's still thin
 // Scan the WHOLE published corpus, not just the oldest 50. The thin

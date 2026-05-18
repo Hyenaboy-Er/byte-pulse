@@ -6,8 +6,9 @@
 
 import { prisma } from '../db';
 import { tg } from '../telegram';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 type DigestStats = {
   windowHours: number;
@@ -84,7 +85,7 @@ export async function runStatsReporter(opts?: { windowHours?: number; silent?: b
 
   // Format compact Telegram message — designed to fit one notification view
   const lines: string[] = [];
-  lines.push(`📊 Byte-Pulse · letzte ${windowHours}h`);
+  lines.push(`📊 ${SITE.name} · letzte ${windowHours}h`);
   lines.push('');
   lines.push(`Publiziert: ${publishedInWindow} (24h: ${publishedToday}) · Total: ${totalArticles}`);
   lines.push(`Views gesamt: ${totalViews.toLocaleString('de-DE')}`);

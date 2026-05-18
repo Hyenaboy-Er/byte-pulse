@@ -9,8 +9,10 @@
 //
 // Failure is non-fatal — IndexNow is a "fire-and-forget" optimization.
 
+import { SITE } from './site';
+
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? 'a3f8b2c1d9e4f5g6h7i8j9k0l1m2n3o4';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 export function indexNowKey(): string {
   return INDEXNOW_KEY;

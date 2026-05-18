@@ -2,6 +2,8 @@
 // Configured via env vars: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID.
 // Silently no-op if either is missing — code stays safe in local dev.
 
+import { SITE } from './site';
+
 const API = 'https://api.telegram.org';
 
 export type TgResult = { ok: boolean; error?: string };
@@ -57,7 +59,7 @@ export function formatDigest(stats: {
   trendsSnapshot?: string[];
 }): string {
   const lines: string[] = [];
-  lines.push(`Byte-Pulse Daily Briefing — ${new Date().toLocaleDateString('en-GB')}`);
+  lines.push(`${SITE.name} Daily Briefing — ${new Date().toLocaleDateString('en-GB')}`);
   lines.push('');
   lines.push(`Yesterday: ${stats.yesterdayPublished} articles published, ${stats.yesterdayErrors} errors`);
   lines.push(`Total articles on site: ${stats.total}`);
@@ -76,6 +78,6 @@ export function formatDigest(stats: {
     lines.push(`Trending now: ${stats.trendsSnapshot.slice(0, 8).join(', ')}`);
   }
   lines.push('');
-  lines.push('https://byte-pulse.net');
+  lines.push(SITE.url);
   return lines.join('\n');
 }

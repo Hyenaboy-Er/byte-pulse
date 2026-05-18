@@ -12,6 +12,7 @@ import { injectAmazonLinks } from '../affiliate';
 import { chat, MODELS, extractJson } from '../openai';
 import { broadcastNewArticle } from '../social';
 import { pingIndexNow } from '../indexnow';
+import { SITE } from '../site';
 
 export type RunReport = {
   startedAt: string;
@@ -436,7 +437,7 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // within minutes instead of waiting for the next bot pass. Non-fatal on
     // failure — Google doesn't use IndexNow yet but Bing does, and Bing-indexed
     // pages also show on DuckDuckGo / Ecosia.
-    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+    const SITE_URL = SITE.url;
     pingIndexNow([`${SITE_URL}/article/${slug}`, `${SITE_URL}/de/article/${slug}`])
       .then((r) => logAgent('indexnow', 'ping', r.ok ? 'success' : 'warn', `status=${r.status} urls=${r.submitted}`))
       .catch(() => null);

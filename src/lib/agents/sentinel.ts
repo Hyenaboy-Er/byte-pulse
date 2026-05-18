@@ -21,8 +21,9 @@
 import { prisma } from '../db';
 import { tg } from '../telegram';
 import { runSocialRetry } from './social-retry';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 const DEDUPE_WINDOW_MIN = 60; // suppress duplicate alerts for the same issue this long
 
 type Severity = 'critical' | 'warning' | 'info';

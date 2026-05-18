@@ -9,8 +9,9 @@
 
 import { prisma } from '../db';
 import { tg, tgWarn } from '../telegram';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 // Targets we sample on every run. Limit to ~5 URLs to keep each cron under 10s.
 const TARGETS: { path: string; label: string; budgetMs: number }[] = [

@@ -10,8 +10,9 @@ import { prisma } from '../db';
 import { chat, MODELS, extractJson } from '../openai';
 import { tg } from '../telegram';
 import { pingIndexNow } from '../indexnow';
+import { SITE } from '../site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 const BOOSTER_SYSTEM = `You are the headline editor for Byte-Pulse, a tech news magazine. Your ONLY job: produce a STRONGER click-magnet rewrite of the given title. ALWAYS rewrite — even if the original is decent, find a punchier angle.
 

@@ -141,6 +141,12 @@ const OFFTOPIC_TERMS = [
   // Sports / celebrity
   'bundesliga', 'champions league', 'super bowl', 'olympics',
   'dua lipa', 'kardashian', 'taylor swift', 'beyoncé',
+  // Non-tech consumer retail / grocery — Byte-Pulse is a TECH site. A
+  // "soft drink prices slashed" story has no tech angle, no affiliate
+  // fit, and reads like spam next to GPU/phone coverage.
+  'soft drink', 'softdrink', 'soda ', 'beverage', 'grocery', 'groceries',
+  'supermarket', 'snack', 'coffee beans', 'cereal', 'frozen food',
+  'fashion sale', 'clothing deal', 'furniture', 'mattress', 'toy deal',
 ];
 
 function looksOffTopic(title: string): boolean {

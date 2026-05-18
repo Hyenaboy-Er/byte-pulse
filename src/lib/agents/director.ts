@@ -120,7 +120,7 @@ async function detectSystemicIssues(): Promise<string[]> {
   // Issue 2: articles missing internal links (we can detect by scanning content for /article/ links)
   const recent = await prisma.article.findMany({
     where: { status: 'published', publishedAt: { gte: since7d } },
-    select: { id: true, slug: true, content: true },
+    select: { id: true, slug: true, content: true, title: true },
     take: 300,
   });
   const noInternalLinks = recent.filter((a) => !/\]\(\/article\/[a-z0-9-]+\)/.test(a.content)).length;
@@ -133,6 +133,16 @@ async function detectSystemicIssues(): Promise<string[]> {
   const samplesNoAmazon = recent.filter((a) => !/amazon\.[a-z]+\/.*?tag=bytepulse/.test(a.content)).length;
   if (recent.length > 0 && samplesNoAmazon / recent.length > 0.6) {
     issues.push(`${samplesNoAmazon}/${recent.length} recent articles don't have an inline Amazon link — Affiliate-Optimizer keyword list may be too narrow`);
+  }
+
+  // Issue 3b: off-niche articles that slipped past the picker/writer guards.
+  // Byte-Pulse is a TECH site; grocery/food/retail/politics filler reads
+  // like spam, won't rank, and can't be monetised. Flag any that got
+  // through so the niche guards can be tightened.
+  const OFF_NICHE = /\b(soft ?drink|soda|beverage|grocer|supermarket|snack|cereal|frozen food|fashion sale|clothing deal|furniture|mattress|toy deal|bundesliga|super bowl|election|parliament|arrested|lawsuit settled)\b/i;
+  const offNiche = recent.filter((a) => OFF_NICHE.test(a.title));
+  if (offNiche.length > 0) {
+    issues.push(`${offNiche.length} off-niche article(s) slipped through (e.g. "${offNiche[0].title.slice(0, 60)}") — tighten OFFTOPIC_TERMS / writer NICHE GUARD`);
   }
 
   // Issue 4: Broadcast volume vs publish volume mismatch

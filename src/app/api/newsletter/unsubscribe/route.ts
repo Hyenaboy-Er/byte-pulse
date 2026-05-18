@@ -8,10 +8,11 @@
 // the person asked to be gone, so we don't keep their address around.
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { SITE } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 async function unsubscribe(token: string): Promise<boolean> {
   if (!token || token.length < 16) return false;

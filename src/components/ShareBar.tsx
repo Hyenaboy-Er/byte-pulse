@@ -9,8 +9,12 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { SITE } from '@/lib/site';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+// SITE.url resolves from NEXT_PUBLIC_SITE_URL (inlined into the client
+// bundle by Next), falling back to the byte-pulse default — identical
+// behaviour to the previous inline read, now single-sourced.
+const SITE_URL = SITE.url;
 
 export default function ShareBar({ title }: { title: string }) {
   const pathname = usePathname() ?? '/';

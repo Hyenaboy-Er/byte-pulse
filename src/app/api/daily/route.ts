@@ -10,11 +10,14 @@
 import { NextResponse } from 'next/server';
 import { buildDailyDigest, sendDigestToAll } from '@/lib/newsletter';
 import { tg } from '@/lib/telegram';
+import { SITE as SITE_CONFIG } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+// Local `SITE` is the base URL string used by the fan-out fetches; source
+// it from the central keystone (aliased to avoid shadowing the config).
+const SITE = SITE_CONFIG.url;
 
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization');

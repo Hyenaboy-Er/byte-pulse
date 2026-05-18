@@ -10,6 +10,7 @@ import ViewCounter from '@/components/ViewCounter';
 import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
+import { SITE } from '@/lib/site';
 import NewsletterForm from '@/components/NewsletterForm';
 import { getCategory } from '@/lib/categories';
 import { authorForArticle } from '@/lib/authors';
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const title = tr?.title ?? a.title;
   const description = tr?.excerpt ?? a.excerpt;
   const path = `/de/article/${a.slug}`;
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+  const SITE_URL = SITE.url;
   const ogImage = a.imageUrl
     ? `${SITE_URL}/api/og-proxy?url=${encodeURIComponent(a.imageUrl)}`
     : `${SITE_URL}/api/og/${a.slug}`;

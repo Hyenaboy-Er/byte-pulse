@@ -3,11 +3,12 @@
 // rotate it to prevent re-confirmation links from leaking.
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { SITE } from '@/lib/site';
 import { randomBytes } from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+const SITE_URL = SITE.url;
 
 export async function GET(req: Request) {
   const url = new URL(req.url);

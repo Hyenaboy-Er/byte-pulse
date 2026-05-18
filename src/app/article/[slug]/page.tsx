@@ -10,6 +10,7 @@ import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
 import SaveButton from '@/components/SaveButton';
 import ViewCounter from '@/components/ViewCounter';
+import { SITE } from '@/lib/site';
 import NewsletterForm from '@/components/NewsletterForm';
 import { getCategory } from '@/lib/categories';
 import { authorForArticle } from '@/lib/authors';
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const a = await prisma.article.findUnique({ where: { slug } });
   if (!a) return {};
   const path = `/article/${a.slug}`;
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
+  const SITE_URL = SITE.url;
   // Self-hosted OG image so social embeds don't break when source removes its image.
   // Use absolute URL so Next.js's auto-preload uses the og-proxy URL (not the
   // raw external URL it tries to unwrap from the query string).

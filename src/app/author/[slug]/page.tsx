@@ -8,6 +8,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAuthor, AUTHORS, authorForArticle } from '@/lib/authors';
 import { ArticleCard } from '@/components/ArticleCard';
+import { SITE } from '@/lib/site';
 
 export const revalidate = 3600;
 
@@ -43,8 +44,8 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
   });
   const articles = allRecent.filter((a) => authorForArticle(a.category, a.slug, a.sourceName).slug === author.slug).slice(0, 12);
 
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.byte-pulse.net';
-  const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
+  const SITE_URL = SITE.url;
+  const SITE_NAME = SITE.name;
 
   const jsonLd = {
     '@context': 'https://schema.org',

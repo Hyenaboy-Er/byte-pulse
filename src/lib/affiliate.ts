@@ -185,7 +185,49 @@ const AMAZON_BY_CATEGORY: Record<string, { en: { q: string; title: string; body:
   },
 };
 
-export function affiliateCtaFor(category: string, lang: Lang = 'en'): AffiliateCTA | null {
+// Non-shoppable / off-niche signals: if the story is about a breach,
+// lawsuit, layoffs, policy, outage, ruling, ban, investigation, opinion,
+// or a non-tech consumer deal (food/drink/grocery), a generic "Shop X"
+// box is noise that converts ~0% and looks broken. Better: show nothing.
+const NON_SHOPPABLE = /\b(breach|hacked|leak|lawsuit|sued|court|ruling|ban(?:s|ned)?|fine[ds]?|layoff|fired|shutdown|outage|down|investigat|antitrust|regulat|policy|opinion|editorial|strike|protest|soft ?drink|grocery|groceries|food|beverage|snack|coffee|soda)\b/i;
+
+// Build a highly-relevant Amazon CTA from a product actually named in the
+// TITLE (reuses the PRODUCT_KEYWORDS table). Returns null if no product
+// is named — caller then decides fallback vs suppress.
+function productCtaFromTitle(title: string, lang: Lang): AffiliateCTA | null {
+  for (const { match, query } of PRODUCT_KEYWORDS) {
+    match.lastIndex = 0;
+    if (match.test(title)) {
+      const url = amazonSearchUrl(query, lang);
+      if (!url) return null;
+      return {
+        kind: 'amazon',
+        ref: url,
+        title: lang === 'de' ? `${query} — beste Angebote` : `${query} — best prices`,
+        body: lang === 'de'
+          ? `Aktuelle Angebote und Bewertungen zum ${query} auf Amazon.`
+          : `Current deals and reviews for the ${query} on Amazon.`,
+        cta: lang === 'de' ? 'Preise ansehen' : 'Check prices',
+      };
+    }
+  }
+  return null;
+}
+
+export function affiliateCtaFor(
+  category: string,
+  lang: Lang = 'en',
+  opts?: { title?: string },
+): AffiliateCTA | null {
+  const title = opts?.title ?? '';
+
+  // 1. Highest relevance: the article names a real product → link to THAT.
+  //    Takes precedence over category fallbacks (an "RTX 5090 review" in
+  //    category 'hardware' should push the RTX 5090, not a generic SSD).
+  if (title) {
+    const productCta = productCtaFromTitle(title, lang);
+    if (productCta) return productCta;
+  }
   // Security / privacy stories → VPN
   if (category === 'security') {
     if (NORDVPN_REF) return {
@@ -229,9 +271,14 @@ export function affiliateCtaFor(category: string, lang: Lang = 'en'): AffiliateC
     };
   }
 
-  // Universal Amazon fallback: every category gets a curated Amazon search CTA.
-  // This is what was missing — articles without iPhone/RTX/PS5 keywords previously
-  // returned null and showed nothing. Now every article shows an Amazon CTA.
+  // Suppress the GENERIC Amazon fallback on non-shoppable / off-niche
+  // stories (breach, lawsuit, policy, food deals…). No product was named
+  // in the title and no VPN/hosting fit — a generic "Shop gadgets" box
+  // here is the exact noise the user flagged. Show nothing instead.
+  if (title && NON_SHOPPABLE.test(title)) return null;
+
+  // Universal Amazon fallback: every OTHER article gets a curated Amazon
+  // search CTA for its category (sensible, not product-specific).
   const amazonCat = AMAZON_BY_CATEGORY[category];
   if (amazonCat) {
     const copy = amazonCat[lang] ?? amazonCat.en;

@@ -226,11 +226,11 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
 
       {!article.imageUrl && <div className="my-8 h-px bg-white/5" />}
 
-      <ArticleBody content={article.content} category={article.category} lang="en" />
+      <ArticleBody content={article.content} category={article.category} lang="en" title={article.title} />
 
       <AdsterraNative />
 
-      <AffiliateCTA category={article.category} lang="en" />
+      <AffiliateCTA category={article.category} lang="en" title={article.title} />
 
       <AdSlot slot="article-bottom" />
 

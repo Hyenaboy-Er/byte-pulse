@@ -9,12 +9,14 @@ export default function InlineAffiliateCard({
   category,
   lang = 'en',
   variant = 'compact',
+  title,
 }: {
   category: string;
   lang?: 'en' | 'de';
   variant?: 'compact' | 'callout';
+  title?: string;
 }) {
-  const cta = affiliateCtaFor(category, lang);
+  const cta = affiliateCtaFor(category, lang, { title });
   if (!cta) return null;
 
   const adLabel = lang === 'de' ? 'Anzeige' : 'Sponsored';

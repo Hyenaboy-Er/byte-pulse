@@ -3,8 +3,8 @@
 // "Sponsored" label so we stay GDPR/UWG-compliant.
 import { affiliateCtaFor } from '@/lib/affiliate';
 
-export default function AffiliateCTA({ category, lang = 'en' }: { category: string; lang?: 'en' | 'de' }) {
-  const cta = affiliateCtaFor(category, lang);
+export default function AffiliateCTA({ category, lang = 'en', title }: { category: string; lang?: 'en' | 'de'; title?: string }) {
+  const cta = affiliateCtaFor(category, lang, { title });
   if (!cta) return null;
 
   const label = lang === 'de' ? 'Anzeige · Affiliate-Link' : 'Sponsored · Affiliate link';

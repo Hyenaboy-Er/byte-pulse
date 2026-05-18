@@ -42,10 +42,12 @@ export default function ArticleBody({
   content,
   category,
   lang = 'en',
+  title,
 }: {
   content: string;
   category?: string;
   lang?: 'en' | 'de';
+  title?: string;
 }) {
   const parts = splitMarkdownByParagraph(content);
   const adsenseLive = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
@@ -62,6 +64,7 @@ export default function ArticleBody({
                 <InlineAffiliateCard
                   category={category}
                   lang={lang}
+                  title={title}
                   variant={i === 0 ? 'compact' : 'callout'}
                 />
               )

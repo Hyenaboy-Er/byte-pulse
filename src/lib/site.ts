@@ -4,8 +4,13 @@
 // Why this exists: byte-pulse.net was hardwired across ~42 files. To spin
 // up site #2, #3 … you must NOT hunt through the codebase. Everything that
 // changes per-site lives here, env-driven, with byte-pulse values as the
-// fallback so the live site keeps working unchanged while new code migrates
-// to read from SITE.* incrementally.
+// fallback so the live site keeps working unchanged.
+//
+// Migration status: all url/brand/identity in src/lib/** and src/app/**
+// now reads from SITE.* (commits 639ef0c → c93f2d1). The only deliberate
+// holdout is the writer/translator/quality-auditor LLM SYSTEM prompts —
+// they carry niche prose, not just a brand token, so a non-tech clone
+// rewrites those together with SITE_NICHE (see docs/NEW-SITE-LAUNCH.md).
 //
 // New site = set the env vars below in Vercel (+ the per-domain external
 // setup in docs/NEW-SITE-LAUNCH.md). Zero code edits for a clone.

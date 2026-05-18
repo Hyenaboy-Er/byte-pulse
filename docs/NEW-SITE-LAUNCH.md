@@ -31,10 +31,30 @@ Set in `src/lib/site.ts` defaults OR (preferred) as Vercel env vars:
 `NEXT_PUBLIC_SITE_NAME`, `NEXT_PUBLIC_SITE_URL`, `SITE_APEX_DOMAIN`,
 `NEXT_PUBLIC_SITE_TAGLINE`, `NEXT_PUBLIC_SITE_EMAIL`, `NEWSLETTER_FROM`,
 `NEWSLETTER_BRAND`, `SITE_FOUNDER_NAME`, `SITE_FOUNDER_ROLE`, `SITE_NICHE`,
-`MASTODON_INSTANCE`, `MASTODON_ACCOUNT_ID`, `RESEND_DOMAIN_ID`,
-`CLOUDFLARE_ZONE_ID`, `VERCEL_PROJECT`.
-Still site-specific by nature (real content, edit per business): legal
-pages — impressum, privacy, about, editorial-policy, affiliate-disclosure.
+`MASTODON_INSTANCE`, `MASTODON_ACCOUNT_ID`, `MASTODON_HANDLE`,
+`RESEND_DOMAIN_ID`, `CLOUDFLARE_ZONE_ID`, `VERCEL_PROJECT`.
+
+### Migration status (what already reads from SITE.* — zero edits for a clone)
+
+DONE (commits 639ef0c → c93f2d1, verified on live byte-pulse):
+- Keystone `src/lib/site.ts` + this runbook.
+- All site URL/brand/identity in `src/lib/**` (14 agents, newsletter,
+  social, indexnow, telegram, stats) and `src/app/**` (article + author
+  pages, ShareBar, newsletter/daily routes) → `SITE.url` / `SITE.name`.
+- Identity: `authors.ts` personas + founder, `comparison-writer.ts`
+  byline & `ORIGINAL_SOURCE_NAME` sentinel, `community-replies.ts`
+  Mastodon id/handle/instance + article-URL regex → all `SITE.*`.
+- `grep "byte-pulse.net'" src/` → only `site.ts` defaults remain.
+
+DEFERRED ON PURPOSE (own verified pass, do NOT drive-by):
+- Writer / translator / quality-auditor LLM `SYSTEM` prompts. They hold
+  niche prose ("European tech magazine, The Verge/TechCrunch", explicit
+  tech-only niche list), not just a brand token. Templating brand here
+  without wiring the niche list to `SITE.niche` gives false readiness
+  and these are the most behaviour-sensitive strings on the site. For a
+  non-tech clone: rewrite these prompts + set `SITE_NICHE` together.
+- Legal pages (impressum, privacy, about, editorial-policy,
+  affiliate-disclosure): real per-business content — edit by hand.
 
 ## 2. Secrets needed (the access that unblocks autonomy)
 

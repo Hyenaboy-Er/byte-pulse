@@ -92,6 +92,13 @@ export async function POST(req: Request) {
           html,
           text,
           reply_to: 'editorial@byte-pulse.net',
+          // List-Unsubscribe on the confirm mail too — mailbox providers
+          // weight its presence for inbox placement even on transactional
+          // mail. Token already exists at signup; one-click removes the row.
+          headers: {
+            'List-Unsubscribe': `<${SITE_URL}/api/newsletter/unsubscribe?token=${token}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
         }),
         signal: AbortSignal.timeout(8_000),
       });

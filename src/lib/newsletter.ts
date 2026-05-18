@@ -72,35 +72,51 @@ export async function buildDailyDigest(): Promise<DailyDigest | null> {
 
 export async function sendDigestToAll(digest: DailyDigest, opts: { dryRun?: boolean } = {}) {
   const apiKey = process.env.RESEND_API_KEY;
+  // Only confirmed subscribers (double opt-in). No silent fallback to
+  // unconfirmed — sending to people who never confirmed tanks sender
+  // reputation and is a CAN-SPAM/GDPR problem.
   const subs = await prisma.newsletterSubscriber.findMany({ where: { confirmed: true } });
-  // Note: in production add double-opt-in. For now we send to all collected addresses.
-  const allSubs = subs.length ? subs : await prisma.newsletterSubscriber.findMany();
 
-  const recipients = allSubs.map((s) => s.email);
   if (opts.dryRun || !apiKey) {
-    return { ok: true, sent: 0, recipients: recipients.length, dryRun: true, missingKey: !apiKey };
+    return { ok: true, sent: 0, recipients: subs.length, dryRun: true, missingKey: !apiKey };
   }
-  if (!recipients.length) return { ok: true, sent: 0, recipients: 0 };
+  if (!subs.length) return { ok: true, sent: 0, recipients: 0 };
 
-  // Send batched (Resend supports up to 100 per request)
-  const chunks: string[][] = [];
-  for (let i = 0; i < recipients.length; i += 100) chunks.push(recipients.slice(i, i + 100));
-
+  // Send PER-subscriber (not batched) so each mail carries a per-user
+  // one-click List-Unsubscribe — a hard Gmail/Yahoo bulk-sender
+  // requirement since Feb 2024. Missing it = near-guaranteed spam folder.
+  // Resend free tier allows 100/day; cap at 90 to stay safe. At current
+  // volume this is trivially within limits.
+  const batch = subs.slice(0, 90);
   let sent = 0;
-  for (const chunk of chunks) {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        from: FROM,
-        to: chunk,
-        subject: digest.subject,
-        html: digest.html,
-        text: digest.text,
-      }),
-    });
-    if (res.ok) sent += chunk.length;
-    else console.warn('[newsletter] Resend error:', await res.text());
+  for (const sub of batch) {
+    const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${sub.token}`;
+    // Swap the generic /newsletter unsubscribe link for this user's
+    // tokenised one-click URL in both html + text parts.
+    const html = digest.html.replaceAll(`${SITE_URL}/newsletter`, unsubUrl);
+    const text = digest.text.replaceAll(`${SITE_URL}/newsletter`, unsubUrl);
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          from: FROM,
+          to: sub.email,
+          subject: digest.subject,
+          html,
+          text,
+          headers: {
+            'List-Unsubscribe': `<${unsubUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) sent++;
+      else console.warn('[newsletter] Resend error:', await res.text());
+    } catch (e) {
+      console.warn('[newsletter] send failed:', (e as Error).message);
+    }
   }
-  return { ok: true, sent, recipients: recipients.length, dryRun: false };
+  return { ok: true, sent, recipients: subs.length, dryRun: false };
 }

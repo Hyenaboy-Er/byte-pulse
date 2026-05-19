@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { runAdsenseRobo } from '@/lib/agents/adsense-robo';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 90;
+export const maxDuration = 60; // Vercel Hobby hard cap; controller fires heavy work, never runs it inline
 
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization');

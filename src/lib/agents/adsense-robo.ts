@@ -26,11 +26,10 @@ import { prisma } from '../db';
 import { tg } from '../telegram';
 import { SITE } from '../site';
 import { submitUrlsToBing } from '../bing-submit';
-import { runTranslationRepair } from './translation-repair';
 
 const WORD_FLOOR = 700;     // below this = "thin" (AdSense / HCU risk)
 const DE_MIN_RATIO = 0.7;   // DE words / EN words below this = truncated
-const SCAN = 800;           // newest N published articles inspected
+const SCAN = 500;           // newest N published articles inspected (lean)
 
 const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
@@ -133,13 +132,19 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
       fixed.push('quality-upgrade angestoßen (läuft unabhängig weiter)');
     }
   }
-  // 3b. Truncated DE → repair inline (bounded — fits the budget).
+  // 3b. Truncated DE → FIRE translation-repair (its own 60s budget).
+  //     Must NOT run inline: 4 LLM calls would blow this function's
+  //     Vercel 60s cap (it did — FUNCTION_INVOCATION_TIMEOUT). The
+  //     controller fires heavy work; it never performs it.
   if (deTruncated > 0) {
     try {
-      const r = await runTranslationRepair({ max: 4 });
-      if (r.repaired > 0) fixed.push(`${r.repaired} kaputte DE-Übersetzung(en) repariert`);
-      else if (r.broken > 0) fixed.push(`${r.broken} kaputte DE gefunden, Reparatur läuft (gedrosselt)`);
-    } catch { /* non-fatal */ }
+      await fetch(`${SITE.url}/api/translate-repair?token=${process.env.CRON_SECRET}`, {
+        signal: AbortSignal.timeout(6000),
+      });
+      fixed.push(`translation-repair angestoßen (${deTruncated} kaputte DE)`);
+    } catch {
+      fixed.push(`translation-repair angestoßen (${deTruncated} kaputte DE, läuft unabhängig)`);
+    }
   }
   // 3c. Push recent URLs to Bing (the working discovery channel).
   if (newsSitemap) {

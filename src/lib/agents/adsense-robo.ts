@@ -185,6 +185,16 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
   const escalate = problems.length > 0 || score >= 80;
   if (escalate) await tg(lines.join('\n')).catch(() => null);
 
+  // Log our own run so the agent-auditor can verify adsense-robo too
+  // (was a "unknown — no AgentLog" blind spot).
+  await prisma.agentLog.create({
+    data: {
+      agent: 'adsense-robo', action: 'control',
+      status: problems.length ? 'warn' : 'success',
+      message: `score=${score} thin=${thin} deBroken=${deTruncated} fixed=${fixed.length}`,
+    },
+  }).catch(() => null);
+
   return {
     score, published, thin, thinPct, deCoverage, deTruncated,
     fixed, problems, escalated: escalate,

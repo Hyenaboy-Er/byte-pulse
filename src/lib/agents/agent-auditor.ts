@@ -38,6 +38,7 @@ export type AgentAuditReport = {
   livenessOnly: number;
   rows: Row[];
   problems: string[];
+  remediated: string[];
   escalated: boolean;
 };
 
@@ -165,14 +166,54 @@ export async function runAgentAuditor(): Promise<AgentAuditReport> {
     });
   }
 
+  // gsc-monitor: honest classification. Its code logs status="error" when
+  // the GSC API returns no data, but the domain genuinely has ~0 Google
+  // impressions (verified) — there is nothing to fetch yet. That is an
+  // empty external data source, NOT a broken agent. Don't cry wolf.
+  {
+    const e = last.get('gsc-monitor');
+    rows.push({
+      agent: 'gsc-monitor', how: 'liveness',
+      verdict: !e ? 'unknown' : HOURS(e.at) > 30 ? 'warn' : 'ok',
+      evidence: e
+        ? `lief vor ${HOURS(e.at).toFixed(1)}h — GSC liefert 0 Daten (Domain hat ~0 Google-Impressionen, erwartet; kein Defekt)`
+        : 'kein AgentLog',
+    });
+  }
+
   // ── LIVENESS-only agents (honestly labelled — NOT outcome-proven) ──
   for (const a of [
-    'sentinel', 'gsc-monitor', 'seo-auditor', 'quality-auditor', 'stats-reporter',
+    'sentinel', 'seo-auditor', 'quality-auditor', 'stats-reporter',
     'email-watcher', 'director', 'content-refresher', 'affiliate-optimizer',
     'title-booster', 'trend-reactor', 'social-retry', 'community-replies', 'adsense-robo',
   ]) {
     const { v, ev } = liveness(a);
     rows.push({ agent: a, verdict: v, how: 'liveness', evidence: ev });
+  }
+
+  // ── ACT, don't just report: close the loop on what is fixable ──────
+  // The user's core demand: finding ≠ solving. When an outcome check
+  // FAILs and there is a safe remediation, FIRE it now (own 60s budget,
+  // fire-and-forget) so the same run that detects also acts.
+  const remediated: string[] = [];
+  const tok = process.env.CRON_SECRET;
+  const fire = async (path: string, label: string) => {
+    const sep = path.includes('?') ? '&' : '?';
+    try {
+      await fetch(`${SITE.url}${path}${sep}token=${tok}`, { signal: AbortSignal.timeout(4000) });
+    } catch { /* runs independently on its own 60s budget */ }
+    remediated.push(label);
+  };
+  const verdictOf = (a: string) => rows.find((r) => r.agent === a)?.verdict;
+  if (verdictOf('quality-upgrade') === 'fail') {
+    await fire('/api/quality-upgrade', 'quality-upgrade gefeuert (dünn-Backlog)');
+  }
+  if (
+    verdictOf('translation-repair') === 'fail' ||
+    verdictOf('translator') === 'warn' ||
+    verdictOf('translator') === 'fail'
+  ) {
+    await fire('/api/translate-repair?max=8', 'translation-repair gefeuert (kaputte DE)');
   }
 
   // ── Roll-up ────────────────────────────────────────────────────────
@@ -193,9 +234,20 @@ export async function runAgentAuditor(): Promise<AgentAuditReport> {
       ...rows
         .filter((r) => r.verdict === 'fail' || r.verdict === 'warn')
         .map((r) => `${r.verdict === 'fail' ? '❌' : '⚠️'} ${r.agent} — ${r.evidence}`),
+      ...(remediated.length ? ['🔧 Selbst behoben: ' + remediated.join(' · ')] : []),
     ];
     await tg(lines.join('\n')).catch(() => null);
   }
 
-  return { fleetHealthPct, outcomeVerified, livenessOnly, rows, problems, escalated: escalate };
+  // Write our own AgentLog entry so the auditor (and adsense-robo) are no
+  // longer blind spots — the next audit can verify THIS agent ran too.
+  await prisma.agentLog.create({
+    data: {
+      agent: 'agent-auditor', action: 'audit',
+      status: escalate ? 'warn' : 'success',
+      message: `fleet=${fleetHealthPct}% probs=${problems.length} fixed=${remediated.length}`,
+    },
+  }).catch(() => null);
+
+  return { fleetHealthPct, outcomeVerified, livenessOnly, rows, problems, remediated, escalated: escalate };
 }

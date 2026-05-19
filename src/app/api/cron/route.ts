@@ -27,10 +27,22 @@ export async function GET(req: Request) {
     if (r.error) break;
   }
 
+  // SECOND daily backlog drain. The 08:00 fan-out already fires
+  // quality-upgrade + translation-repair once/day; the auditor showed
+  // that single pass can't keep up (53% thin, 123 broken DE). Fire them
+  // again here at 07:00 (fire-and-forget, own 60s budget) → roughly
+  // doubles the daily drain rate without touching the writer's budget.
+  const base = `${url.protocol}//${url.host}`;
+  await Promise.allSettled([
+    fetch(`${base}/api/quality-upgrade?token=${expected}`, { signal: AbortSignal.timeout(3000) }),
+    fetch(`${base}/api/translate-repair?token=${expected}&max=8`, { signal: AbortSignal.timeout(3000) }),
+  ]);
+
   return NextResponse.json({
     ok: !reports.some((r) => r.error),
     attempted: reports.length,
     published,
     last: reports[reports.length - 1],
+    drain: 'quality-upgrade + translate-repair fired',
   });
 }

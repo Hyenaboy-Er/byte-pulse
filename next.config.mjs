@@ -33,6 +33,15 @@ const nextConfig = {
       { source: '/de/category/cybersecurity', destination: '/de/category/security', permanent: true },
       { source: '/category/tech', destination: '/', permanent: true },
       { source: '/de/category/tech', destination: '/de', permanent: true },
+      // Privacy-policy path aliases. The page lives at /privacy, but crude
+      // AdSense/eligibility checkers (and some reviewers) probe the literal
+      // '/privacy-policy' or '/datenschutz' path and falsely report "no
+      // privacy policy". Redirect the conventional paths to the real page
+      // so no tool or crawler can miss it.
+      { source: '/privacy-policy', destination: '/privacy', permanent: true },
+      { source: '/datenschutz', destination: '/de/privacy', permanent: true },
+      { source: '/de/privacy-policy', destination: '/de/privacy', permanent: true },
+      { source: '/de/datenschutz', destination: '/de/privacy', permanent: true },
       // Apex byte-pulse.net → www (permanent for SEO PageRank consolidation).
       {
         source: '/:path*',

@@ -1,9 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { SITE } from '@/lib/site';
 
 export default function LangSwitcher() {
   const pathname = usePathname() || '/';
+  // DE layer disabled → single-language site, no EN/DE toggle at all.
+  // (NEXT_PUBLIC_DE_ENABLED is a NEXT_PUBLIC var, so available client-side.)
+  if (!SITE.deEnabled) return null;
   const isDE = pathname === '/de' || pathname.startsWith('/de/');
 
   // Mirror path between EN and DE trees

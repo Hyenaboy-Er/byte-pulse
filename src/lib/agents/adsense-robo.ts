@@ -138,7 +138,7 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
   //     controller fires heavy work; it never performs it.
   if (deTruncated > 0) {
     try {
-      await fetch(`${SITE.url}/api/translate-repair?token=${process.env.CRON_SECRET}`, {
+      await fetch(`${SITE.url}/api/translate-repair?token=${process.env.CRON_SECRET}&max=8`, {
         signal: AbortSignal.timeout(6000),
       });
       fixed.push(`translation-repair angestoßen (${deTruncated} kaputte DE)`);
@@ -157,14 +157,20 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
     }
   }
 
-  // ── 4. AdSense-readiness score (0..100, transparent weights) ────────
-  const sVolume = Math.min(15, (published / 30) * 15);              // ≥30 art = full
-  const sThin = (1 - thinPct) * 25;                                  // thin = top reject cause
-  const sDe = deCoverage * 10 + (1 - (articles.length ? deTruncated / articles.length : 0)) * 10;
+  // ── 4. AdSense-readiness score (0..100, HONEST weights) ─────────────
+  // Google's dominant criterion is original, substantial content. The
+  // previous formula flattered (85 while 43% thin + 237 broken DE) —
+  // useless. Thin ratio and broken-DE now DOMINATE and are punishing
+  // (a site that is >25% thin or >15% broken-DE scores ~0 on that axis),
+  // because that is the honest truth of AdSense readiness.
+  const truncRatio = articles.length ? deTruncated / articles.length : 0;
+  const sThin = Math.max(0, 35 * (1 - thinPct / 0.25));   // 0 once ≥25% thin
+  const sDe = Math.max(0, 20 * (1 - truncRatio / 0.15));  // 0 once ≥15% DE broken
+  const sVolume = Math.min(10, (published / 30) * 10);    // ≥30 articles = full
   const sLegal = ((5 - legalMissing.length) / 5) * 15 + (adsTxtOk ? 0 : -5);
   const sSeo = (canonicalOk ? 6 : 0) + (robotsOk ? 5 : 0) + (sitemapHostOk ? 4 : 0); // /15
-  const sIndex = 10; // discovery actively pushed (Bing submit wired) — honest cap; real organic = time
-  const score = Math.max(0, Math.round(sVolume + sThin + sDe + sLegal + sSeo + sIndex));
+  const sIndex = 5; // discovery is pushed, but real organic indexing = time
+  const score = Math.max(0, Math.round(sThin + sDe + sVolume + sLegal + sSeo + sIndex));
 
   // ── 5. Escalate ONLY what it could not fix ─────────────────────────
   const lines: string[] = [];

@@ -21,7 +21,7 @@ import { translateArticle } from './translator';
 
 const MIN_RATIO = 0.7;       // same gate as the translator
 const SCAN = 500;            // newest N translated articles per run
-const MAX_REPair_PER_RUN = 5; // LLM calls/run — fits the 60s budget
+const MAX_REPair_PER_RUN = 8; // LLM calls/run (~6s each) — fits the 60s budget
 
 const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 

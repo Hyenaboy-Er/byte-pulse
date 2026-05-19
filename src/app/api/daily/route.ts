@@ -202,6 +202,10 @@ export async function GET(req: Request) {
     // translation-repair, Bing submit, SEO-host regression guard),
     // computes a readiness score, escalates only the unfixable.
     ['adsenseRobo', '/api/adsense-robo'],
+    // Agent-Auditor: meta-watchdog. Audits whether every agent produced
+    // GOOD WORK (real outcome metrics), not just "ran 200" — the failure
+    // mode that hid broken agents for weeks. Escalates only ⚠️/❌.
+    ['agentAuditor', '/api/agent-audit'],
   ];
   const idleResults = await Promise.allSettled(
     idleAgents.map(([, path]) =>

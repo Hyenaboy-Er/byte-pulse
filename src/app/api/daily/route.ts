@@ -197,6 +197,11 @@ export async function GET(req: Request) {
     // Re-translates DE articles truncated by the old maxTokens:4000 bug,
     // ~5/run, until the backlog of broken German pages is drained.
     ['translationRepair', '/api/translate-repair'],
+    // AdSense-Robo: the consolidating control brain. Checks content /
+    // indexing / quality, AUTO-FIXES the safe ones (quality-upgrade,
+    // translation-repair, Bing submit, SEO-host regression guard),
+    // computes a readiness score, escalates only the unfixable.
+    ['adsenseRobo', '/api/adsense-robo'],
   ];
   const idleResults = await Promise.allSettled(
     idleAgents.map(([, path]) =>

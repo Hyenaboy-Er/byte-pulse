@@ -24,7 +24,11 @@ import { SITE } from '../site';
 
 const MIN_WORDS = 500;
 const MAX_VIEWS = 2;
-const MIN_AGE_DAYS = 21;
+// 7 (was 21): on a ~3-week-old domain almost nothing is >21d old, so
+// the pruner found 0 eligible and did nothing. 7d is still safe — the
+// writer pipeline has long moved on, and combined with <500w + <2 views
+// + not-founder-longform it only ever hits genuine 0-traffic junk.
+const MIN_AGE_DAYS = 7;
 const MAX_PER_RUN = 80; // cheap DB updates; bounded so it drains visibly, not all at once
 
 const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

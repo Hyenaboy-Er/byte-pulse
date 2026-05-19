@@ -36,6 +36,10 @@ export default function ThirdPartyScripts() {
   const adsenseEnabled = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
   const infolinksPid = process.env.NEXT_PUBLIC_INFOLINKS_PID;
   const infolinksWsid = process.env.NEXT_PUBLIC_INFOLINKS_WSID;
+  // Google Reader Revenue Manager (Subscribe-with-Google basic client).
+  // Publication CAow_6G3DA approved 2026-05; product id "<pub>:openaccess"
+  // is the free tier that powers the newsletter-signup / follow CTA.
+  const rrmProductId = process.env.NEXT_PUBLIC_RRM_PRODUCT_ID || 'CAow_6G3DA:openaccess';
   // Show consent banner whenever ANY ad/tracking network is configured.
   const trackingActive = adsenseEnabled || !!oneSignalId || !!infolinksPid;
   const [consent, setConsent] = useState<'accept' | 'reject' | null>(null);
@@ -55,9 +59,27 @@ export default function ThirdPartyScripts() {
   // Infolinks: in-text contextual ads. Consent required because it sets a cookie
   // for frequency capping. Loads ALL Infolinks variants the user enabled.
   const loadInfolinks = !!infolinksPid && !!infolinksWsid && consent === 'accept';
+  // RRM: Google serves the newsletter/follow CTA itself; the client sets a
+  // metering cookie → same consent bar as Skimlinks (legitimate interest /
+  // load when no hard tracking gate active or user accepted).
+  const loadRRM = !!rrmProductId && (!trackingActive || consent === 'accept');
 
   return (
     <>
+      {loadRRM && (
+        <>
+          <script
+            async
+            type="application/javascript"
+            src="https://news.google.com/swg/js/v1/swg-basic.js"
+          />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(self.SWG_BASIC=self.SWG_BASIC||[]).push(s=>{s.init({type:"NewsArticle",isPartOfType:["Product"],isPartOfProductId:${JSON.stringify(rrmProductId)},clientOptions:{theme:"light",lang:"en"}});});`,
+            }}
+          />
+        </>
+      )}
       {loadSkim && (
         <script async src={`https://s.skimresources.com/js/${skimId}.skimlinks.js`} />
       )}

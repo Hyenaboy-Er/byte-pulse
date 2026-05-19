@@ -193,6 +193,10 @@ export async function GET(req: Request) {
     ['affiliateOptimizer', '/api/affiliate-optimize'],
     ['statsReporter', '/api/stats'],
     ['emailWatcher', '/api/email-watch'],
+    // Translation-Repair: the QA controller the translator never had.
+    // Re-translates DE articles truncated by the old maxTokens:4000 bug,
+    // ~5/run, until the backlog of broken German pages is drained.
+    ['translationRepair', '/api/translate-repair'],
   ];
   const idleResults = await Promise.allSettled(
     idleAgents.map(([, path]) =>

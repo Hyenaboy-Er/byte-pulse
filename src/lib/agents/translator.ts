@@ -66,33 +66,70 @@ ${article.content}
 
 Translate to German per the rules.`;
 
-  const text = await chat({
-    model: MODELS.writer,
-    system: SYSTEM_DE,
-    user: userPrompt,
-    maxTokens: 4000,
-    json: true,
-  });
+  // QUALITY GATE — the bug this fixes: maxTokens was 4000, which silently
+  // TRUNCATES the German translation of long articles mid-sentence, and the
+  // broken result was cached forever with zero validation. Now: generous
+  // token budget + a length-ratio check + one stricter retry, and we only
+  // ever CACHE a translation that passes the gate (a bad one is returned
+  // best-effort so the page still renders, but not persisted — so it
+  // self-heals on the next request / via the translation-repair pass).
+  const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+  const srcWords = wc(article.content);
+  // German runs ~0.9–1.15× the English word count. A complete translation
+  // is virtually never below 0.7×; far below = truncated/summarised.
+  const MIN_RATIO = 0.7;
 
-  const parsed = extractJson<Translation>(text);
-  if (!parsed) throw new Error(`Translator JSON parse failed: ${text.slice(0, 200)}`);
+  async function translateOnce(strict: boolean): Promise<Translation | null> {
+    const text = await chat({
+      model: MODELS.writer,
+      system: strict
+        ? SYSTEM_DE +
+          '\n\nCRITICAL: Translate the ENTIRE article to the very last sentence. Do NOT stop early, summarise, or drop sections. The German content must cover every paragraph and heading of the source.'
+        : SYSTEM_DE,
+      user: userPrompt,
+      maxTokens: 8000, // was 4000 — too low; truncated long articles
+      json: true,
+    });
+    return extractJson<Translation>(text);
+  }
+
+  let parsed = await translateOnce(false);
+  let ratio = parsed?.content ? wc(parsed.content) / Math.max(1, srcWords) : 0;
+
+  // Retry once, stricter, if the first pass came back short (truncated).
+  if (!parsed || ratio < MIN_RATIO) {
+    const retry = await translateOnce(true);
+    const retryRatio = retry?.content ? wc(retry.content) / Math.max(1, srcWords) : 0;
+    if (retry && retryRatio > ratio) {
+      parsed = retry;
+      ratio = retryRatio;
+    }
+  }
+
+  if (!parsed) throw new Error('Translator JSON parse failed after retry');
 
   // Inject .de Amazon affiliate links into the German content (separate tag from EN).
   const { content: monetizedContent } = injectAmazonLinks(parsed.content, 'de');
   parsed.content = monetizedContent;
 
-  // 4. Cache
-  await prisma.translation.create({
-    data: {
-      articleId,
-      lang,
-      title: parsed.title,
-      subtitle: parsed.subtitle ?? null,
-      excerpt: parsed.excerpt,
-      content: parsed.content,
-      tags: JSON.stringify(parsed.tags ?? []),
-    },
-  }).catch(() => null); // ignore race conditions
+  // 4. Cache ONLY if it passed the quality gate. A still-truncated result
+  //    is returned (page renders something) but never persisted, so it is
+  //    re-attempted next time instead of being frozen broken forever.
+  if (ratio >= MIN_RATIO) {
+    await prisma.translation.create({
+      data: {
+        articleId,
+        lang,
+        title: parsed.title,
+        subtitle: parsed.subtitle ?? null,
+        excerpt: parsed.excerpt,
+        content: parsed.content,
+        tags: JSON.stringify(parsed.tags ?? []),
+      },
+    }).catch(() => null); // ignore race conditions
+  } else {
+    console.warn(`[translator] ${articleId}: ratio ${ratio.toFixed(2)} < ${MIN_RATIO} after retry — NOT cached (will re-attempt)`);
+  }
 
   return parsed;
 }

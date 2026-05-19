@@ -11,7 +11,9 @@ const SITE_URL = SITE.url;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await prisma.article.findMany({
-    where: { status: 'published' },
+    // qualityScore >= 0 excludes thin-pruner-deindexed legacy articles —
+    // don't tell Google to index pages we explicitly noindex.
+    where: { status: 'published', qualityScore: { gte: 0 } },
     select: { id: true, slug: true, updatedAt: true },
     orderBy: { publishedAt: 'desc' },
     take: 1000,

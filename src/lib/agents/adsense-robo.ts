@@ -73,13 +73,16 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
   const host = new URL(SITE.url).host;
 
   // ── 1. Content + German quality (DB) ────────────────────────────────
+  // qualityScore >= 0 excludes thin-pruner-deindexed articles: they are
+  // noindexed, so Google does NOT evaluate them as part of site quality —
+  // counting them here would understate true AdSense readiness.
   const articles = await prisma.article.findMany({
-    where: { status: 'published' },
+    where: { status: 'published', qualityScore: { gte: 0 } },
     orderBy: { publishedAt: 'desc' },
     take: SCAN,
     select: { id: true, slug: true, content: true },
   });
-  const published = await prisma.article.count({ where: { status: 'published' } });
+  const published = await prisma.article.count({ where: { status: 'published', qualityScore: { gte: 0 } } });
   const wordOf = new Map(articles.map((a) => [a.id, wc(a.content)]));
   const thin = articles.filter((a) => (wordOf.get(a.id) ?? 0) < WORD_FLOOR).length;
   const thinPct = articles.length ? thin / articles.length : 0;

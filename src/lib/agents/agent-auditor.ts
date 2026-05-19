@@ -102,7 +102,9 @@ export async function runAgentAuditor(): Promise<AgentAuditReport> {
 
   // quality-upgrade: thin ratio over the recent corpus
   const corpus = await prisma.article.findMany({
-    where: { status: 'published' }, orderBy: { publishedAt: 'desc' }, take: 400,
+    // exclude thin-pruner-deindexed articles — they're noindexed, not
+    // part of the indexable site Google evaluates.
+    where: { status: 'published', qualityScore: { gte: 0 } }, orderBy: { publishedAt: 'desc' }, take: 400,
     select: { id: true, content: true },
   });
   const thin = corpus.filter((a) => wc(a.content) < 700).length;

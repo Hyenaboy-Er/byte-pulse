@@ -23,7 +23,7 @@ function escape(s: string) {
 export async function GET() {
   const cutoff = new Date(Date.now() - 48 * 3600_000); // last 48h
   const articles = await prisma.article.findMany({
-    where: { status: 'published', publishedAt: { gte: cutoff } },
+    where: { status: 'published', publishedAt: { gte: cutoff }, qualityScore: { gte: 0 } },
     orderBy: { publishedAt: 'desc' },
     take: 1000, // Google News allows up to 1000 per sitemap
   });

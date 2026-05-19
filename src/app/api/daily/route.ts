@@ -206,6 +206,11 @@ export async function GET(req: Request) {
     // GOOD WORK (real outcome metrics), not just "ran 200" — the failure
     // mode that hid broken agents for weeks. Escalates only ⚠️/❌.
     ['agentAuditor', '/api/agent-audit'],
+    // Thin-Pruner: de-indexes genuinely worthless thin legacy articles
+    // (Google "improve OR remove") — the fastest legitimate path to 90+
+    // AdSense readiness. Hard guardrails: <500w + <2 views + >21d old +
+    // never the founder longform. Drains ~80/run.
+    ['thinPruner', '/api/thin-prune'],
   ];
   const idleResults = await Promise.allSettled(
     idleAgents.map(([, path]) =>

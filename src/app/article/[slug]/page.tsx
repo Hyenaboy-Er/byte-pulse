@@ -66,7 +66,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       canonical: path,
       languages: { 'en-US': path, 'de-DE': `/de/article/${a.slug}` },
     },
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
+    // thin-pruner sentinel: qualityScore < 0 = deliberately de-indexed
+    // (genuinely thin, 0-view, old legacy article). Page still renders
+    // (no 404, links intact) but tells Google/Bing not to index it, so
+    // it stops dragging down site-wide quality for AdSense. follow:true
+    // keeps link equity flowing.
+    robots: a.qualityScore < 0
+      ? { index: false, follow: true, googleBot: { index: false, follow: true } }
+      : { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
     openGraph: {
       type: 'article',
       siteName: 'Byte-Pulse',

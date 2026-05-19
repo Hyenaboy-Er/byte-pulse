@@ -89,3 +89,30 @@ Der Canonical-/Robots-Fix wirkte sofort live (Vercel-Env
 `NEXT_PUBLIC_SITE_URL` gesetzt) — die Code-Migration macht es nur dauerhaft
 robust. Heißt: der größte technische Indexierungs-Blocker ist **jetzt**
 behoben, nicht erst nach dem nächsten Deploy.
+
+## 7. Alle inaktiven Agenten repariert (Commit 1ff27fb, live getestet)
+
+7 Agenten hatten seit Launch KEINEN Zeitplan (Vercel Hobby = 2 Crons, nie
+verdrahtet). Jetzt im täglichen Fan-out (concurrent, +~4 s, unter 60 s-Cap).
+**Jeder einzeln live mit Auth getestet — alle HTTP 200, alle funktionieren:**
+
+- `director` → Agenten-Statusbericht ✅
+- `backlink-hunt` → 12 Keywords, 34 Kandidaten ✅ (findet, handelt aber
+  nicht selbst — Backlink-Outreach bleibt manuell; ehrlich: begrenzt)
+- `content-refresh` → hat im Test direkt 2 Artikel aufgefrischt ✅
+- `affiliate-optimize` → 60 gescannt, 1 Affiliate-Link ergänzt ✅
+- `stats` → Telegram-Heartbeat ✅
+- `email-watch` → sicherer No-Op bis GMAIL_IMAP-Creds da sind ✅
+- `community-reply` → 30 Posts gescannt, nichts zu beantworten ✅
+
+`site-monitor` bewusst NICHT reaktiviert — `monitor.ts` läuft schon (Schritt
+2 im Fan-out), wäre nur Dublette. Das ist die einzige bewusst „aus".
+
+## 8. Warum nicht früher (ehrlich)
+
+Ich habe der Runbook-Aussage „IndexNow pingt Bing bei jedem Publish"
+vertraut, statt den Ping live zu testen. Erst auf deinen Druck Richtung
+Geld/Traffic habe ich es real geprüft → 422 seit Launch. Lehre, die ich
+jetzt durchziehe: **jede Behauptung über die Live-Pipeline live verifizieren,
+nie dem Code-Kommentar/Runbook glauben.** Deshalb sind oben alle 7 Agenten
+einzeln per echtem HTTP-Call geprüft, nicht „müsste laufen".

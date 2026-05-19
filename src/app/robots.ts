@@ -9,7 +9,18 @@ const SITE_URL = SITE.url;
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: '*', allow: '/', disallow: ['/api/', '/admin'] },
+      {
+        userAgent: '*',
+        // `/api/og` (and `/api/og-proxy`) serve the social/Discover
+        // preview images every article's og:image points to. Blocking
+        // them under Disallow: /api/ made GSC report "blocked by
+        // robots.txt" (2026-05-18) and stopped Google fetching the
+        // preview image → weaker Discover/rich cards. Longer, more
+        // specific Allow wins over Disallow in Googlebot, so the rest
+        // of /api/ stays blocked.
+        allow: ['/', '/api/og'],
+        disallow: ['/api/', '/admin'],
+      },
       // Explicitly welcome Google News crawler
       { userAgent: 'Googlebot-News', allow: '/' },
     ],

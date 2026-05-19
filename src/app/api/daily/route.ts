@@ -165,8 +165,46 @@ export async function GET(req: Request) {
     }
   }
 
+  // 6. Previously-IDLE agents — reactivated. These had NO schedule at all
+  //    (Vercel Hobby = 2 crons; they were never wired anywhere) so they
+  //    sat dead since launch. Each is genuinely useful:
+  //      • community-reply  → answers Mastodon comments (engagement signal)
+  //      • backlink-hunt    → finds link opportunities (backlinks are THE
+  //        single biggest missing ranking signal for this domain)
+  //      • content-refresh  → freshness pass on older articles (SEO)
+  //      • director         → daily strategic state-of-the-union to Telegram
+  //      • affiliate-optimize → tunes affiliate placement (revenue)
+  //      • stats            → Telegram heartbeat digest
+  //      • email-watch      → no-ops safely until GMAIL_IMAP creds exist,
+  //        then self-activates (reactivating the trigger now = zero extra
+  //        work the day creds land)
+  //    Fired CONCURRENTLY with a short timeout: we only need to kick each
+  //    function off — it then runs to completion on its own 60s budget.
+  //    Concurrent (not sequential) so this whole block adds ~4s, keeping
+  //    the daily route safely under the Vercel 60s cap.
+  //    NOTE: site-monitor is deliberately NOT here — monitor.ts already
+  //    runs as step 2 above; re-adding site-monitor.ts would just
+  //    duplicate the same public-health checks.
+  const idleAgents: Array<[string, string]> = [
+    ['communityReplies', '/api/community-reply'],
+    ['backlinkHunter', '/api/backlink-hunt'],
+    ['contentRefresher', '/api/content-refresh'],
+    ['director', '/api/director'],
+    ['affiliateOptimizer', '/api/affiliate-optimize'],
+    ['statsReporter', '/api/stats'],
+    ['emailWatcher', '/api/email-watch'],
+  ];
+  const idleResults = await Promise.allSettled(
+    idleAgents.map(([, path]) =>
+      fetch(`${SITE}${path}?token=${expected}`, { signal: AbortSignal.timeout(4_000) }),
+    ),
+  );
+  idleAgents.forEach(([key], i) => {
+    out[key] = { triggered: true, note: idleResults[i].status === 'fulfilled' ? 'kicked off' : 'fired (running independently)' };
+  });
+
   await tg(
-    `Daily-ops: newsletter=${JSON.stringify(out.newsletter)} monitor=${JSON.stringify(out.monitor)} comparison=${JSON.stringify(out.comparison)} gsc=${JSON.stringify(out.gscMonitor)} sentinel=${JSON.stringify(out.sentinel)}`,
+    `Daily-ops: newsletter=${JSON.stringify(out.newsletter)} monitor=${JSON.stringify(out.monitor)} comparison=${JSON.stringify(out.comparison)} gsc=${JSON.stringify(out.gscMonitor)} sentinel=${JSON.stringify(out.sentinel)} idle-reactivated=${idleAgents.length}`,
     { silent: true },
   ).catch(() => null);
 

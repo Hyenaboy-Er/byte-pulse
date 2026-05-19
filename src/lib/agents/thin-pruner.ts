@@ -39,7 +39,40 @@ export type ThinPrunerReport = {
   pruned: number;
   remainingThin: number;
   slugs: string[];
+  diag?: Record<string, unknown>;
 };
+
+// DIAGNOSE — no writes. Answers exactly WHY the pruner finds 0 eligible:
+// per-guardrail counts + the publishedAt-vs-createdAt bump comparison.
+export async function diagnoseThinPruner(): Promise<Record<string, unknown>> {
+  const now = Date.now();
+  const d7 = new Date(now - 7 * 24 * 3600_000);
+  const rows = await prisma.article.findMany({
+    where: { status: 'published', qualityScore: { gte: 0 } },
+    orderBy: { createdAt: 'asc' },
+    select: { content: true, views: true, publishedAt: true, createdAt: true, sourceName: true },
+    take: 2000,
+  });
+  const thin = rows.filter((r) => wc(r.content) < MIN_WORDS);
+  const ageD = (dt: Date | null) => dt ? (now - new Date(dt).getTime()) / 86_400_000 : -1;
+  const pubOlder7 = (r: typeof rows[number]) => r.publishedAt !== null && new Date(r.publishedAt) < d7;
+  const creOlder7 = (r: typeof rows[number]) => new Date(r.createdAt) < d7;
+  const notOrig = (r: typeof rows[number]) => r.sourceName !== `${SITE.name} Original`;
+  const lowViews = (r: typeof rows[number]) => r.views < MAX_VIEWS;
+  const bumped = thin.filter((r) => !pubOlder7(r) && creOlder7(r)).length;
+  return {
+    totalPublishedUnpruned: rows.length,
+    thinUnder500: thin.length,
+    'thin&views<2': thin.filter(lowViews).length,
+    'thin&publishedAt>7d': thin.filter(pubOlder7).length,
+    'thin&createdAt>7d': thin.filter(creOlder7).length,
+    'thin&notFounder': thin.filter(notOrig).length,
+    'eligible_by_publishedAt(current)': thin.filter((r) => lowViews(r) && pubOlder7(r) && notOrig(r)).length,
+    'eligible_by_createdAt(proposed)': thin.filter((r) => lowViews(r) && creOlder7(r) && notOrig(r)).length,
+    'thin_bumped(pubRecent_butCreated>7d)': bumped,
+    sample_oldest_thin_ages: thin.slice(0, 5).map((r) => ({ pubAgeD: +ageD(r.publishedAt).toFixed(1), creAgeD: +ageD(r.createdAt).toFixed(1), views: r.views })),
+  };
+}
 
 export async function runThinPruner(opts: { max?: number } = {}): Promise<ThinPrunerReport> {
   const max = opts.max ?? MAX_PER_RUN;

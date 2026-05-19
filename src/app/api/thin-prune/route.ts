@@ -4,7 +4,7 @@
 // the agent. Fired by the daily fan-out; callable on demand with ?max=.
 
 import { NextResponse } from 'next/server';
-import { runThinPruner } from '@/lib/agents/thin-pruner';
+import { runThinPruner, diagnoseThinPruner } from '@/lib/agents/thin-pruner';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -16,6 +16,9 @@ export async function GET(req: Request) {
   const expected = process.env.CRON_SECRET;
   if (!expected || (auth !== `Bearer ${expected}` && tokenFromQuery !== expected)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+  if (url.searchParams.get('diag') === '1') {
+    return NextResponse.json({ ok: true, diag: await diagnoseThinPruner() });
   }
   const max = url.searchParams.get('max');
   const report = await runThinPruner({ max: max ? Number(max) : undefined });

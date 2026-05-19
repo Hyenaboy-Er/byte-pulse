@@ -192,6 +192,9 @@ export async function runCommunityReplies(): Promise<CommunityReplyReport> {
 
   if (!TOKEN) {
     report.errors.push('MASTODON_ACCESS_TOKEN missing');
+    await prisma.agentLog.create({
+      data: { agent: 'community-replies', action: 'scan', status: 'warn', message: 'MASTODON_ACCESS_TOKEN missing' },
+    }).catch(() => null);
     return report;
   }
 
@@ -200,6 +203,9 @@ export async function runCommunityReplies(): Promise<CommunityReplyReport> {
     posts = await fetchOurRecentStatuses();
   } catch (e) {
     report.errors.push(`fetch posts: ${(e as Error).message}`);
+    await prisma.agentLog.create({
+      data: { agent: 'community-replies', action: 'scan', status: 'error', message: `fetch posts: ${(e as Error).message}`.slice(0, 140) },
+    }).catch(() => null);
     return report;
   }
 
@@ -299,6 +305,17 @@ export async function runCommunityReplies(): Promise<CommunityReplyReport> {
     if (report.errors.length) lines.push(`errors: ${report.errors.length}`);
     await tg(lines.join('\n')).catch(() => null);
   }
+
+  // Always log one summary run-entry so the agent-auditor can verify
+  // this agent (previously it wrote AgentLog only on errors/posts, so a
+  // normal "nothing to reply to" run left no trace → falsely "unknown").
+  await prisma.agentLog.create({
+    data: {
+      agent: 'community-replies', action: 'scan',
+      status: report.errors.length ? 'warn' : 'success',
+      message: `scanned=${report.postsScanned} found=${report.repliesFound} posted=${report.posted} errors=${report.errors.length}`,
+    },
+  }).catch(() => null);
 
   return report;
 }

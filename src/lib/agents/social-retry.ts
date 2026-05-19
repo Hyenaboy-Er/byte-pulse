@@ -179,5 +179,16 @@ export async function runSocialRetry(opts?: { limit?: number }): Promise<SocialR
     );
   }
 
+  // Always log one summary run-entry so the agent-auditor can verify
+  // this agent ran (it previously only UPDATEd existing rows, so a
+  // normal "nothing to retry" run left no trace → falsely "unknown").
+  await prisma.agentLog.create({
+    data: {
+      agent: 'social-retry', action: 'retry',
+      status: gaveUp > 0 ? 'warn' : 'success',
+      message: `pending=${pendingFound} retried=${retried} ok=${succeeded} gaveUp=${gaveUp}`,
+    },
+  }).catch(() => null);
+
   return { pendingFound, retried, succeeded, gaveUp, channels };
 }

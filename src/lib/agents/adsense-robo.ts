@@ -87,17 +87,27 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
   const thin = articles.filter((a) => (wordOf.get(a.id) ?? 0) < WORD_FLOOR).length;
   const thinPct = articles.length ? thin / articles.length : 0;
 
-  const trans = await prisma.translation.findMany({
-    where: { lang: 'de', articleId: { in: articles.map((a) => a.id) } },
-    select: { articleId: true, content: true },
-  });
-  const deByArticle = new Map(trans.map((t) => [t.articleId, wc(t.content)]));
-  const deCoverage = articles.length ? trans.length / articles.length : 0;
+  // DE layer disabled (SITE.deEnabled=false): all /de pages are
+  // noindexed, so Google does NOT index or evaluate any German content —
+  // the old broken translation rows still sit in the DB but are
+  // invisible to search engines. Counting them would understate true
+  // readiness (same principle as excluding noindexed thin articles).
+  // So: no DE penalty, don't fire translation-repair. This is what makes
+  // the sDe axis legitimately go full — NOT a DB purge.
+  let deCoverage = 1;
   let deTruncated = 0;
-  for (const a of articles) {
-    const en = wordOf.get(a.id) ?? 0;
-    const de = deByArticle.get(a.id);
-    if (de !== undefined && en >= 200 && de / en < DE_MIN_RATIO) deTruncated++;
+  if (SITE.deEnabled) {
+    const trans = await prisma.translation.findMany({
+      where: { lang: 'de', articleId: { in: articles.map((a) => a.id) } },
+      select: { articleId: true, content: true },
+    });
+    const deByArticle = new Map(trans.map((t) => [t.articleId, wc(t.content)]));
+    deCoverage = articles.length ? trans.length / articles.length : 0;
+    for (const a of articles) {
+      const en = wordOf.get(a.id) ?? 0;
+      const de = deByArticle.get(a.id);
+      if (de !== undefined && en >= 200 && de / en < DE_MIN_RATIO) deTruncated++;
+    }
   }
 
   // ── 2. SEO host health + trust pages (live) ─────────────────────────
@@ -178,7 +188,7 @@ export async function runAdsenseRobo(): Promise<AdsenseRoboReport> {
   // ── 5. Escalate ONLY what it could not fix ─────────────────────────
   const lines: string[] = [];
   lines.push(`🤖 AdSense-Robo — Readiness ${score}/100`);
-  lines.push(`Artikel ${published} · dünn ${thin} (${Math.round(thinPct * 100)}%) · DE ${Math.round(deCoverage * 100)}% (kaputt ${deTruncated})`);
+  lines.push(`Artikel ${published} · dünn ${thin} (${Math.round(thinPct * 100)}%) · ${SITE.deEnabled ? `DE ${Math.round(deCoverage * 100)}% (kaputt ${deTruncated})` : 'DE-Layer AUS (noindex, zählt nicht)'}`);
   if (fixed.length) lines.push('✅ Selbst behoben: ' + fixed.join(' · '));
   if (problems.length) lines.push('⚠️ Braucht dich: ' + problems.join(' · '));
   else lines.push('Keine ungelösten Probleme.');

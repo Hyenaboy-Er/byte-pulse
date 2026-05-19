@@ -69,9 +69,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       canonical: path,
       languages: { 'en-US': `/article/${a.slug}`, 'de-DE': path },
     },
-    // noindex if no real German translation OR thin-pruner sentinel
-    // (qualityScore < 0 = deliberately de-indexed thin legacy article).
-    robots: hasGerman && a.qualityScore >= 0
+    // noindex if the DE layer is disabled (SITE.deEnabled=false — broken
+    // German removed wholesale), OR no real German translation, OR
+    // thin-pruner sentinel (qualityScore < 0).
+    robots: SITE.deEnabled && hasGerman && a.qualityScore >= 0
       ? { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } }
       : { index: false, follow: true, googleBot: { index: false, follow: true } },
     openGraph: {

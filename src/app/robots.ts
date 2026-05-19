@@ -19,7 +19,10 @@ export default function robots(): MetadataRoute.Robots {
         // specific Allow wins over Disallow in Googlebot, so the rest
         // of /api/ stays blocked.
         allow: ['/', '/api/og'],
-        disallow: ['/api/', '/admin'],
+        // /de disallowed when the German layer is off (SITE.deEnabled=
+        // false): all /de pages are noindexed via the de/ layout — also
+        // stop wasting crawl budget on them.
+        disallow: ['/api/', '/admin', ...(SITE.deEnabled ? [] : ['/de'])],
       },
       // Explicitly welcome Google News crawler
       { userAgent: 'Googlebot-News', allow: '/' },

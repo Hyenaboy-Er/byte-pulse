@@ -43,6 +43,14 @@ export const SITE = {
   // are skipped (orchestrator) so a tech clone never publishes recipes and
   // a recipe clone never publishes GPU benchmarks.
   niche: env('SITE_NICHE', 'technology, software, hardware, AI, gaming, mobile, cybersecurity, crypto, science, EV/auto-tech'),
+  // Bilingual DE layer. Turned OFF for byte-pulse: the writer publishes
+  // faster than translation+repair can keep up, so /de/* was a mass of
+  // broken/truncated thin duplicates dragging the whole site's quality
+  // (and AdSense readiness) down at ~0 German traffic. Broken German is
+  // worse than no German. When false: no DE generation, all /de noindex,
+  // /de out of sitemaps, DE not counted against the score. A clone with
+  // a working translation cadence flips NEXT_PUBLIC_DE_ENABLED=true.
+  deEnabled: env('NEXT_PUBLIC_DE_ENABLED', 'false') === 'true',
 } as const;
 
 export type SiteConfig = typeof SITE;

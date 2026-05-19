@@ -450,25 +450,28 @@ Return JSON only: { "content": "<expanded markdown>" }`,
       .then((r) => logAgent('bing-submit', 'submit', r.ok ? 'success' : 'warn', `status=${r.status} urls=${r.submitted}${r.skipped ? ' skipped=' + r.skipped : ''}`))
       .catch(() => null);
 
-    // 6. Immediate DE translation so /de/* pages show the article in German right away.
-    // Fire-and-forget: don't block the rest of the orchestrator (social broadcast etc.)
-    // on translation. If it fails or times out, /de/article/[slug] falls back to
-    // on-demand translation on first visit. Translator result is DB-cached so
-    // subsequent visits to either path are instant.
-    translateArticle(created.id, 'de')
-      .then(async (result) => {
-        if (result) {
-          await logAgent('translator', 'translated', 'success', slug, { lang: 'de' });
-          // Revalidate the DE article page so cached EN-fallback (if any) is purged.
-          try {
-            const { revalidatePath } = await import('next/cache');
-            revalidatePath(`/de/article/${slug}`);
-          } catch { /* dev only */ }
-        }
-      })
-      .catch(async (err) => {
-        await logAgent('translator', 'translated', 'error', (err as Error).message).catch(() => null);
-      });
+    // 6. Immediate DE translation — ONLY if the German layer is enabled.
+    // SITE.deEnabled is false for byte-pulse: the writer outpaces
+    // translation+repair, so /de was a broken-duplicate mass hurting
+    // site quality at ~0 German traffic. Skipping it stops burning LLM
+    // budget on German and lets the pipeline focus on EN quality.
+    if (SITE.deEnabled) {
+      translateArticle(created.id, 'de')
+        .then(async (result) => {
+          if (result) {
+            await logAgent('translator', 'translated', 'success', slug, { lang: 'de' });
+            try {
+              const { revalidatePath } = await import('next/cache');
+              revalidatePath(`/de/article/${slug}`);
+            } catch { /* dev only */ }
+          }
+        })
+        .catch(async (err) => {
+          await logAgent('translator', 'translated', 'error', (err as Error).message).catch(() => null);
+        });
+    } else {
+      await logAgent('translator', 'skip', 'success', 'DE layer disabled (SITE.deEnabled=false)').catch(() => null);
+    }
 
     // 7. Social broadcast — fan out to X / LinkedIn / Mastodon / Bluesky / Telegram channel.
     // Each channel silently no-ops if its env creds aren't set, so it stays safe during onboarding.

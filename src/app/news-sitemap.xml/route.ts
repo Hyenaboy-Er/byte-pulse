@@ -49,7 +49,8 @@ export async function GET() {
     ${a.imageUrl ? `<image:image><image:loc>${escape(a.imageUrl)}</image:loc></image:image>` : ''}
   </url>`).join('\n');
 
-  const deEntries = articles
+  // DE layer off → no German URLs in the news sitemap at all.
+  const deEntries = !SITE.deEnabled ? '' : articles
     .filter((a) => trMap.has(a.id))
     .map((a) => {
       const tr = trMap.get(a.id)!;

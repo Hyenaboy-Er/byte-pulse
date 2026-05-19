@@ -26,7 +26,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     where: { lang: 'de', articleId: { in: articles.map((a) => a.id) } },
     select: { articleId: true },
   });
-  const hasGerman = new Set(translated.map((t) => t.articleId));
+  // DE layer is off (SITE.deEnabled=false) → never list /de in the
+  // sitemap (don't ask Google to index the de-indexed German layer).
+  const deOn = SITE.deEnabled;
+  const hasGerman = new Set(deOn ? translated.map((t) => t.articleId) : []);
 
   const articleUrls = articles.flatMap((a) => {
     const enAlt = `${SITE_URL}/article/${a.slug}`;
@@ -55,13 +58,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   const categoryUrls = CATEGORIES.flatMap((c) => [
-    { url: `${SITE_URL}/category/${c.slug}`,    lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.6 },
-    { url: `${SITE_URL}/de/category/${c.slug}`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.55 },
+    { url: `${SITE_URL}/category/${c.slug}`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.6 },
+    ...(deOn
+      ? [{ url: `${SITE_URL}/de/category/${c.slug}`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.55 }]
+      : []),
   ]);
 
   return [
     { url: SITE_URL,            lastModified: new Date(), changeFrequency: 'hourly',  priority: 1 },
-    { url: `${SITE_URL}/de`,    lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.95 },
+    ...(deOn ? [{ url: `${SITE_URL}/de`, lastModified: new Date(), changeFrequency: 'hourly' as const, priority: 0.95 }] : []),
     { url: `${SITE_URL}/newsletter`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
     ...categoryUrls,
     ...articleUrls,

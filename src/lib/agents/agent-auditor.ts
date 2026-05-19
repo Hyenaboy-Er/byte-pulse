@@ -79,26 +79,34 @@ export async function runAgentAuditor(): Promise<AgentAuditReport> {
   });
 
   // translator: sample newest 8 published — DE must exist & be >=70% of EN
-  const recent = await prisma.article.findMany({
-    where: { status: 'published' }, orderBy: { publishedAt: 'desc' }, take: 8,
-    select: { id: true, content: true },
-  });
-  const tr = await prisma.translation.findMany({
-    where: { lang: 'de', articleId: { in: recent.map((a) => a.id) } },
-    select: { articleId: true, content: true },
-  });
-  const trMap = new Map(tr.map((t) => [t.articleId, wc(t.content)]));
-  let trBad = 0, trMissing = 0;
-  for (const a of recent) {
-    const en = wc(a.content); const de = trMap.get(a.id);
-    if (de === undefined) trMissing++;
-    else if (en >= 200 && de / en < 0.7) trBad++;
+  // DE layer disabled → translator/translation-repair are intentionally
+  // off. Don't FAIL them (no DE ≠ broken) and don't fire pointless
+  // remediation; report honestly as deliberately disabled.
+  if (!SITE.deEnabled) {
+    rows.push({ agent: 'translator', how: 'outcome', verdict: 'ok', evidence: 'DE-Layer deaktiviert (SITE.deEnabled=false) — bewusst aus, nicht kaputt' });
+    rows.push({ agent: 'translation-repair', how: 'outcome', verdict: 'ok', evidence: 'DE-Layer deaktiviert — nichts zu reparieren' });
+  } else {
+    const recent = await prisma.article.findMany({
+      where: { status: 'published' }, orderBy: { publishedAt: 'desc' }, take: 8,
+      select: { id: true, content: true },
+    });
+    const tr = await prisma.translation.findMany({
+      where: { lang: 'de', articleId: { in: recent.map((a) => a.id) } },
+      select: { articleId: true, content: true },
+    });
+    const trMap = new Map(tr.map((t) => [t.articleId, wc(t.content)]));
+    let trBad = 0, trMissing = 0;
+    for (const a of recent) {
+      const en = wc(a.content); const de = trMap.get(a.id);
+      if (de === undefined) trMissing++;
+      else if (en >= 200 && de / en < 0.7) trBad++;
+    }
+    rows.push({
+      agent: 'translator', how: 'outcome',
+      verdict: (trBad + trMissing) === 0 ? 'ok' : (trBad + trMissing) <= 2 ? 'warn' : 'fail',
+      evidence: `Stichprobe 8 neu: ${trBad} abgeschnitten, ${trMissing} fehlend`,
+    });
   }
-  rows.push({
-    agent: 'translator', how: 'outcome',
-    verdict: (trBad + trMissing) === 0 ? 'ok' : (trBad + trMissing) <= 2 ? 'warn' : 'fail',
-    evidence: `Stichprobe 8 neu: ${trBad} abgeschnitten, ${trMissing} fehlend`,
-  });
 
   // quality-upgrade: thin ratio over the recent corpus
   const corpus = await prisma.article.findMany({
@@ -115,22 +123,26 @@ export async function runAgentAuditor(): Promise<AgentAuditReport> {
     evidence: `${thin}/${corpus.length} dünn (${Math.round(thinPct * 100)}%) — Backlog, Trend muss fallen`,
   });
 
-  // translation-repair: how many DE still broken across the same corpus
-  const allTr = await prisma.translation.findMany({
-    where: { lang: 'de', articleId: { in: corpus.map((a) => a.id) } },
-    select: { articleId: true, content: true },
-  });
-  const deMap = new Map(allTr.map((t) => [t.articleId, wc(t.content)]));
-  let broken = 0;
-  for (const a of corpus) {
-    const en = wc(a.content); const de = deMap.get(a.id);
-    if (de !== undefined && en >= 200 && de / en < 0.7) broken++;
+  // translation-repair: how many DE still broken across the same corpus.
+  // Skipped entirely when the DE layer is disabled (row already pushed
+  // above as deliberately-off — avoid a duplicate + a pointless query).
+  if (SITE.deEnabled) {
+    const allTr = await prisma.translation.findMany({
+      where: { lang: 'de', articleId: { in: corpus.map((a) => a.id) } },
+      select: { articleId: true, content: true },
+    });
+    const deMap = new Map(allTr.map((t) => [t.articleId, wc(t.content)]));
+    let broken = 0;
+    for (const a of corpus) {
+      const en = wc(a.content); const de = deMap.get(a.id);
+      if (de !== undefined && en >= 200 && de / en < 0.7) broken++;
+    }
+    rows.push({
+      agent: 'translation-repair', how: 'outcome',
+      verdict: broken === 0 ? 'ok' : broken < 80 ? 'warn' : 'fail',
+      evidence: `${broken} DE noch kaputt im Korpus (muss über Läufe fallen)`,
+    });
   }
-  rows.push({
-    agent: 'translation-repair', how: 'outcome',
-    verdict: broken === 0 ? 'ok' : broken < 80 ? 'warn' : 'fail',
-    evidence: `${broken} DE noch kaputt im Korpus (muss über Läufe fallen)`,
-  });
 
   // internal-linker: do the newest 20 actually contain internal links?
   const link20 = await prisma.article.findMany({

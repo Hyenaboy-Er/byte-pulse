@@ -231,6 +231,15 @@ async function main() {
     '-c', 'copy', `${OUT}/nightly.mp4`,
   ], { stdio: ['ignore', 'ignore', 'inherit'] });
 
+  // Metadaten für den automatischen YouTube-Upload (post-to-buffer.mjs liest sie).
+  const lineup = stories.slice(0, 6).map((s) => s.title).join(' · ');
+  writeFileSync(`${OUT}/broadcast-meta.json`, JSON.stringify({
+    title: `Byte-Pulse Nightly — Tech News for ${date}`,
+    excerpt: `Anchor Danny Williams covers tonight's biggest tech stories: ${lineup}.`,
+    url: SITE,
+    category: 'technology news',
+  }, null, 2));
+
   const min = Math.round(total / 60 * 10) / 10;
   console.log(`[broadcast] fertig → ${OUT}/nightly.mp4 (~${min} Min, ${segs.length} Segmente)`);
 }

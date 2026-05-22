@@ -1,62 +1,115 @@
-// Postet ein Video über die Buffer-API an einen verbundenen Kanal (TikTok).
+// Postet ein Video über die Buffer-API an TikTok und/oder YouTube.
 //
-// Buffer ist offizieller TikTok-Partner — über Buffer geht Auto-Posting zu
-// TikTok ohne eigene TikTok-App-Freigabe. Buffer holt das Video per URL, die
-// Datei muss also öffentlich erreichbar sein (in der GitHub Action via
+// Buffer ist offizieller Partner beider Plattformen — Auto-Posting ohne
+// eigene TikTok-/YouTube-App-Freigabe. Buffer holt das Video per URL, die
+// Datei muss also öffentlich erreichbar sein (in der GitHub Action über ein
 // GitHub-Release-Asset gelöst).
 //
-// Lauf:  node post-to-buffer.mjs <öffentliche-video-url>
-// Caption kommt aus out/video-meta.json (vom video-generator geschrieben).
+// Lauf:  node post-to-buffer.mjs <öffentliche-video-url> [meta-json] [ziele]
+//   meta-json  Pfad zu Artikel-/Sendungsdaten   — default: out/video-meta.json
+//   ziele      Kommaliste aus tiktok,youtube    — default: tiktok,youtube
+//
+// Beispiele:
+//   node post-to-buffer.mjs https://… out/video-meta.json            (TikTok + YouTube)
+//   node post-to-buffer.mjs https://… out/broadcast/broadcast-meta.json youtube
 //
 // Env:
 //   BUFFER_API_KEY              Pflicht
 //   BUFFER_TIKTOK_CHANNEL_ID    optional, default = byte-pulse.net TikTok
+//   BUFFER_YOUTUBE_CHANNEL_ID   optional, default = Byte-PulseNet YouTube
+//   YOUTUBE_CATEGORY_ID         optional, default 28 (Science & Technology)
 
 import { readFileSync } from 'node:fs';
 import { optimizeMetadata } from './optimize-metadata.mjs';
 
 const BUFFER_KEY = process.env.BUFFER_API_KEY;
-const CHANNEL = process.env.BUFFER_TIKTOK_CHANNEL_ID || '6a106ccd090476fb994ac0fe';
+const CHANNELS = {
+  tiktok:  process.env.BUFFER_TIKTOK_CHANNEL_ID  || '6a106ccd090476fb994ac0fe',
+  youtube: process.env.BUFFER_YOUTUBE_CHANNEL_ID || '6a10ba31090476fb994c7ae9',
+};
+const YT_CATEGORY = process.env.YOUTUBE_CATEGORY_ID || '28'; // Science & Technology
+
 const videoUrl = process.argv[2];
+const metaFile = process.argv[3] || 'out/video-meta.json';
+const targets = (process.argv[4] || 'tiktok,youtube')
+  .split(',').map((s) => s.trim().toLowerCase()).filter((s) => CHANNELS[s]);
 
 if (!BUFFER_KEY) { console.error('FEHLER: BUFFER_API_KEY fehlt.'); process.exit(1); }
 if (!videoUrl || !/^https?:\/\//.test(videoUrl)) {
   console.error('FEHLER: öffentliche Video-URL als Argument nötig.'); process.exit(1);
 }
+if (!targets.length) { console.error('FEHLER: keine gültigen Ziele (tiktok,youtube).'); process.exit(1); }
 
 let meta = { title: 'Tech news that matters', url: 'https://byte-pulse.net' };
-try { meta = JSON.parse(readFileSync('out/video-meta.json', 'utf8')); } catch { /* default */ }
+try { meta = JSON.parse(readFileSync(metaFile, 'utf8')); }
+catch { console.log(`[buffer] ${metaFile} nicht gefunden — nutze Default-Metadaten.`); }
 
-// KI-Optimizer-Agent: beste Caption + Hashtags (statt fester Vorlage).
+// KI-Optimizer-Agent: beste Caption, Hashtags, YouTube-Titel + -Beschreibung.
 const opt = await optimizeMetadata(meta);
-const caption = `${opt.caption}\n\n${opt.hashtags.map((h) => '#' + h).join(' ')}`;
-console.log(`[buffer] KI-optimierte Caption (${opt.hashtags.length} Hashtags)`);
+const hashtagLine = opt.hashtags.map((h) => '#' + h).join(' ');
+const captionTikTok  = `${opt.caption}\n\n${hashtagLine}`;
+const captionYouTube = `${opt.youtubeDescription}\n\n${hashtagLine}`;
+console.log(`[buffer] KI-Metadaten fertig (${opt.hashtags.length} Hashtags) — Ziele: ${targets.join(', ')}`);
 
-// Inline-Mutation exakt nach Buffer-Doku (api.buffer.com, GraphQL).
-const mutation = `mutation {
-  createPost(input: {
-    text: ${JSON.stringify(caption)}
-    channelId: ${JSON.stringify(CHANNEL)}
-    schedulingType: automatic
-    mode: addToQueue
-    assets: [{ video: { url: ${JSON.stringify(videoUrl)} } }]
-  }) {
-    ... on PostActionSuccess { post { id text } }
+// Mutation mit Variablen — verschachtelte YouTube-Metadaten als GraphQL-Literal
+// wären fehleranfällig (Escaping). $input wird serverseitig typgeprüft.
+const MUTATION = `mutation Create($input: CreatePostInput!) {
+  createPost(input: $input) {
+    ... on PostActionSuccess { post { id } }
     ... on MutationError { message }
   }
 }`;
 
-const r = await fetch('https://api.buffer.com', {
-  method: 'POST',
-  headers: { 'Authorization': `Bearer ${BUFFER_KEY}`, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ query: mutation }),
-});
+function inputFor(target) {
+  const base = {
+    schedulingType: 'automatic',
+    mode: 'addToQueue',
+    channelId: CHANNELS[target],
+    assets: [{ video: { url: videoUrl } }],
+  };
+  if (target === 'youtube') {
+    return {
+      ...base,
+      text: captionYouTube,
+      metadata: {
+        youtube: {
+          title: opt.youtubeTitle,
+          privacy: 'public',
+          categoryId: YT_CATEGORY,
+          madeForKids: false,
+          notifySubscribers: true,
+          embeddable: true,
+        },
+      },
+    };
+  }
+  return { ...base, text: captionTikTok }; // tiktok
+}
 
-const data = await r.json().catch(() => null);
-if (!r.ok || !data) { console.error(`FEHLER: Buffer HTTP ${r.status}`); process.exit(1); }
-if (data.errors) { console.error('FEHLER (GraphQL):', JSON.stringify(data.errors).slice(0, 300)); process.exit(1); }
+async function postTo(target) {
+  const r = await fetch('https://api.buffer.com', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${BUFFER_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: MUTATION, variables: { input: inputFor(target) } }),
+  });
+  const data = await r.json().catch(() => null);
+  if (!r.ok || !data) throw new Error(`HTTP ${r.status}`);
+  if (data.errors) throw new Error(`GraphQL: ${JSON.stringify(data.errors).slice(0, 300)}`);
+  const result = data.data?.createPost;
+  if (result?.message) throw new Error(`Buffer: ${result.message}`);
+  return result?.post?.id || 'ok';
+}
 
-const result = data.data?.createPost;
-if (result?.message) { console.error('FEHLER (Buffer):', result.message); process.exit(1); }
-
-console.log(`[buffer] Video in TikTok-Queue gestellt — Post-ID ${result?.post?.id || 'ok'}`);
+// Jede Plattform unabhängig — ein Fehler bei TikTok darf YouTube nicht killen.
+let failed = 0;
+for (const target of targets) {
+  try {
+    const id = await postTo(target);
+    console.log(`[buffer] ${target} → in Queue gestellt (Post-ID ${id})`);
+  } catch (e) {
+    failed++;
+    console.error(`[buffer] FEHLER bei ${target}: ${e.message}`);
+  }
+}
+// Exit 1 nur, wenn ALLE Ziele scheitern — sonst gilt der Lauf als erfolgreich.
+process.exit(failed === targets.length ? 1 : 0);

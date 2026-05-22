@@ -23,18 +23,34 @@
 //   MUSIC_URL        optional — direkte URL zu einem CC0-Musik-Bett (stereo)
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
+import { platform } from 'node:os';
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const SITE = (process.env.SITE_URL || 'https://www.byte-pulse.net').replace(/\/$/, '');
 const VOICE = process.env.TTS_VOICE || 'onyx';
 const MUSIC_URL = process.env.MUSIC_URL || '';
-const FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+// Font für ffmpeg drawtext. Windows-Laufwerkspfade (C:\…) zerlegen den
+// ffmpeg-Filtergraph (der Doppelpunkt trennt Optionen). Lösung: den Quell-
+// Font nach out/font.ttf kopieren und im Filter nur den relativen Pfad
+// out/font.ttf benutzen — kein Doppelpunkt, funktioniert Windows + Linux.
+const SRC_FONT = platform() === 'win32'
+  ? 'C:/Windows/Fonts/arialbd.ttf'
+  : '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+const FONT = 'out/font.ttf';
 
 if (!OPENAI_KEY) { console.error('FEHLER: OPENAI_API_KEY fehlt.'); process.exit(1); }
 
 const OUT = 'out';
 if (!existsSync(OUT)) mkdirSync(OUT, { recursive: true });
+
+// Font in den Arbeitsordner kopieren (relativer, doppelpunktfreier Pfad).
+try {
+  copyFileSync(SRC_FONT, FONT);
+} catch (e) {
+  console.error(`FEHLER: Font ${SRC_FONT} nicht gefunden — ${e.message}`);
+  process.exit(1);
+}
 
 function decodeEntities(s) {
   return s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -74,9 +90,10 @@ async function voiceScript(article) {
       messages: [
         { role: 'system', content:
           'You write punchy 25-second voiceover scripts for a tech-news short video ' +
-          '(TikTok/Reels/Shorts). 55-70 words. Spoken, energetic, plain English. ' +
-          'Hook in the first sentence. No hashtags, no emojis, no "link in bio". ' +
-          'End on why it matters. Output ONLY the script text.' },
+          '(TikTok/Reels/Shorts). 55-70 words. Spoken, energetic, US English. ' +
+          'Hook in the first sentence. No hashtags, no emojis. Cover why it matters, ' +
+          'then end by telling viewers to read the full story on Byte-Pulse dot net. ' +
+          'Output ONLY the script text.' },
         { role: 'user', content:
           `Headline: ${article.title}\nSummary: ${article.excerpt || '(none)'}` },
       ],
@@ -144,6 +161,11 @@ async function main() {
     catch (e) { console.warn('  Hero-Bild-Fehler, Schwarz-Fallback:', e.message); }
   }
 
+  // Homepage-Logo (apple-icon) für den Kopfbereich.
+  let hasLogo = false;
+  try { await download(`${SITE}/apple-icon`, `${OUT}/logo.png`); hasLogo = true; }
+  catch (e) { console.warn('  Logo-Download-Fehler, ohne Logo:', e.message); }
+
   // Musik-Bett (optional, echte CC0-Aufnahme, stereo).
   let hasMusic = false;
   if (MUSIC_URL) {
@@ -152,35 +174,57 @@ async function main() {
   }
 
   writeFileSync(`${OUT}/headline.txt`, wrapHeadline(article.title));
+  writeFileSync(`${OUT}/url.txt`, 'https://www.byte-pulse.net/');
 
   // ── ffmpeg-Filter ──────────────────────────────────────────────────────
+  // Input-Reihenfolge ist dynamisch (Logo/Musik optional) — Indizes mitzählen.
   const inputs = [];
+  let i = 0;
   if (existsSync(`${OUT}/hero.jpg`)) inputs.push('-loop', '1', '-i', `${OUT}/hero.jpg`);
   else inputs.push('-f', 'lavfi', '-i', `color=c=0x0a0a12:s=1080x1920:d=${dur}`);
-  inputs.push('-i', `${OUT}/voice.mp3`);
-  if (hasMusic) inputs.push('-i', `${OUT}/music.mp3`);
+  const heroI = i++;
+  let logoI = -1;
+  if (hasLogo && existsSync(`${OUT}/logo.png`)) {
+    inputs.push('-loop', '1', '-i', `${OUT}/logo.png`); logoI = i++;
+  }
+  inputs.push('-i', `${OUT}/voice.mp3`); const voiceI = i++;
+  let musicI = -1;
+  if (hasMusic) { inputs.push('-i', `${OUT}/music.mp3`); musicI = i++; }
 
-  const vf =
-    `[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,` +
-    `drawbox=x=0:y=0:w=1080:h=1920:color=black@0.5:t=fill,` +
-    `drawtext=fontfile=${FONT}:text='BYTE-PULSE':fontcolor=white:fontsize=44:` +
-    `x=(w-text_w)/2:y=150:box=1:boxcolor=0xE5242A@0.92:boxborderw=22,` +
-    `drawtext=fontfile=${FONT}:textfile=${OUT}/headline.txt:fontcolor=white:fontsize=80:` +
-    `x=(w-text_w)/2:y=(h-text_h)/2:line_spacing=20:box=1:boxcolor=black@0.38:boxborderw=34,` +
-    `drawtext=fontfile=${FONT}:text='byte-pulse.net':fontcolor=white@0.92:fontsize=40:` +
-    `x=(w-text_w)/2:y=h-230[v]`;
+  // Video: Hero abgedunkelt → Logo-Overlay oben → Text-Overlays.
+  let v = `[${heroI}:v]scale=1080:1920:force_original_aspect_ratio=increase,` +
+          `crop=1080:1920,setsar=1,drawbox=x=0:y=0:w=1080:h=1920:color=black@0.5:t=fill[bg]`;
+  let stage = '[bg]';
+  if (logoI >= 0) {
+    v += `;[${logoI}:v]scale=180:-1[logo];${stage}[logo]overlay=x=(W-w)/2:y=70[wl]`;
+    stage = '[wl]';
+  }
+  const T = `fontfile=${FONT}`;
+  v += `;${stage}` +
+    // Volle URL in der roten Bar (oben, unter dem Logo)
+    `drawtext=${T}:textfile=${OUT}/url.txt:fontcolor=white:fontsize=36:` +
+    `x=(w-text_w)/2:y=275:box=1:boxcolor=0xE5242A@0.96:boxborderw=18,` +
+    // Headline (Mitte)
+    `drawtext=${T}:textfile=${OUT}/headline.txt:fontcolor=white:fontsize=76:` +
+    `x=(w-text_w)/2:y=(h-text_h)/2:line_spacing=20:box=1:boxcolor=black@0.42:boxborderw=32,` +
+    // Hinweis auf den Artikel (unten, zentriert)
+    `drawtext=${T}:text='Read the full article':fontcolor=white:fontsize=46:` +
+    `x=(w-text_w)/2:y=h-400:box=1:boxcolor=black@0.6:boxborderw=22,` +
+    // Abo-Button (unten rechts, rot, button-artig)
+    `drawtext=${T}:text='SUBSCRIBE':fontcolor=white:fontsize=46:` +
+    `x=w-text_w-70:y=h-210:box=1:boxcolor=0xE5242A@0.96:boxborderw=28[v]`;
 
-  const audioParts = [`[1:a]volume=1.0,aformat=channel_layouts=stereo[vo]`];
+  const audioParts = [`[${voiceI}:a]volume=1.0,aformat=channel_layouts=stereo[vo]`];
   let audioMap = '[vo]';
-  if (hasMusic) {
-    audioParts.push(`[2:a]volume=0.14,aformat=channel_layouts=stereo[mus]`);
+  if (musicI >= 0) {
+    audioParts.push(`[${musicI}:a]volume=0.14,aformat=channel_layouts=stereo[mus]`);
     audioParts.push(`[vo][mus]amix=inputs=2:duration=first:dropout_transition=0[a]`);
     audioMap = '[a]';
   }
 
   const args = [
     '-y', ...inputs,
-    '-filter_complex', `${vf};${audioParts.join(';')}`,
+    '-filter_complex', `${v};${audioParts.join(';')}`,
     '-map', '[v]', '-map', audioMap,
     '-t', String(dur), '-r', '30',
     '-c:v', 'libx264', '-preset', 'medium', '-pix_fmt', 'yuv420p',

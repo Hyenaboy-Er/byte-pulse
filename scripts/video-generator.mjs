@@ -192,9 +192,13 @@ async function main() {
   let musicI = -1;
   if (hasMusic) { inputs.push('-i', `${OUT}/music.mp3`); musicI = i++; }
 
-  // Video: Hero abgedunkelt → Logo-Overlay oben → Text-Overlays.
-  let v = `[${heroI}:v]scale=1080:1920:force_original_aspect_ratio=increase,` +
-          `crop=1080:1920,setsar=1,drawbox=x=0:y=0:w=1080:h=1920:color=black@0.5:t=fill[bg]`;
+  // Video: Hero mit langsamem Ken-Burns-Zoom + Vignette (cinematisch,
+  // hebt statisches Foto auf Profi-Niveau) → Logo-Overlay → Text-Overlays.
+  const frames = Math.round(dur * 30);
+  let v = `[${heroI}:v]scale=2160:3840:force_original_aspect_ratio=increase,` +
+          `crop=2160:3840,zoompan=z='min(zoom+0.00015,1.14)':d=${frames}:` +
+          `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
+          `setsar=1,drawbox=x=0:y=0:w=1080:h=1920:color=black@0.5:t=fill,vignette[bg]`;
   let stage = '[bg]';
   if (logoI >= 0) {
     v += `;[${logoI}:v]scale=180:-1[logo];${stage}[logo]overlay=x=(W-w)/2:y=70[wl]`;

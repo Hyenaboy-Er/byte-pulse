@@ -149,9 +149,14 @@ function renderSegment(idx, seg) {
 
   const T = `fontfile=${FONT}`;
   const src = (seg.source || '').replace(/['\\]/g, '');
+  // Hintergrund mit langsamem Ken-Burns-Zoom (erst hochskalieren = ruckelfrei)
+  // + Vignette für cinematischen Look. Macht statische Fotos "lebendig".
+  const frames = Math.round((dur + 0.4) * 30);
   let v =
-    `[${bgI}:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,` +
-    `setsar=1,drawbox=x=0:y=0:w=1920:h=1080:color=black@0.62:t=fill[bg];` +
+    `[${bgI}:v]scale=2880:1620:force_original_aspect_ratio=increase,crop=2880:1620,` +
+    `zoompan=z='min(zoom+0.00012,1.13)':d=${frames}:` +
+    `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1920x1080:fps=30,` +
+    `setsar=1,drawbox=x=0:y=0:w=1920:h=1080:color=black@0.55:t=fill,vignette[bg];` +
     `[${dannyI}:v]scale=-1:1040[danny];` +
     `[bg][danny]overlay=x=W-w-30:y=H-h[wd];` +
     `[wd]` +
@@ -164,9 +169,11 @@ function renderSegment(idx, seg) {
     (src
       ? `,drawtext=${T}:text='Source\\: ${src}':fontcolor=0xFFD24A:fontsize=34:x=72:y=760:box=1:boxcolor=black@0.6:boxborderw=12`
       : '') +
-    // Bauchbinde unten
+    // Bauchbinde unten + Abo-Button (auf JEDEM Video)
     `,drawtext=${T}:text='DANNY WILLIAMS':fontcolor=white:fontsize=38:` +
-    `x=70:y=H-95:box=1:boxcolor=0x111827@0.92:boxborderw=20[v]`;
+    `x=70:y=H-95:box=1:boxcolor=0x111827@0.92:boxborderw=20` +
+    `,drawtext=${T}:text='SUBSCRIBE':fontcolor=white:fontsize=38:` +
+    `x=480:y=H-95:box=1:boxcolor=0xE5242A@0.97:boxborderw=20[v]`;
 
   const args = [
     '-y', ...inputs,

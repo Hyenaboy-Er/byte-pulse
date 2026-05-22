@@ -1,0 +1,51 @@
+# Tech-Highlight Video-Generator — kostenlos auf GitHub Actions.
+#
+# Erzeugt aus dem neuesten Artikel ein 9:16-Kurzvideo (TikTok/Reels/Shorts).
+# ffmpeg + Node sind auf ubuntu-latest vorinstalliert → 0 Setup, 0 Kosten.
+# Das fertige Video landet als Download-Artifact am Action-Lauf.
+#
+# EINMALIGES SETUP (du, in GitHub):
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     OPENAI_API_KEY  = (dein OpenAI-Key — für Skript + TTS)
+#   Optional:
+#     MUSIC_URL       = direkte URL zu einem CC0-Musik-Bett (Pixabay), stereo
+#     TTS_VOICE       = onyx | echo | nova | shimmer | alloy  (default onyx)
+#
+# Läuft 1×/Tag. Manuell auslösbar über den "Run workflow"-Knopf.
+
+name: Tech-Highlight Video
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify ffmpeg
+        run: ffmpeg -version | head -1 && ffprobe -version | head -1
+
+      - name: Render tech-highlight video
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SITE_URL: 'https://www.byte-pulse.net'
+          TTS_VOICE: ${{ vars.TTS_VOICE }}
+          MUSIC_URL: ${{ vars.MUSIC_URL }}
+        run: node scripts/video-generator.mjs
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tech-highlight-mp4
+          path: out/highlight.mp4
+          retention-days: 14

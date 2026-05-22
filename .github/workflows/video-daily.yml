@@ -46,7 +46,10 @@ jobs:
           MUSIC_URL: ${{ vars.MUSIC_URL }}
         run: node scripts/video-generator.mjs
 
+      # Nur wenn der Generator wirklich ein neues Video erzeugt hat (gab es
+      # keinen ungeposteten Artikel, fehlt out/highlight.mp4 → Schritt skippt).
       - name: Publish to GitHub Release + auto-post to TikTok & YouTube
+        if: ${{ success() && hashFiles('out/highlight.mp4') != '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
@@ -60,3 +63,13 @@ jobs:
           echo "Public video URL: $URL"
           # 9:16-Kurzvideo → TikTok + YouTube (wird dort als Short eingestuft).
           node scripts/post-to-buffer.mjs "$URL" out/video-meta.json tiktok,youtube
+
+      # Gepostete Artikel-URL festhalten, damit kein Duplikat entsteht.
+      - name: Persist dedup state
+        if: ${{ success() && hashFiles('out/highlight.mp4') != '' }}
+        run: |
+          git add data/posted-clips.json
+          git -c user.name="byte-pulse-bot" \
+              -c user.email="byte-pulse-bot@users.noreply.github.com" \
+              commit -m "chore: record posted clip [skip ci]" || echo "nichts zu committen"
+          git push || echo "push uebersprungen"

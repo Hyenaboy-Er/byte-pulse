@@ -4,26 +4,28 @@
 // vorinstalliert) — kein Vercel, kein Render-Service, keine Kosten.
 //
 // Pipeline:
-//   1. Neuesten Top-Artikel aus der News-Sitemap holen (Titel, Bild, Excerpt)
-//   2. KI schreibt ein knackiges 25-Sek-Voiceover-Skript (OpenAI)
+//   1. Neuesten NOCH NICHT geposteten Top-Artikel aus der News-Sitemap holen
+//      (Duplikat-Schutz über data/posted-clips.json)
+//   2. KI schreibt ein knackiges ~25-Sek-Voiceover-Skript (OpenAI)
 //   3. OpenAI TTS → Voiceover-MP3 (Stimme: onyx, tief/professionell)
 //   4. Hero-Bild laden
-//   5. ffmpeg baut 1080×1920-Video: Bild abgedunkelt, Marken-Bar,
-//      Headline groß, Voiceover + optionaler Musik-Bett (stereo)
-//   6. Output: out/highlight.mp4 (GitHub Action lädt es als Artifact hoch)
+//   5. ffmpeg baut 1080×1920-Video: Story oben (Bild + Headline), unten ein
+//      Anchor-Band mit Danny Williams (volle Breite), Marken-Bar, CTAs
+//   6. Output: out/highlight.mp4
+//
+// Gibt es keinen neuen Artikel, wird NICHT gerendert (kein out/highlight.mp4)
+// — die GitHub Action überspringt dann Release + Auto-Post.
 //
 // Audio ist IMMER stereo. Musik-Bett nur wenn MUSIC_URL gesetzt ist — dann
-// MUSS es eine echte Aufnahme sein (Pixabay/freesoundslibrary CC0), niemals
-// synthetisch generiertes Rauschen.
+// MUSS es eine echte Aufnahme sein (Pixabay/freesoundslibrary CC0).
 //
 // Env:
 //   OPENAI_API_KEY   Pflicht — Skript-Text + TTS
 //   SITE_URL         optional, default https://www.byte-pulse.net
-//   TTS_VOICE        optional, default 'onyx'
 //   MUSIC_URL        optional — direkte URL zu einem CC0-Musik-Bett (stereo)
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import { platform } from 'node:os';
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
@@ -31,21 +33,26 @@ const SITE = (process.env.SITE_URL || 'https://www.byte-pulse.net').replace(/\/$
 // Feste Byte-Pulse-Stimme (onyx) — überall identisch, Marken-Konsistenz.
 const VOICE = 'onyx';
 const MUSIC_URL = process.env.MUSIC_URL || '';
+// Anchor-Portrait — muss vorhanden sein (Teil jeder Sendung UND jedes Shorts).
+const DANNY = 'assets/anchor-danny.png';
+// Duplikat-Schutz: schon als Video gepostete Artikel-URLs.
+const STATE = 'data/posted-clips.json';
 // Font für ffmpeg drawtext. Windows-Laufwerkspfade (C:\…) zerlegen den
-// ffmpeg-Filtergraph (der Doppelpunkt trennt Optionen). Lösung: den Quell-
-// Font nach out/font.ttf kopieren und im Filter nur den relativen Pfad
-// out/font.ttf benutzen — kein Doppelpunkt, funktioniert Windows + Linux.
+// ffmpeg-Filtergraph (Doppelpunkt trennt Optionen) → nach out/font.ttf kopieren.
 const SRC_FONT = platform() === 'win32'
   ? 'C:/Windows/Fonts/arialbd.ttf'
   : '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
 const FONT = 'out/font.ttf';
 
 if (!OPENAI_KEY) { console.error('FEHLER: OPENAI_API_KEY fehlt.'); process.exit(1); }
+if (!existsSync(DANNY)) {
+  console.error(`FEHLER: ${DANNY} fehlt — erst scripts/generate-anchor.mjs laufen lassen.`);
+  process.exit(1);
+}
 
 const OUT = 'out';
 if (!existsSync(OUT)) mkdirSync(OUT, { recursive: true });
 
-// Font in den Arbeitsordner kopieren (relativer, doppelpunktfreier Pfad).
 try {
   copyFileSync(SRC_FONT, FONT);
 } catch (e) {
@@ -58,20 +65,23 @@ function decodeEntities(s) {
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'");
 }
 
-// 1. Neuesten Artikel aus der News-Sitemap.
-async function latestArticle() {
+// 1. Neuesten EN-Artikel aus der News-Sitemap, der NICHT in postedSet ist.
+async function pickArticle(postedSet) {
   const r = await fetch(`${SITE}/news-sitemap.xml`);
   if (!r.ok) throw new Error(`news-sitemap ${r.status}`);
   const xml = await r.text();
-  const block = xml.split('<url>').slice(1).find((b) => {
-    const loc = b.match(/<loc>([^<]+)<\/loc>/)?.[1];
-    return loc && !loc.includes('/de/');
-  });
-  if (!block) throw new Error('kein EN-Artikel in Sitemap');
-  const url = block.match(/<loc>([^<]+)<\/loc>/)[1];
+  let chosen = null;
+  for (const block of xml.split('<url>').slice(1)) {
+    const loc = block.match(/<loc>([^<]+)<\/loc>/)?.[1];
+    if (!loc || loc.includes('/de/')) continue;
+    if (postedSet.has(loc)) continue;            // schon gepostet → überspringen
+    chosen = { block, url: loc };
+    break;
+  }
+  if (!chosen) return null;                       // nichts Neues
+  const { block, url } = chosen;
   const title = decodeEntities(block.match(/<news:title>([^<]+)<\/news:title>/)?.[1] || 'Tech News');
   const image = block.match(/<image:loc>([^<]+)<\/image:loc>/)?.[1];
-  // Excerpt aus der Artikelseite (og:description)
   let excerpt = '';
   try {
     const html = await (await fetch(url, { signal: AbortSignal.timeout(10_000) })).text();
@@ -130,13 +140,13 @@ function ffprobeDuration(path) {
   return parseFloat(out) || 25;
 }
 
-// Headline auf ~16 Zeichen/Zeile umbrechen, max 5 Zeilen.
+// Headline auf ~17 Zeichen/Zeile umbrechen, max 5 Zeilen.
 function wrapHeadline(title) {
   const words = title.split(/\s+/);
   const lines = [];
   let cur = '';
   for (const w of words) {
-    if ((cur + ' ' + w).trim().length > 16 && cur) { lines.push(cur); cur = w; }
+    if ((cur + ' ' + w).trim().length > 17 && cur) { lines.push(cur); cur = w; }
     else cur = (cur + ' ' + w).trim();
   }
   if (cur) lines.push(cur);
@@ -144,8 +154,18 @@ function wrapHeadline(title) {
 }
 
 async function main() {
-  console.log('[video] neuesten Artikel holen …');
-  const article = await latestArticle();
+  // Duplikat-Schutz: bereits gepostete Artikel laden.
+  let posted = [];
+  try { posted = JSON.parse(readFileSync(STATE, 'utf8')); } catch { /* erste Ausführung */ }
+  const postedSet = new Set(posted);
+
+  console.log('[video] neuesten ungeposteten Artikel suchen …');
+  const article = await pickArticle(postedSet);
+  if (!article) {
+    console.log('[video] nichts Neues — alle aktuellen Artikel sind schon als Video gepostet.');
+    console.log('[video] kein Render, kein Post. (Das ist KEIN Fehler.)');
+    process.exit(0);   // kein out/highlight.mp4 → Workflow überspringt Release + Post
+  }
   console.log('  ' + article.title);
 
   console.log('[video] Voiceover-Skript schreiben …');
@@ -156,8 +176,7 @@ async function main() {
   const dur = Math.min(ffprobeDuration(`${OUT}/voice.mp3`) + 0.8, 60);
 
   console.log('[video] Hero-Bild laden …');
-  const heroOk = !!article.image;
-  if (heroOk) {
+  if (article.image) {
     try { await download(article.image, `${OUT}/hero.jpg`); }
     catch (e) { console.warn('  Hero-Bild-Fehler, Schwarz-Fallback:', e.message); }
   }
@@ -188,12 +207,12 @@ async function main() {
   if (hasLogo && existsSync(`${OUT}/logo.png`)) {
     inputs.push('-loop', '1', '-i', `${OUT}/logo.png`); logoI = i++;
   }
+  inputs.push('-loop', '1', '-i', DANNY); const dannyI = i++;
   inputs.push('-i', `${OUT}/voice.mp3`); const voiceI = i++;
   let musicI = -1;
   if (hasMusic) { inputs.push('-i', `${OUT}/music.mp3`); musicI = i++; }
 
-  // Video: Hero mit langsamem Ken-Burns-Zoom + Vignette (cinematisch,
-  // hebt statisches Foto auf Profi-Niveau) → Logo-Overlay → Text-Overlays.
+  // Story-Hero mit Ken-Burns-Zoom + Vignette (cinematisch).
   const frames = Math.round(dur * 30);
   let v = `[${heroI}:v]scale=2160:3840:force_original_aspect_ratio=increase,` +
           `crop=2160:3840,zoompan=z='min(zoom+0.00015,1.14)':d=${frames}:` +
@@ -201,23 +220,32 @@ async function main() {
           `setsar=1,drawbox=x=0:y=0:w=1080:h=1920:color=black@0.5:t=fill,vignette[bg]`;
   let stage = '[bg]';
   if (logoI >= 0) {
-    v += `;[${logoI}:v]scale=180:-1[logo];${stage}[logo]overlay=x=(W-w)/2:y=70[wl]`;
+    v += `;[${logoI}:v]scale=165:-1[logo];${stage}[logo]overlay=x=(W-w)/2:y=46[wl]`;
     stage = '[wl]';
   }
+  // Danny Williams als Anchor-Band unten — volle Breite, Kopf + Schultern.
+  v += `;[${dannyI}:v]scale=1080:-1,crop=1080:820:0:110[danny];` +
+       `${stage}[danny]overlay=x=0:y=1100[wd]`;
+  stage = '[wd]';
+
   const T = `fontfile=${FONT}`;
   v += `;${stage}` +
-    // Volle URL in der roten Bar (oben, unter dem Logo)
-    `drawtext=${T}:textfile=${OUT}/url.txt:fontcolor=white:fontsize=36:` +
-    `x=(w-text_w)/2:y=275:box=1:boxcolor=0xE5242A@0.96:boxborderw=18,` +
-    // Headline (Mitte)
-    `drawtext=${T}:textfile=${OUT}/headline.txt:fontcolor=white:fontsize=76:` +
-    `x=(w-text_w)/2:y=(h-text_h)/2:line_spacing=20:box=1:boxcolor=black@0.42:boxborderw=32,` +
-    // Hinweis auf den Artikel (unten, zentriert)
-    `drawtext=${T}:text='Read the full article':fontcolor=white:fontsize=46:` +
-    `x=(w-text_w)/2:y=h-400:box=1:boxcolor=black@0.6:boxborderw=22,` +
-    // Abo-Button (unten rechts, rot, button-artig)
-    `drawtext=${T}:text='SUBSCRIBE':fontcolor=white:fontsize=46:` +
-    `x=w-text_w-70:y=h-210:box=1:boxcolor=0xE5242A@0.96:boxborderw=28[v]`;
+    // Volle URL in der roten Marken-Bar (oben)
+    `drawtext=${T}:textfile=${OUT}/url.txt:fontcolor=white:fontsize=34:` +
+    `x=(w-text_w)/2:y=196:box=1:boxcolor=0xE5242A@0.96:boxborderw=16,` +
+    // Headline (Story-Bereich oben)
+    `drawtext=${T}:textfile=${OUT}/headline.txt:fontcolor=white:fontsize=62:` +
+    `x=(w-text_w)/2:y=322:line_spacing=18:box=1:boxcolor=black@0.42:boxborderw=28,` +
+    // Artikel-CTA, direkt über dem Anchor-Band
+    `drawtext=${T}:text='Read the full article':fontcolor=white:fontsize=42:` +
+    `x=(w-text_w)/2:y=1004:box=1:boxcolor=black@0.62:boxborderw=18,` +
+    // Roter Trennstrich zwischen Story und Anchor-Band
+    `drawbox=x=0:y=1096:w=1080:h=6:color=0xE5242A,` +
+    // Bauchbinde: Anchor-Name (links) + Abo-Hinweis (rechts) auf JEDEM Video
+    `drawtext=${T}:text='DANNY WILLIAMS':fontcolor=white:fontsize=36:` +
+    `x=42:y=1798:box=1:boxcolor=0x111827@0.92:boxborderw=18,` +
+    `drawtext=${T}:text='SUBSCRIBE':fontcolor=white:fontsize=36:` +
+    `x=w-text_w-42:y=1798:box=1:boxcolor=0xE5242A@0.97:boxborderw=18[v]`;
 
   const audioParts = [`[${voiceI}:a]volume=1.0,aformat=channel_layouts=stereo[vo]`];
   let audioMap = '[vo]';
@@ -242,12 +270,19 @@ async function main() {
   console.log(`[video] fertig → ${OUT}/highlight.mp4 (${dur.toFixed(1)}s)`);
   console.log(`[video] Artikel: ${article.url}`);
 
-  // Metadaten für den TikTok-Auto-Upload (Caption-Quelle).
+  // Metadaten für den Auto-Upload (Caption-Quelle für post-to-buffer.mjs).
   writeFileSync(`${OUT}/video-meta.json`, JSON.stringify({
     title: article.title,
     url: article.url,
+    excerpt: article.excerpt || '',
     category: article.category || '',
   }));
+
+  // Duplikat-Schutz fortschreiben (letzte 60 Artikel behalten).
+  posted.push(article.url);
+  mkdirSync('data', { recursive: true });
+  writeFileSync(STATE, JSON.stringify(posted.slice(-60), null, 2) + '\n');
+  console.log('[video] data/posted-clips.json aktualisiert.');
 }
 
 main().catch((e) => { console.error('[video] FATAL:', e.message); process.exit(1); });

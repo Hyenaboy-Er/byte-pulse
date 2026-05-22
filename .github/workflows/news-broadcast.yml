@@ -1,0 +1,50 @@
+# Byte-Pulse Nightly mit Danny Williams — nächtliche Tech-News-Sendung.
+#
+# Baut jede Nacht aus den Top-Storys eine 16:9-Nachrichtensendung (Anchor
+# Danny Williams + Story-Visuals + KI-Voiceover) und legt sie als Artifact ab.
+# ffmpeg ist auf ubuntu-latest vorinstalliert → kostenlos.
+#
+# EINMALIGES SETUP (du, in GitHub):
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     OPENAI_API_KEY  = (dein OpenAI-Key — Skript + TTS)
+#   Optional als "Variable" (nicht Secret):
+#     BROADCAST_STORIES = Anzahl Storys, default 8 (mehr = längere Sendung)
+#     TTS_VOICE         = onyx (default) | echo | nova | …
+
+name: Byte-Pulse Nightly
+
+on:
+  schedule:
+    # 02:30 UTC — nachts. Sendung steht am frühen Morgen bereit.
+    - cron: '30 2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  broadcast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify ffmpeg
+        run: ffmpeg -version | head -1
+
+      - name: Render nightly broadcast
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SITE_URL: 'https://www.byte-pulse.net'
+          BROADCAST_STORIES: ${{ vars.BROADCAST_STORIES }}
+          TTS_VOICE: ${{ vars.TTS_VOICE }}
+        run: node scripts/news-broadcast.mjs
+
+      - name: Upload broadcast
+        uses: actions/upload-artifact@v4
+        with:
+          name: byte-pulse-nightly
+          path: out/broadcast/nightly.mp4
+          retention-days: 14

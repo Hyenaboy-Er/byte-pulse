@@ -241,6 +241,13 @@ async function main() {
   execFileSync('ffmpeg', args, { stdio: 'inherit' });
   console.log(`[video] fertig → ${OUT}/highlight.mp4 (${dur.toFixed(1)}s)`);
   console.log(`[video] Artikel: ${article.url}`);
+
+  // Metadaten für den TikTok-Auto-Upload (Caption-Quelle).
+  writeFileSync(`${OUT}/video-meta.json`, JSON.stringify({
+    title: article.title,
+    url: article.url,
+    category: article.category || '',
+  }));
 }
 
 main().catch((e) => { console.error('[video] FATAL:', e.message); process.exit(1); });

@@ -13,6 +13,7 @@
 //   BUFFER_TIKTOK_CHANNEL_ID    optional, default = byte-pulse.net TikTok
 
 import { readFileSync } from 'node:fs';
+import { optimizeMetadata } from './optimize-metadata.mjs';
 
 const BUFFER_KEY = process.env.BUFFER_API_KEY;
 const CHANNEL = process.env.BUFFER_TIKTOK_CHANNEL_ID || '6a106ccd090476fb994ac0fe';
@@ -26,10 +27,10 @@ if (!videoUrl || !/^https?:\/\//.test(videoUrl)) {
 let meta = { title: 'Tech news that matters', url: 'https://byte-pulse.net' };
 try { meta = JSON.parse(readFileSync('out/video-meta.json', 'utf8')); } catch { /* default */ }
 
-const caption =
-  `${meta.title}\n\n` +
-  `Full story on Byte-Pulse.Net — link in bio.\n\n` +
-  `#technews #tech #ai #gadgets #breakingnews`;
+// KI-Optimizer-Agent: beste Caption + Hashtags (statt fester Vorlage).
+const opt = await optimizeMetadata(meta);
+const caption = `${opt.caption}\n\n${opt.hashtags.map((h) => '#' + h).join(' ')}`;
+console.log(`[buffer] KI-optimierte Caption (${opt.hashtags.length} Hashtags)`);
 
 // Inline-Mutation exakt nach Buffer-Doku (api.buffer.com, GraphQL).
 const mutation = `mutation {

@@ -50,6 +50,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           TAG="clip-$(date +%Y%m%d-%H%M%S)"
           gh release create "$TAG" out/highlight.mp4 \

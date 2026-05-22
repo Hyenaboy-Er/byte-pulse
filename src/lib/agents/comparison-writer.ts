@@ -326,7 +326,6 @@ ${JSON.stringify({ title: draft.title, subtitle: draft.subtitle, excerpt: draft.
   try {
     const { revalidatePath } = await import('next/cache');
     revalidatePath(`/article/${slug}`);
-    revalidatePath(`/de/article/${slug}`);
     revalidatePath('/');
   } catch { /* revalidate is best-effort */ }
 

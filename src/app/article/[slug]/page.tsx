@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     description: a.excerpt,
     alternates: {
       canonical: path,
-      languages: { 'en-US': path, 'de-DE': `/de/article/${a.slug}` },
+      languages: { 'en-US': path },
     },
     // thin-pruner sentinel: qualityScore < 0 = deliberately de-indexed
     // (genuinely thin, 0-view, old legacy article). Page still renders

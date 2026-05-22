@@ -116,7 +116,7 @@ Rewrite into a click-magnet title following the rules. JSON only.`;
         examples.push({ slug: a.slug, oldTitle: a.title, newTitle });
         rewritten++;
         // Re-ping IndexNow so search engines pick up the new title fast
-        pingIndexNow([`${SITE_URL}/article/${a.slug}`, `${SITE_URL}/de/article/${a.slug}`]).catch(() => null);
+        pingIndexNow([`${SITE_URL}/article/${a.slug}`]).catch(() => null);
       }
 
       // Log success/skip for idempotency

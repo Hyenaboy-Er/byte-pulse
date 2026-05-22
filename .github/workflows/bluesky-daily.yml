@@ -1,0 +1,43 @@
+# Bluesky Auto-Posting — komplett kostenlos, läuft auf GitHub Actions.
+#
+# Warum hier und nicht auf Vercel: byte-pulse sprengt den Vercel-Hobby-Gratis-
+# Tarif (Fluid Active CPU). GitHub Actions hat 2000 Gratis-Minuten/Monat;
+# dieser Job braucht ~1 Min pro Lauf → ~120 Min/Monat → bleibt kostenlos.
+#
+# Läuft 4× täglich. Das Skript dedupliziert selbst (liest den eigenen Bluesky-
+# Feed), postet pro Lauf max. 3 → max. 12 Posts/Tag, der algorithmus-freundliche
+# Bereich für Bluesky.
+#
+# EINMALIGES SETUP (du, in GitHub):
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     BLUESKY_HANDLE        = byte-pulse.bsky.social
+#     BLUESKY_APP_PASSWORD  = (das App-Password)
+#   Danach: Actions-Tab → diesen Workflow → "Enable workflow".
+
+name: Bluesky Auto-Post
+
+on:
+  schedule:
+    # UTC-Zeiten — decken EU- + US-Tagesfenster ab.
+    - cron: '0 7,12,16,20 * * *'
+  workflow_dispatch: {}   # erlaubt manuelles Auslösen per Knopf im Actions-Tab
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Post recent articles to Bluesky
+        env:
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          BLUESKY_MAX_PER_RUN: '3'
+          SITE_URL: 'https://www.byte-pulse.net'
+        run: node scripts/bluesky-autopost.mjs

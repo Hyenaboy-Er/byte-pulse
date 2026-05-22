@@ -10,7 +10,7 @@ const SITE_EMAIL = process.env.NEXT_PUBLIC_SITE_EMAIL ?? 'editorial@byte-pulse.n
 export const metadata: Metadata = {
   title: `Contact · ${SITE_NAME}`,
   description: `Reach the ${SITE_NAME} editorial team — story tips, partnerships, corrections, press.`,
-  alternates: { canonical: '/contact', languages: { 'en-US': '/contact', 'de-DE': '/de/contact' } },
+  alternates: { canonical: '/contact', languages: { 'en-US': '/contact' } },
 };
 
 export default function ContactPage() {

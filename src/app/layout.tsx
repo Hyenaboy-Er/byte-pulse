@@ -8,7 +8,6 @@ import StickyAdBar from '@/components/StickyAdBar';
 import CookieBanner from '@/components/CookieBanner';
 import ThirdPartyScripts from '@/components/ThirdPartyScripts';
 import DeferredOverlays from '@/components/DeferredOverlays';
-import LangSetter from '@/components/LangSetter';
 import { SITE } from '@/lib/site';
 
 // Single-sourced from the keystone. Critical: this drives metadataBase →
@@ -23,7 +22,7 @@ const SITE_URL = SITE.url;
 
 const HOME_TITLE = 'Latest tech news, AI, gaming, hardware — Byte-Pulse';
 const HOME_DESCRIPTION =
-  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Bilingual EN/DE, fact-checked, updated every 30 minutes.';
+  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Fact-checked, updated every 30 minutes.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -32,7 +31,7 @@ export const metadata: Metadata = {
   applicationName: SITE_NAME,
   alternates: {
     canonical: '/',
-    languages: { 'en-US': '/', 'de-DE': '/de' },
+    languages: { 'en-US': '/' },
     types: { 'application/rss+xml': '/feed.xml' },
   },
   keywords: [
@@ -65,12 +64,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // creators.brave.com once we register the domain there. Zero-cost passive
   // income source — no minimum traffic.
   const braveCreatorToken = process.env.NEXT_PUBLIC_BRAVE_VERIFICATION_TOKEN;
-  // lang is set to 'en' here at SSR time; the LangSetter client component
-  // below switches it to 'de' on /de/* routes after hydration. This keeps
-  // the root layout STATIC (no `await headers()`), which is the prerequisite
-  // for Next.js / Vercel CDN caching to actually apply Cache-Control headers
-  // on article pages. SEO impact is none — hreflang in metadata is the
-  // authoritative language signal for Google.
+  // English-only site (DE layer retired). Static lang="en" + no client-side
+  // lang switching keeps the root layout fully STATIC, which is the
+  // prerequisite for Next.js / Vercel CDN caching to apply Cache-Control
+  // headers on article pages.
   return (
     <html lang="en" className="dark">
       <head>
@@ -126,7 +123,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   '@type': 'ContactPoint',
                   contactType: 'editorial',
                   email: SITE.email,
-                  availableLanguage: ['en', 'de'],
+                  availableLanguage: ['en'],
                 },
               },
               {
@@ -148,7 +145,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
         <StickyAdBar />
         <CookieBanner />
-        <LangSetter />
         <DeferredOverlays />
         <ThirdPartyScripts />
         <Analytics />

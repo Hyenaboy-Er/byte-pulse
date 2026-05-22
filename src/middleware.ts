@@ -17,6 +17,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
 
+  // DE layer fully retired: permanently redirect any indexed /de/* URL to the
+  // EN canonical so Google/Bing flow legacy DE pages to the live equivalent
+  // instead of dead 404s. Runs BEFORE the trailing-slash strip so the strip
+  // applies to the redirected EN path, not the DE source.
+  if (url.pathname === '/de' || url.pathname.startsWith('/de/')) {
+    url.pathname = url.pathname === '/de' ? '/' : url.pathname.replace(/^\/de/, '');
+    return NextResponse.redirect(url, 308);
+  }
+
   // Trailing-slash stripping (but never strip the root "/")
   if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
     url.pathname = url.pathname.replace(/\/+$/, '');

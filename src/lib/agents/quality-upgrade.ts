@@ -160,9 +160,8 @@ Rewrite into a substantial 850-1050 word version per the rules. Same facts, deep
       try {
         const { revalidatePath } = await import('next/cache');
         revalidatePath(`/article/${a.slug}`);
-        revalidatePath(`/de/article/${a.slug}`);
       } catch { /* best-effort */ }
-      pingIndexNow([`${SITE_URL}/article/${a.slug}`, `${SITE_URL}/de/article/${a.slug}`]).catch(() => null);
+      pingIndexNow([`${SITE_URL}/article/${a.slug}`]).catch(() => null);
 
       report.upgraded++;
       report.examples.push({ slug: a.slug, before, after: wc(expanded) });

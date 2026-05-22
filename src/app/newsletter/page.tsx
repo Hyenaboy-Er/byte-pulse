@@ -4,7 +4,7 @@ export const metadata = {
   title: 'The Byte-Pulse Brief — the 5 tech stories worth your time, 3× a week',
   description:
     'Three mornings a week (Mon/Wed/Fri): our 5 best tech picks — AI, hardware, gaming, security. Curated, fact-checked, free, unsubscribe anytime.',
-  alternates: { canonical: '/newsletter', languages: { 'en-US': '/newsletter', 'de-DE': '/de/newsletter' } },
+  alternates: { canonical: '/newsletter', languages: { 'en-US': '/newsletter' } },
 };
 
 export default function NewsletterPage() {

@@ -7,6 +7,7 @@
 // the publish flow.
 
 import { SITE } from './site';
+import { postToInstagramPersonal } from './social/instagram-private';
 
 export type BroadcastTarget = {
   url: string;        // canonical article URL incl. https://
@@ -15,6 +16,10 @@ export type BroadcastTarget = {
   category?: string;
   tags?: string[];
   imageUrl?: string | null;
+  // Reviewer-Score (0-100). Genutzt für per-Kanal Quality-Gating, z. B. Bluesky
+  // postet nur den Top-Cut, um nicht wie Spam-Bot zu wirken. Default 100 →
+  // Backwards-Compat: ohne Score wird gepostet (wie vorher).
+  qualityScore?: number;
 };
 
 type ChannelResult = { channel: string; ok: boolean; error?: string };
@@ -249,6 +254,16 @@ async function postToBluesky(t: BroadcastTarget): Promise<ChannelResult> {
   const pw = process.env.BLUESKY_APP_PASSWORD;
   if (!handle || !pw) return { channel: 'bluesky', ok: false, error: 'Bluesky creds missing' };
 
+  // Quality-Gate: Pipeline produziert ~50 Artikel/Tag. Alles davon zu posten
+  // sieht für den Bluesky-Algorithmus wie Bot-Spam aus (Followern-Mute,
+  // Discovery-Feed-Drosselung). Threshold default 70 → nur Top ~20-30% rausen,
+  // ergibt algorithmusfreundliche 8-15 Posts/Tag. Anpassbar via Env-Var ohne
+  // Code-Änderung.
+  const minQuality = Number(process.env.BLUESKY_MIN_QUALITY ?? 70);
+  if ((t.qualityScore ?? 100) < minQuality) {
+    return { channel: 'bluesky', ok: false, error: `skipped: qualityScore ${t.qualityScore} < ${minQuality} (anti-spam threshold)` };
+  }
+
   try {
     // 1. Create session to get accessJwt
     const ses = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
@@ -472,7 +487,7 @@ async function postToTumblr(t: BroadcastTarget): Promise<ChannelResult> {
 }
 
 // ─── Public entry ──────────────────────────────────────────────────────────
-export async function broadcastNewArticle(article: { slug: string; title: string; excerpt: string; category: string; tags?: string[]; imageUrl?: string | null }): Promise<ChannelResult[]> {
+export async function broadcastNewArticle(article: { slug: string; title: string; excerpt: string; category: string; tags?: string[]; imageUrl?: string | null; qualityScore?: number }): Promise<ChannelResult[]> {
   const target: BroadcastTarget = {
     url: `${SITE_URL.replace(/\/$/, '')}/article/${article.slug}`,
     title: article.title,
@@ -480,6 +495,7 @@ export async function broadcastNewArticle(article: { slug: string; title: string
     category: article.category,
     tags: article.tags,
     imageUrl: article.imageUrl,
+    qualityScore: article.qualityScore,
   };
   const results = await Promise.allSettled([
     postToX(target),
@@ -490,9 +506,14 @@ export async function broadcastNewArticle(article: { slug: string; title: string
     postToThreads(target),
     postToPinterest(target),
     postToTumblr(target),
+    // Instagram via Personal-Account-Adapter (reverse-engineered Mobile-API).
+    // Eingebauter Schutz: Quality-Gate ≥80 + Tageslimit 3 + zufälliger Delay
+    // (30-90s) vor jedem Post + Session-Persistenz (kein Re-Login pro Post).
+    // Skippt still wenn IG_USERNAME/IG_PASSWORD nicht gesetzt sind.
+    postToInstagramPersonal(target),
   ]);
   return results.map((r, i) => {
-    const channel = ['x','linkedin','mastodon','bluesky','telegram','threads','pinterest','tumblr'][i];
+    const channel = ['x','linkedin','mastodon','bluesky','telegram','threads','pinterest','tumblr','instagram'][i];
     return r.status === 'fulfilled'
       ? r.value
       : { channel, ok: false, error: (r.reason as Error)?.message ?? 'rejected' };

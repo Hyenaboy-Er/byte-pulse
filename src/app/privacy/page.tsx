@@ -9,7 +9,7 @@
 export const metadata = {
   title: 'Privacy Policy',
   description: 'How Byte-Pulse handles personal data — GDPR-compliant disclosure of every processor.',
-  alternates: { languages: { 'en-US': '/privacy', 'de-DE': '/de/privacy' } },
+  alternates: { languages: { 'en-US': '/privacy' } },
   robots: { index: true, follow: true },
 };
 

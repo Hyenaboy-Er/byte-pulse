@@ -194,6 +194,24 @@ export async function llmChat(opts: {
   }
 }
 
+/**
+ * Force a chat completion through a SPECIFIC provider, bypassing LLM_PROVIDER
+ * and the per-role config entirely. Used by the homepage content pipeline so
+ * the Reviewer ALWAYS runs on Gemini — cross-model independence must be a hard
+ * guarantee, not something an env var could silently drift away from.
+ * Throws a clear error if that provider's API key is missing.
+ */
+export async function llmChatWith(provider: LLMProvider, opts: {
+  role: LLMRole;
+  system: string;
+  user: string;
+  maxTokens?: number;
+  json?: boolean;
+  temperature?: number;
+}): Promise<string> {
+  return callProvider(provider, opts);
+}
+
 export function extractJson<T = unknown>(text: string): T | null {
   const fenced = text.match(/```json\s*([\s\S]*?)```/i) ?? text.match(/```\s*([\s\S]*?)```/i);
   const raw = (fenced ? fenced[1] : text).trim();

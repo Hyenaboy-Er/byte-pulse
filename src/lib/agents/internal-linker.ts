@@ -188,7 +188,7 @@ export async function runInternalLinker(opts?: { sinceDays?: number; limit?: num
     }).catch(() => null);
 
     // Re-ping IndexNow so Google + Bing re-crawl quickly
-    pingIndexNow([`${SITE_URL}/article/${a.slug}`, `${SITE_URL}/de/article/${a.slug}`]).catch(() => null);
+    pingIndexNow([`${SITE_URL}/article/${a.slug}`]).catch(() => null);
   }
 
   if (totalLinksAdded >= 5) {

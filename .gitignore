@@ -34,3 +34,12 @@ npm-debug.log*
 
 # Vercel
 .vercel
+.secrets-local.txt
+overnight-fill.log
+overnight-fill.sh
+scripts/test-x-post.mjs
+scripts/check-x-timeline.mjs
+scripts/x-*.png
+scripts/gen-x-profile-assets.mjs
+scripts/update-x-profile.mjs
+.gsc-service-account.json

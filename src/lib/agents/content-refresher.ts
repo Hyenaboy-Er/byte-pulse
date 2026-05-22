@@ -106,7 +106,7 @@ Write the update paragraph.`;
     });
 
     // Re-ping IndexNow so Bing re-crawls with the new content/date
-    pingIndexNow([`${SITE_URL}/article/${a.slug}`, `${SITE_URL}/de/article/${a.slug}`]).catch(() => null);
+    pingIndexNow([`${SITE_URL}/article/${a.slug}`]).catch(() => null);
 
     refreshed.push(a.slug);
   }

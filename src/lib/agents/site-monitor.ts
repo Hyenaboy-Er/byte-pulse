@@ -16,7 +16,6 @@ const SITE_URL = SITE.url;
 // Targets we sample on every run. Limit to ~5 URLs to keep each cron under 10s.
 const TARGETS: { path: string; label: string; budgetMs: number }[] = [
   { path: '/',           label: 'home-en', budgetMs: 2500 },
-  { path: '/de',         label: 'home-de', budgetMs: 2500 },
   { path: '/category/ai', label: 'cat-ai', budgetMs: 2500 },
 ];
 

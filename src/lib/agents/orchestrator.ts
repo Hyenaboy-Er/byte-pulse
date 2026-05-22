@@ -434,12 +434,13 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     report.published = { slug };
     await logAgent('orchestrator', 'published', 'success', slug, { score: review.score });
 
-    // Ping IndexNow (Bing/Yandex) with both EN and DE URLs so they're crawled
-    // within minutes instead of waiting for the next bot pass. Non-fatal on
-    // failure — Google doesn't use IndexNow yet but Bing does, and Bing-indexed
-    // pages also show on DuckDuckGo / Ecosia.
+    // Ping IndexNow (Bing/Yandex) so the new URL is crawled within minutes
+    // instead of waiting for the next bot pass. Non-fatal on failure — Google
+    // doesn't use IndexNow yet but Bing does, and Bing-indexed pages also
+    // show on DuckDuckGo / Ecosia. DE URLs intentionally NOT submitted —
+    // the DE layer is retired and /de/* now 308-redirects to EN in middleware.
     const SITE_URL = SITE.url;
-    const freshUrls = [`${SITE_URL}/article/${slug}`, `${SITE_URL}/de/article/${slug}`];
+    const freshUrls = [`${SITE_URL}/article/${slug}`];
     pingIndexNow(freshUrls)
       .then((r) => logAgent('indexnow', 'ping', r.ok ? 'success' : 'warn', `status=${r.status} urls=${r.submitted}`))
       .catch(() => null);
@@ -479,6 +480,9 @@ Return JSON only: { "content": "<expanded markdown>" }`,
       const results = await broadcastNewArticle({
         slug, title: finalTitle, excerpt: humanized.excerpt, category: humanized.category,
         tags: humanized.tags, imageUrl: researchResult.imageUrl,
+        // Reviewer-Score wird durchgereicht, damit Kanal-spezifisches
+        // Quality-Gating (z. B. Bluesky-Anti-Spam) entscheiden kann, ob's gepostet wird.
+        qualityScore: review.score,
       });
       const ok = results.filter((r) => r.ok).map((r) => r.channel);
       const failed = results.filter((r) => !r.ok && !/not set|missing/i.test(r.error ?? ''));

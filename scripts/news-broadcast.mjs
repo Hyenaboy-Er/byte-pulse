@@ -22,7 +22,9 @@ import { platform } from 'node:os';
 const KEY = process.env.OPENAI_API_KEY;
 const SITE = (process.env.SITE_URL || 'https://www.byte-pulse.net').replace(/\/$/, '');
 const STORY_COUNT = Math.max(3, Math.min(20, Number(process.env.BROADCAST_STORIES || 8)));
-const VOICE = process.env.TTS_VOICE || 'onyx';
+// Dannys Stimme ist Teil seiner Identität — FEST auf 'onyx', bewusst NICHT
+// per Env überschreibbar, damit der Anchor in jeder Sendung identisch klingt.
+const VOICE = 'onyx';
 if (!KEY) { console.error('FEHLER: OPENAI_API_KEY fehlt.'); process.exit(1); }
 
 const OUT = 'out/broadcast';
@@ -153,9 +155,9 @@ function renderSegment(idx, seg) {
     `[${dannyI}:v]scale=-1:1040[danny];` +
     `[bg][danny]overlay=x=W-w-30:y=H-h[wd];` +
     `[wd]` +
-    // Marken-Bar oben links
-    `drawtext=${T}:text='BYTE-PULSE NIGHTLY':fontcolor=white:fontsize=40:` +
-    `x=70:y=60:box=1:boxcolor=0xE5242A@0.95:boxborderw=18,` +
+    // Marken-Bar oben links — immer rot "Byte-Pulse.Net"
+    `drawtext=${T}:text='Byte-Pulse.Net':fontcolor=white:fontsize=44:` +
+    `x=70:y=60:box=1:boxcolor=0xE5242A@0.96:boxborderw=20,` +
     // Headline links
     `drawtext=${T}:textfile=${headlineFile}:fontcolor=white:fontsize=64:` +
     `x=70:y=300:line_spacing=16:box=1:boxcolor=black@0.45:boxborderw=26` +

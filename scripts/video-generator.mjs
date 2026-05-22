@@ -28,7 +28,8 @@ import { platform } from 'node:os';
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const SITE = (process.env.SITE_URL || 'https://www.byte-pulse.net').replace(/\/$/, '');
-const VOICE = process.env.TTS_VOICE || 'onyx';
+// Feste Byte-Pulse-Stimme (onyx) — überall identisch, Marken-Konsistenz.
+const VOICE = 'onyx';
 const MUSIC_URL = process.env.MUSIC_URL || '';
 // Font für ffmpeg drawtext. Windows-Laufwerkspfade (C:\…) zerlegen den
 // ffmpeg-Filtergraph (der Doppelpunkt trennt Optionen). Lösung: den Quell-

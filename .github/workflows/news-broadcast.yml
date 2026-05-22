@@ -14,9 +14,12 @@
 name: Byte-Pulse Nightly
 
 on:
-  schedule:
-    # 02:30 UTC — nachts. Sendung steht am frühen Morgen bereit.
-    - cron: '30 2 * * *'
+  # Nächtlicher Lauf PAUSIERT, bis das Broadcast-Format entschieden ist:
+  # Buffer kann auf YouTube nur Shorts posten (vertikal, <= 3 Min) — die
+  # 16:9-Sendung wird abgelehnt. Bis zur Entscheidung kein Auto-Lauf, damit
+  # keine OpenAI-Kosten für eine Sendung anfallen, die nicht gepostet wird.
+  # schedule:
+  #   - cron: '30 2 * * *'
   workflow_dispatch: {}
 
 permissions:

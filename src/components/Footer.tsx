@@ -10,10 +10,32 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-5 gap-8 text-sm">
         <div className="col-span-2">
           <div className="font-display font-extrabold text-lg mb-2">{SITE_NAME}</div>
-          <p className="text-muted max-w-md">
+          <p className="text-muted max-w-md mb-4">
             Tech news that matters. We scan the world&apos;s top sources around the clock and
             publish only the stories worth your time.
           </p>
+          <div className="text-white/60 mb-2 uppercase text-xs tracking-wider">Follow</div>
+          <div className="flex flex-wrap gap-2">
+            <a href="https://bsky.app/profile/byte-pulse.bsky.social"
+              target="_blank" rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 text-xs">
+              Bluesky
+            </a>
+            <a href="https://www.tiktok.com/@bytepulse.net"
+              target="_blank" rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 text-xs">
+              TikTok
+            </a>
+            <a href="https://www.youtube.com/@Byte-PulseNet"
+              target="_blank" rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 text-xs">
+              YouTube
+            </a>
+            <a href="/feed.xml"
+              className="px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 text-xs">
+              RSS
+            </a>
+          </div>
         </div>
         <div>
           <div className="text-white/60 mb-3 uppercase text-xs tracking-wider">Sections</div>

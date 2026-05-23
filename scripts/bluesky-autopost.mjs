@@ -129,14 +129,21 @@ async function postArticle(jwt, did, art) {
   const emoji = CATEGORY_EMOJI[meta.category] || '⚡';
   const thumb = art.image ? await uploadThumb(jwt, art.image) : null;
 
+  // UTM-Tracking — in Vercel Analytics sehen wir, welcher Kanal Klicks bringt.
+  const trackedUrl = `${art.url}${art.url.includes('?') ? '&' : '?'}utm_source=bluesky&utm_medium=social`;
+
   const external = {
-    uri: art.url,
+    uri: trackedUrl,
     title: `${emoji} ${art.title}`.slice(0, 290),
     description: (meta.desc || 'Tech news that matters — byte-pulse.net').slice(0, 290),
   };
   if (thumb) external.thumb = thumb;
 
-  const text = `${emoji} ${art.title}`.slice(0, 290);
+  // Post-Text = Teaser/Hook aus dem Excerpt, NICHT nur die Headline. Bluesky
+  // belohnt substanziellen Begleittext vor der Link-Card; reine Title-Posts
+  // performen mies (Algorithmus liest sie als Spam-Aggregator).
+  const hook = (meta.desc || art.title).replace(/\s+/g, ' ').trim();
+  const text = `${emoji} ${hook}`.slice(0, 290);
   const record = {
     $type: 'app.bsky.feed.post',
     text,

@@ -47,8 +47,17 @@ catch { console.log(`[buffer] ${metaFile} nicht gefunden — nutze Default-Metad
 // KI-Optimizer-Agent: beste Caption, Hashtags, YouTube-Titel + -Beschreibung.
 const opt = await optimizeMetadata(meta);
 const hashtagLine = opt.hashtags.map((h) => '#' + h).join(' ');
-const captionTikTok  = `${opt.caption}\n\n${hashtagLine}`;
-const captionYouTube = `${opt.youtubeDescription}\n\n${hashtagLine}`;
+
+// UTM-Tracking — jede Plattform bekommt eine eigene Quelle, damit Vercel
+// Analytics genau zeigt, welcher Kanal Klicks bringt.
+function addUtm(text, source) {
+  return text.replace(
+    /(https?:\/\/(?:www\.)?byte-pulse\.net\/article\/[a-z0-9-]+)/gi,
+    (m) => m + (m.includes('?') ? '&' : '?') + `utm_source=${source}&utm_medium=social`,
+  );
+}
+const captionTikTok  = addUtm(`${opt.caption}\n\n${hashtagLine}`, 'tiktok');
+const captionYouTube = addUtm(`${opt.youtubeDescription}\n\n${hashtagLine}`, 'youtube_short');
 console.log(`[buffer] KI-Metadaten fertig (${opt.hashtags.length} Hashtags) — Ziele: ${targets.join(', ')}`);
 
 // Mutation mit Variablen — verschachtelte YouTube-Metadaten als GraphQL-Literal

@@ -61,9 +61,15 @@ async function accessToken() {
 async function main() {
   // KI-Optimizer-Agent: bester Titel, Beschreibung, Tags.
   const opt = await optimizeMetadata(meta);
+  // UTM-Tracking — Klicks aus dem Sendungs-Beschreibungstext landen in
+  // Vercel Analytics als Quelle "youtube_broadcast".
+  const taggedDesc = (opt.youtubeDescription || '').replace(
+    /(https?:\/\/(?:www\.)?byte-pulse\.net\/article\/[a-z0-9-]+)/gi,
+    (m) => m + (m.includes('?') ? '&' : '?') + 'utm_source=youtube_broadcast&utm_medium=video',
+  );
   const snippet = {
     title: (opt.youtubeTitle || meta.title || 'Byte-Pulse Nightly').slice(0, 100),
-    description: (opt.youtubeDescription || '').slice(0, 4900),
+    description: taggedDesc.slice(0, 4900),
     tags: (opt.tags || []).slice(0, 15),
     categoryId: CATEGORY,
   };

@@ -4,9 +4,10 @@
 # Tarif (Fluid Active CPU). GitHub Actions hat 2000 Gratis-Minuten/Monat;
 # dieser Job braucht ~1 Min pro Lauf → ~120 Min/Monat → bleibt kostenlos.
 #
-# Läuft 4× täglich. Das Skript dedupliziert selbst (liest den eigenen Bluesky-
-# Feed), postet pro Lauf max. 3 → max. 12 Posts/Tag, der algorithmus-freundliche
-# Bereich für Bluesky.
+# Läuft 6× täglich (alle 4 h). Das Skript dedupliziert selbst (liest den eigenen
+# Bluesky-Feed), postet pro Lauf max. 2 → ~8-12 Posts/Tag, der algorithmus-
+# freundliche Bereich für Bluesky. Jeder Post hat UTM-Tracking → in Vercel
+# Analytics sichtbar als Quelle.
 #
 # EINMALIGES SETUP (du, in GitHub):
 #   Repo → Settings → Secrets and variables → Actions → New repository secret
@@ -18,8 +19,8 @@ name: Bluesky Auto-Post
 
 on:
   schedule:
-    # UTC-Zeiten — decken EU- + US-Tagesfenster ab.
-    - cron: '0 7,12,16,20 * * *'
+    # 6×/Tag alle 4 h — deckt EU + US + Asia gleichmäßig ab.
+    - cron: '0 3,7,11,15,19,23 * * *'
   workflow_dispatch: {}   # erlaubt manuelles Auslösen per Knopf im Actions-Tab
 
 jobs:
@@ -38,6 +39,6 @@ jobs:
         env:
           BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
           BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
-          BLUESKY_MAX_PER_RUN: '3'
+          BLUESKY_MAX_PER_RUN: '2'
           SITE_URL: 'https://www.byte-pulse.net'
         run: node scripts/bluesky-autopost.mjs

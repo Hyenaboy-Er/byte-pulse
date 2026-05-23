@@ -106,13 +106,22 @@ async function writeScript(stories) {
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content:
-          'You are the script editor for "Byte-Pulse Nightly", a tech-news TV broadcast ' +
-          'hosted by anchor Danny Williams. Write in confident, clear US-English broadcast ' +
-          'style — like a real evening news anchor. Return STRICT JSON:\n' +
-          '{ "intro": "...", "reads": ["...", ...], "outro": "..." }\n' +
-          'intro: ~35 words — Danny greets viewers, names the show, teases tonight.\n' +
-          'reads: one per story, IN ORDER, ~55-75 words each, anchor delivery.\n' +
-          'outro: ~30 words — sign-off, points viewers to byte-pulse.net, "goodnight".' },
+          'You are the script editor for "Byte-Pulse Nightly", a nightly tech-news TV ' +
+          'broadcast hosted by anchor Danny Williams. Write in confident, clear US-English ' +
+          'broadcast style — like a real evening news anchor. Return STRICT JSON:\n' +
+          '{ "intro": "...", "reads": ["...", ...], "outro": "...", "thumbnailHook": "..." }\n' +
+          'intro: ~40 words — open with a CRISP hook on tonight\'s biggest story (no ' +
+          'generic "Good evening, welcome to..."), name the show, tease 1-2 specific ' +
+          'stories. Build curiosity in the first 5 seconds.\n' +
+          'reads: one per story, IN ORDER, ~55-75 words each, anchor delivery. End each ' +
+          'read with a single punchy line of consequence ("Here is why that matters: …").\n' +
+          'outro: ~35 words — sign-off + STRONG, explicit subscribe call. Example: ' +
+          '"If this helped you stay sharp, hit subscribe and the bell — Byte-Pulse Nightly ' +
+          'lands every night. Full stories on byte-pulse.net. Goodnight."\n' +
+          'thumbnailHook: 3-5 WORDS MAX, all-caps if punchy, click-grabby phrase ' +
+          'summarizing tonight\'s most important angle. Used as the YouTube thumbnail ' +
+          'headline. Must read instantly at small size. Example: "META ENCRYPTION ON TRIAL" ' +
+          'or "iPHONE 18 LEAKS LAND". NEVER use generic words like "news" or "update".' },
         { role: 'user', content: `Tonight's stories:\n${list}` },
       ],
     }),
@@ -130,6 +139,38 @@ async function tts(text, path) {
   });
   if (!r.ok) throw new Error(`TTS ${r.status}`);
   writeFileSync(path, Buffer.from(await r.arrayBuffer()));
+}
+
+// Custom-YouTube-Thumbnail (1280×720) — Hero abgedunkelt, Danny rechts hell,
+// roter "BYTE-PULSE NIGHTLY"-Bar oben, riesige Klick-Headline aus dem LLM-Hook.
+// Größter CTR-Hebel auf YouTube. Wird nach dem Upload via thumbnails.set gesetzt.
+function renderThumbnail(hook, bgPath) {
+  const T = `fontfile=${FONT}`;
+  const hookFile = `${OUT}/hook.txt`;
+  writeFileSync(hookFile, wrap(hook || 'TONIGHT ON BYTE-PULSE', 14));
+
+  const inputs = [];
+  if (bgPath && existsSync(bgPath)) inputs.push('-i', bgPath);
+  else inputs.push('-f', 'lavfi', '-i', 'color=c=0x0b1f3a:s=1280x720');
+  inputs.push('-i', DANNY);
+
+  const filter =
+    `[0:v]scale=2560:1440:force_original_aspect_ratio=increase,crop=2560:1440,` +
+    `scale=1280:720,setsar=1,` +
+    `drawbox=x=0:y=0:w=1280:h=720:color=black@0.55:t=fill,vignette[bg];` +
+    `[1:v]scale=-1:720[d];` +
+    `[bg][d]overlay=x=W-w:y=H-h[wd];` +
+    `[wd]drawtext=${T}:text='BYTE-PULSE NIGHTLY':fontcolor=white:fontsize=40:` +
+    `x=40:y=36:box=1:boxcolor=0xE5242A@0.97:boxborderw=16,` +
+    `drawtext=${T}:textfile=${hookFile}:fontcolor=white:fontsize=88:` +
+    `x=40:y=210:line_spacing=18:box=1:boxcolor=black@0.55:boxborderw=22`;
+
+  execFileSync('ffmpeg', [
+    '-y', ...inputs,
+    '-filter_complex', filter,
+    '-frames:v', '1',
+    `${OUT}/thumbnail.png`,
+  ], { stdio: ['ignore', 'ignore', 'inherit'] });
 }
 
 // Ein Segment (Intro / Story / Outro) → eigenes 1920×1080-Clip.
@@ -213,6 +254,11 @@ async function main() {
     console.log(`[broadcast] TTS Segment ${i + 1}/${segs.length} …`);
     await tts(seg.text, `${OUT}/voice_${i}.mp3`);
   }
+
+  // Custom-Thumbnail (1280×720) für YouTube — separat von den Sendungs-Frames.
+  console.log('[broadcast] Thumbnail rendern …');
+  try { renderThumbnail(script.thumbnailHook, segs[1]?.bg); }
+  catch (e) { console.warn('  Thumbnail-Fehler (kein Block):', e.message); }
 
   // Segmente rendern.
   let total = 0;

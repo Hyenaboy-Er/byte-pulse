@@ -100,10 +100,17 @@ async function voiceScript(article) {
       temperature: 0.7,
       messages: [
         { role: 'system', content:
-          'You write punchy 25-second voiceover scripts for a tech-news short video ' +
-          '(TikTok/Reels/Shorts). 55-70 words. Spoken, energetic, US English. ' +
-          'Hook in the first sentence. No hashtags, no emojis. Cover why it matters, ' +
-          'then end by telling viewers to read the full story on Byte-Pulse dot net. ' +
+          'You write 25-second voiceover scripts for a tech-news short video ' +
+          '(TikTok / Reels / YouTube Shorts), delivered by anchor Danny Williams. ' +
+          '55-70 words. Spoken, energetic, US English. NEVER use hashtags or emojis. ' +
+          'STRUCTURE (mandatory): ' +
+          '(1) HARD HOOK in the first 1-2 seconds — e.g. "Stop scrolling." or ' +
+          '"Big tech move:" or an alarming/surprising fact. The very first 5 words ' +
+          'must make a thumb stop. NEVER start with "Hey guys" / "In todays world" / ' +
+          '"Welcome back". ' +
+          '(2) Why it matters in one plain-language beat. ' +
+          '(3) Close with a CLEAR subscribe call — e.g. "Follow Byte-Pulse for daily tech" ' +
+          'or "Hit follow, Byte-Pulse drops a story like this every day." ' +
           'Output ONLY the script text.' },
         { role: 'user', content:
           `Headline: ${article.title}\nSummary: ${article.excerpt || '(none)'}` },

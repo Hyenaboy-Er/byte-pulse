@@ -17,7 +17,7 @@
 // Hinweis: Ein noch nicht von Google auditiertes API-Projekt sperrt Uploads
 // evtl. auf "privat". Das Skript meldet die tatsächliche Sichtbarkeit.
 
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, statSync, existsSync } from 'node:fs';
 import { optimizeMetadata } from './optimize-metadata.mjs';
 
 const { YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN } = process.env;
@@ -115,6 +115,34 @@ async function main() {
     console.log('[yt] HINWEIS: Video ist nicht oeffentlich. Unauditierte YouTube-');
     console.log('[yt] API-Projekte sperren Uploads auf "privat" — einmaliger Audit');
     console.log('[yt] noetig, dann sind kuenftige Uploads automatisch oeffentlich.');
+  }
+
+  // Schritt 3: Custom-Thumbnail setzen, wenn vorhanden (groesster CTR-Hebel auf YouTube).
+  // Braucht den 'youtube.force-ssl'-Scope — falls der Refresh-Token nur 'youtube.upload'
+  // hat, antwortet die API mit 403 → kein Fehler, nur Hinweis.
+  const thumbPath = process.argv[4] || 'out/broadcast/thumbnail.png';
+  if (existsSync(thumbPath)) {
+    console.log(`[yt] Custom-Thumbnail hochladen (${thumbPath}) …`);
+    const thumbBytes = readFileSync(thumbPath);
+    const thumbRes = await fetch(
+      `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${vid}&uploadType=media`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'image/png' },
+        body: thumbBytes,
+      },
+    );
+    if (thumbRes.ok) {
+      console.log('[yt] OK — Custom-Thumbnail gesetzt.');
+    } else {
+      const errTxt = (await thumbRes.text()).slice(0, 250);
+      console.warn(`[yt] Thumbnail-Upload ${thumbRes.status}: ${errTxt}`);
+      if (thumbRes.status === 403) {
+        console.warn('[yt] Tipp: OAuth-Scope muss "youtube.force-ssl" enthalten.');
+      }
+    }
+  } else {
+    console.log('[yt] kein out/broadcast/thumbnail.png → YouTubes Auto-Thumbnail.');
   }
 }
 

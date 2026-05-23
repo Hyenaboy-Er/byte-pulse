@@ -17,7 +17,12 @@ name: Tech-Highlight Video
 
 on:
   schedule:
-    - cron: '0 9 * * *'
+    # 3×/Tag in US-Primetime — Algorithmus belohnt Konsistenz und Frequenz.
+    # Dedup (data/posted-clips.json) sorgt dafür, dass jedes Mal ein neuer
+    # Artikel gewählt wird; gibt es keinen, wird der Lauf still beendet.
+    - cron: '0 13 * * *'   # 8 AM ET — US-Morgen
+    - cron: '0 18 * * *'   # 1 PM ET — US-Mittag
+    - cron: '0 23 * * *'   # 6 PM ET — US-Abend
   workflow_dispatch: {}
 
 permissions:

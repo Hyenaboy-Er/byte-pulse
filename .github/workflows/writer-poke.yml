@@ -1,0 +1,45 @@
+# Writer-Poke — feuert den Artikel-Writer alle 2 Stunden.
+#
+# Hintergrund: Vercel Hobby erlaubt nur DAILY-Crons (1×/Tag). Der Writer
+# schreibt pro Lauf max. 12 Artikel und ist dann fertig — danach steht die
+# Homepage stundenlang still. GitHub Actions hat keine Frequenz-Begrenzung
+# und kann den Writer-Endpoint beliebig oft pingen.
+#
+# SETUP (einmalig, du):
+#   1. Vercel → Projekt byte-pulse → Settings → Environment Variables
+#      → finde CRON_SECRET → "Reveal" → Wert kopieren.
+#   2. GitHub → Repo Settings → Secrets and variables → Actions
+#      → New repository secret → Name: CRON_SECRET, Value: <der Wert>.
+#   3. Fertig. Workflow läuft alle 2 h ab dem nächsten Slot.
+
+name: Writer Poke
+
+on:
+  schedule:
+    # Alle 2 Stunden. Mit batch=3 pro Lauf → bis zu 36 Artikel-Kandidaten/Tag,
+    # davon publiziert der Reviewer realistisch ~15-25.
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire /api/cron
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::CRON_SECRET ist nicht als GitHub-Secret gesetzt."
+            echo "::warning::Wert aus Vercel Env Vars holen und unter Repo Settings → Secrets → Actions als CRON_SECRET hinterlegen."
+            exit 0
+          fi
+          echo "[poke] feuere /api/cron?batch=3 …"
+          RESPONSE=$(curl -sS -w "\nHTTP_CODE:%{http_code}" "https://www.byte-pulse.net/api/cron?token=$CRON_SECRET&batch=3")
+          echo "$RESPONSE"
+          CODE=$(echo "$RESPONSE" | grep -oE 'HTTP_CODE:[0-9]+' | cut -d: -f2)
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Writer-Endpoint antwortete mit HTTP $CODE"
+            exit 1
+          fi
+          echo "[poke] ok."

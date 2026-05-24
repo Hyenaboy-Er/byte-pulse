@@ -1,20 +1,52 @@
 import { NextResponse } from 'next/server';
 import { runOnce, type RunReport } from '@/lib/agents/orchestrator';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
+
+// Öffentlicher Poke-Token. Committed bewusst in den public-Repo:
+//   - Erlaubt der GitHub-Action "writer-poke" alle 30 Min /api/cron zu feuern,
+//     ohne dass CRON_SECRET als GitHub-Secret hinterlegt sein muss.
+//   - Missbrauch wird durch ein DB-basiertes Rate-Limit (<20 Min seit letztem
+//     Artikel → 429) abgefangen: Egal wie oft jemand das ruft, schreibt der
+//     Writer max. ~3 Artikel/Stunde. Keine kalkulierbare Kosten-Falle.
+//   - Beim regulären CRON_SECRET-Pfad gilt das Limit NICHT.
+const PUBLIC_POKE_TOKEN = 'pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick';
+const PUBLIC_POKE_MIN_GAP_MS = 20 * 60_000;
 
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization');
   const url = new URL(req.url);
   const tokenFromQuery = url.searchParams.get('token');
-  const batch = Math.max(1, Math.min(30, Number(url.searchParams.get('batch') ?? '1')));
+  const requestedBatch = Math.max(1, Math.min(30, Number(url.searchParams.get('batch') ?? '1')));
   const expected = process.env.CRON_SECRET;
 
-  // Vercel cron sends `Authorization: Bearer $CRON_SECRET` automatically; also accept ?token=
-  if (expected && auth !== `Bearer ${expected}` && tokenFromQuery !== expected) {
+  const isAuthCron = !!(expected && (auth === `Bearer ${expected}` || tokenFromQuery === expected));
+  const isPublicPoke = tokenFromQuery === PUBLIC_POKE_TOKEN;
+
+  if (!isAuthCron && !isPublicPoke) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
+
+  // Rate-Limit nur für Public-Poke — schützt vor DoS / Cost-Abuse, ohne den
+  // legitimen Vercel-Cron (CRON_SECRET) zu drosseln.
+  if (isPublicPoke && !isAuthCron) {
+    const lastArticle = await prisma.article.findFirst({
+      where: { status: 'published' },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    if (lastArticle && Date.now() - lastArticle.createdAt.getTime() < PUBLIC_POKE_MIN_GAP_MS) {
+      return NextResponse.json({
+        ok: true, skipped: true, reason: 'public-poke rate-limit',
+        lastPublishedAt: lastArticle.createdAt.toISOString(),
+      });
+    }
+  }
+
+  // Public-Poke darf max. batch=1 anfordern. Echter Cron beliebig.
+  const batch = isPublicPoke && !isAuthCron ? 1 : requestedBatch;
 
   // Time-bounded batch: stop ~50s in to leave headroom for the response.
   const deadline = Date.now() + 50_000;
@@ -27,16 +59,16 @@ export async function GET(req: Request) {
     if (r.error) break;
   }
 
-  // SECOND daily backlog drain. The 08:00 fan-out already fires
-  // quality-upgrade + translation-repair once/day; the auditor showed
-  // that single pass can't keep up (53% thin, 123 broken DE). Fire them
-  // again here at 07:00 (fire-and-forget, own 60s budget) → roughly
-  // doubles the daily drain rate without touching the writer's budget.
-  const base = `${url.protocol}//${url.host}`;
-  await Promise.allSettled([
-    fetch(`${base}/api/quality-upgrade?token=${expected}`, { signal: AbortSignal.timeout(3000) }),
-    fetch(`${base}/api/translate-repair?token=${expected}&max=8`, { signal: AbortSignal.timeout(3000) }),
-  ]);
+  // Backlog-Drain (quality-upgrade + translation-repair) nur beim
+  // authentifizierten Vercel-Cron — beim Public-Poke alle 30 Min würde
+  // das den Drain übersteuern und Tokens verbrennen.
+  if (isAuthCron) {
+    const base = `${url.protocol}//${url.host}`;
+    await Promise.allSettled([
+      fetch(`${base}/api/quality-upgrade?token=${expected}`, { signal: AbortSignal.timeout(3000) }),
+      fetch(`${base}/api/translate-repair?token=${expected}&max=8`, { signal: AbortSignal.timeout(3000) }),
+    ]);
+  }
 
   return NextResponse.json({
     ok: !reports.some((r) => r.error),

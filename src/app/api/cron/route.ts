@@ -31,17 +31,26 @@ export async function GET(req: Request) {
 
   // Rate-Limit nur für Public-Poke — schützt vor DoS / Cost-Abuse, ohne den
   // legitimen Vercel-Cron (CRON_SECRET) zu drosseln.
+  // Resilient: when Turso reads are blocked we can't check the "last article
+  // age" — we fall through without the rate-limit. The 30-min cron cadence
+  // and the slug-uniqueness check make abuse irrelevant in practice.
   if (isPublicPoke && !isAuthCron) {
-    const lastArticle = await prisma.article.findFirst({
-      where: { status: 'published' },
-      orderBy: { createdAt: 'desc' },
-      select: { createdAt: true },
-    });
-    if (lastArticle && Date.now() - lastArticle.createdAt.getTime() < PUBLIC_POKE_MIN_GAP_MS) {
-      return NextResponse.json({
-        ok: true, skipped: true, reason: 'public-poke rate-limit',
-        lastPublishedAt: lastArticle.createdAt.toISOString(),
+    try {
+      const lastArticle = await prisma.article.findFirst({
+        where: { status: 'published' },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
       });
+      if (lastArticle && Date.now() - lastArticle.createdAt.getTime() < PUBLIC_POKE_MIN_GAP_MS) {
+        return NextResponse.json({
+          ok: true, skipped: true, reason: 'public-poke rate-limit',
+          lastPublishedAt: lastArticle.createdAt.toISOString(),
+        });
+      }
+    } catch (e) {
+      // DB read blocked — skip the rate-limit check and proceed. Better to
+      // produce an article (or hit a downstream LLM-side rate limit naturally)
+      // than to 500-out the entire pipeline.
     }
   }
 

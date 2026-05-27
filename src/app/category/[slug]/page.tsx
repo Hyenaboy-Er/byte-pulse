@@ -1,10 +1,10 @@
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { notFound } from 'next/navigation';
 import { ArticleCard } from '@/components/ArticleCard';
 import { getCategory, CATEGORIES } from '@/lib/categories';
 import type { Metadata } from 'next';
 
-export const revalidate = 120;
+export const revalidate = 600;
 
 type Params = { slug: string };
 
@@ -27,11 +27,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   const cat = getCategory(slug);
   if (!cat) notFound();
 
-  const articles = await prisma.article.findMany({
-    where: { status: 'published', category: cat.slug },
-    orderBy: { publishedAt: 'desc' },
-    take: 50,
-  });
+  const articles = await listPublished({ category: cat.slug, take: 50 });
 
   const [hero, ...rest] = articles;
 

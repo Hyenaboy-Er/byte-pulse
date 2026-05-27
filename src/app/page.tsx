@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import TrendingTicker from '@/components/TrendingTicker';
@@ -7,17 +7,13 @@ import { CATEGORIES } from '@/lib/categories';
 import { relativeTime, readingTime } from '@/lib/readingTime';
 import Link from 'next/link';
 
-export const revalidate = 60;
+// 5-min revalidate (was 60s) reduces DB read pressure on the free Turso plan
+// while still keeping the homepage fresh for visitors.
+export const revalidate = 300;
 
 export default async function HomePage() {
-  // Pull a moderate slice — enough for hero + side stack + main grid + 2-3
-  // category rails. 60 was overkill (full first paint paying for cards no
-  // visitor scrolls past). 30 keeps homepage TTI fast on mobile.
-  const articles = await prisma.article.findMany({
-    where: { status: 'published' },
-    orderBy: { publishedAt: 'desc' },
-    take: 30,
-  });
+  // listPublished falls back to the snapshot when Turso is read-blocked.
+  const articles = await listPublished({ take: 30 });
 
   if (!articles.length) return <EmptyState />;
 

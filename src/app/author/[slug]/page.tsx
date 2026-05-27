@@ -2,7 +2,7 @@
 // Required for Google's E-E-A-T evaluation: "Is the author a real, named
 // person with a stable URL?" Yes, here.
 
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -37,12 +37,8 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
   // Pull recent articles whose category routes to this author. Not strictly
   // accurate (multiple authors could share a slug-hash bucket) but good enough
   // to populate the page with bylined work — better than an empty author page.
-  const allRecent = await prisma.article.findMany({
-    where: { status: 'published' },
-    orderBy: { publishedAt: 'desc' },
-    take: 60,
-  });
-  const articles = allRecent.filter((a) => authorForArticle(a.category, a.slug, a.sourceName).slug === author.slug).slice(0, 12);
+  const allRecent = await listPublished({ take: 60 });
+  const articles = allRecent.filter((a: any) => authorForArticle(a.category, a.slug, a.sourceName).slug === author.slug).slice(0, 12);
 
   const SITE_URL = SITE.url;
   const SITE_NAME = SITE.name;

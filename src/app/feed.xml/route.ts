@@ -1,7 +1,9 @@
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { SITE } from '@/lib/site';
 
-export const dynamic = 'force-dynamic';
+// RSS readers poll every few hours — 1h revalidate is plenty fresh
+// and lets us survive Turso quota windows.
+export const revalidate = 3600;
 
 // Single-sourced from the keystone (fixes empty-env localhost fallback +
 // the stale 'TechPuls' brand fallback).
@@ -14,11 +16,7 @@ function escape(s: string) {
 }
 
 export async function GET() {
-  const articles = await prisma.article.findMany({
-    where: { status: 'published' },
-    orderBy: { publishedAt: 'desc' },
-    take: 50,
-  });
+  const articles = await listPublished({ take: 50 });
 
   const items = articles.map((a) => `
     <item>

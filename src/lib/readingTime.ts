@@ -1,10 +1,14 @@
-export function readingTime(text: string): number {
-  const words = text.trim().split(/\s+/).length;
+export function readingTime(text: string | null | undefined): number {
+  // Tolerate null/undefined content so a partial snapshot row doesn't crash
+  // pre-render (some article-card props expose body that may be empty).
+  const words = (text ?? '').trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 
-export function formatDate(date: Date | string, lang: 'en' | 'de' = 'en'): string {
+export function formatDate(date: Date | string | null | undefined, lang: 'en' | 'de' = 'en'): string {
+  if (!date) return '';
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
   const locale = lang === 'de' ? 'de-DE' : 'en-US';
   return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
@@ -35,8 +39,10 @@ export function formatViews(n: number): string {
   return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
 }
 
-export function relativeTime(date: Date | string, lang: 'en' | 'de' = 'en'): string {
+export function relativeTime(date: Date | string | null | undefined, lang: 'en' | 'de' = 'en'): string {
+  if (!date) return '';
   const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
   const diff = Date.now() - d.getTime();
   const min = Math.round(diff / 60000);
   const s = STR[lang];

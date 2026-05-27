@@ -1,7 +1,7 @@
 // Tags index — browse the site by topic. Boosts internal-link density and
 // gives readers a discovery path beyond categories.
 
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import Link from 'next/link';
 
 export const metadata = {
@@ -17,11 +17,7 @@ function safeTags(s: string): string[] {
 }
 
 export default async function TagsIndex() {
-  const articles = await prisma.article.findMany({
-    where: { status: 'published' },
-    select: { tags: true },
-    take: 1000,
-  });
+  const articles = await listPublished({ take: 1000 });
 
   // Count tag frequency across the corpus
   const counts = new Map<string, number>();

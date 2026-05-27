@@ -1,7 +1,7 @@
 // Per-tag archive page — every tag on the site gets a stable URL we can
 // link to from inside articles. Massive internal-link target for SEO.
 
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArticleCard } from '@/components/ArticleCard';
@@ -28,11 +28,7 @@ export default async function TagPage({ params }: { params: Promise<Params> }) {
   // recent articles and filter in memory — SQLite + libSQL doesn't have
   // efficient JSON-array containment querying, but this scales fine to
   // thousands of articles.
-  const articles = await prisma.article.findMany({
-    where: { status: 'published' },
-    orderBy: { publishedAt: 'desc' },
-    take: 200,
-  });
+  const articles = await listPublished({ take: 200 });
   const matched = articles.filter((a) => {
     try {
       const tags = JSON.parse(a.tags) as string[];

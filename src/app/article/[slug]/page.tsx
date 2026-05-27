@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { findBySlug, listPublished, allSlugs } from '@/lib/articles-source';
 import { notFound } from 'next/navigation';
 import ArticleBody from '@/components/ArticleBody';
 import { ArticleCard } from '@/components/ArticleCard';
@@ -32,24 +33,17 @@ export const revalidate = 3600;
 // articles fall through to on-demand-ISR (still cached for 1h).
 export const dynamicParams = true;
 export async function generateStaticParams() {
-  try {
-    const recent = await prisma.article.findMany({
-      where: { status: 'published' },
-      orderBy: { publishedAt: 'desc' },
-      take: 300,
-      select: { slug: true },
-    });
-    return recent.map((a) => ({ slug: a.slug }));
-  } catch {
-    return []; // fail-open: if DB is unreachable at build, fall back to on-demand-ISR
-  }
+  // allSlugs falls back to the static snapshot on DB read failure — keeps
+  // build green even when Turso is quota-blocked.
+  const slugs = await allSlugs();
+  return slugs.slice(0, 300).map((slug) => ({ slug }));
 }
 
 type Params = { slug: string };
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
-  const a = await prisma.article.findUnique({ where: { slug } });
+  const a = await findBySlug(slug);
   if (!a) return {};
   const path = `/article/${a.slug}`;
   const SITE_URL = SITE.url;
@@ -91,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function ArticlePage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const article = await prisma.article.findUnique({ where: { slug } });
+  const article = await findBySlug(slug);
   if (!article || article.status !== 'published') notFound();
 
   // View counter moved to client-side <ViewCounter /> so this page stays
@@ -102,11 +96,9 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
     try { return JSON.parse(article.tags); } catch { return []; }
   })();
 
-  const related = await prisma.article.findMany({
-    where: { category: article.category, id: { not: article.id }, status: 'published' },
-    orderBy: { publishedAt: 'desc' },
-    take: 4,
-  });
+  // Related: same category, exclude self. Falls through to snapshot if DB blocked.
+  const sameCat = await listPublished({ category: article.category, take: 8 });
+  const related = sameCat.filter((a: any) => a.id !== article.id && a.slug !== article.slug).slice(0, 4);
 
   const SITE_URL = SITE.url;
   const SITE_NAME = SITE.name;

@@ -2,11 +2,13 @@
 // Spec: https://developers.google.com/search/docs/crawling-indexing/sitemaps/news-sitemap
 // Only articles published in the last 48 hours, with <news:news> markup.
 
-import { prisma } from '@/lib/db';
+import { listRecentForNewsSitemap } from '@/lib/articles-source';
 import { SITE } from '@/lib/site';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 300;
+// Was force-dynamic — every request was hitting Turso and burning quota.
+// Now ISR with a 15 min revalidate: Google News crawls this every few
+// minutes, but our DB only sees ~4 reads/hr instead of one per request.
+export const revalidate = 900;
 
 // Single-sourced from the keystone. The old `process.env.X ?? '...'`
 // reads broke on Vercel where NEXT_PUBLIC_SITE_URL/NAME are '' (empty
@@ -21,19 +23,9 @@ function escape(s: string) {
 }
 
 export async function GET() {
-  const cutoff = new Date(Date.now() - 48 * 3600_000); // last 48h
-  const articles = await prisma.article.findMany({
-    where: { status: 'published', publishedAt: { gte: cutoff }, qualityScore: { gte: 0 } },
-    orderBy: { publishedAt: 'desc' },
-    take: 1000, // Google News allows up to 1000 per sitemap
-  });
-
-  // For DE versions we list separately (Google News supports multiple language editions)
-  const ids = articles.map((a) => a.id);
-  const trs = ids.length
-    ? await prisma.translation.findMany({ where: { articleId: { in: ids }, lang: 'de' } })
-    : [];
-  const trMap = new Map(trs.map((t) => [t.articleId, t]));
+  // listRecentForNewsSitemap falls back to the snapshot when Turso is read-blocked.
+  const articles = await listRecentForNewsSitemap(48);
+  const trMap = new Map<string, { title: string }>(); // DE layer deleted
 
   const enEntries = articles.map((a) => `
   <url>

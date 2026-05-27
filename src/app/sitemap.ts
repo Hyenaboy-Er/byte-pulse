@@ -1,35 +1,18 @@
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { CATEGORIES } from '@/lib/categories';
 import { SITE } from '@/lib/site';
 import type { MetadataRoute } from 'next';
 
-// Single-sourced from the keystone. site.ts's env() helper correctly
-// handles an empty NEXT_PUBLIC_SITE_URL (falls back), unlike the old
-// `?? 'http://localhost:3000'` which `??` does NOT trigger on '' —
-// that produced broken/redirecting URLs in the live sitemap.
 const SITE_URL = SITE.url;
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const articles = await prisma.article.findMany({
-    // qualityScore >= 0 excludes thin-pruner-deindexed legacy articles —
-    // don't tell Google to index pages we explicitly noindex.
-    where: { status: 'published', qualityScore: { gte: 0 } },
-    select: { id: true, slug: true, updatedAt: true },
-    orderBy: { publishedAt: 'desc' },
-    take: 1000,
-  });
+// DE layer was deleted by the user — never emit /de URLs into the sitemap
+// regardless of past schema or SITE flag.
+const deOn = false;
 
-  // Look up which articles have a German translation. We only emit /de/article/<slug>
-  // into the sitemap once the translation exists — otherwise Google indexes the
-  // English fallback content under the /de URL and flags it as a duplicate.
-  const translated = await prisma.translation.findMany({
-    where: { lang: 'de', articleId: { in: articles.map((a) => a.id) } },
-    select: { articleId: true },
-  });
-  // DE layer is off (SITE.deEnabled=false) → never list /de in the
-  // sitemap (don't ask Google to index the de-indexed German layer).
-  const deOn = SITE.deEnabled;
-  const hasGerman = new Set(deOn ? translated.map((t) => t.articleId) : []);
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // listPublished falls back to the static snapshot when Turso is read-blocked.
+  const articles = await listPublished({ take: 1000 });
+  const hasGerman = new Set<string>();
 
   const articleUrls = articles.flatMap((a) => {
     const enAlt = `${SITE_URL}/article/${a.slug}`;

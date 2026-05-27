@@ -4,7 +4,7 @@
 // an AI story see Gaming / Hardware / EV options too. Drives lateral
 // browsing, which directly increases pageviews per session.
 
-import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { ArticleCard } from '@/components/ArticleCard';
 
 export default async function ContinueReading({
@@ -22,15 +22,10 @@ export default async function ContinueReading({
 
   // Pull a fat slice, then bucket per category and round-robin so we don't
   // emit 6 AI cards if AI dominated the last hour.
-  const pool = await prisma.article.findMany({
-    where: {
-      status: 'published',
-      id: { not: excludeId },
-      category: { not: excludeCategory },
-    },
-    orderBy: { publishedAt: 'desc' },
-    take: 24,
-  });
+  // Pull a wide slice across all categories, then filter out the article's
+  // own category client-side. Snapshot-aware via listPublished.
+  const wide = await listPublished({ take: 40 });
+  const pool = wide.filter((a: any) => a.id !== excludeId && a.category !== excludeCategory).slice(0, 24);
 
   const buckets = new Map<string, typeof pool>();
   for (const a of pool) {

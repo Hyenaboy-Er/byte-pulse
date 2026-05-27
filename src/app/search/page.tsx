@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { listPublished } from '@/lib/articles-source';
 import { ArticleCard } from '@/components/ArticleCard';
 
 export const dynamic = 'force-dynamic';
@@ -7,9 +8,12 @@ export const metadata = { title: 'Search' };
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const query = (q ?? '').trim();
+  const ql = query.toLowerCase();
 
-  const results = query.length >= 2
-    ? await prisma.article.findMany({
+  let results: any[] = [];
+  if (query.length >= 2) {
+    try {
+      results = await prisma.article.findMany({
         where: {
           status: 'published',
           OR: [
@@ -22,8 +26,21 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         },
         orderBy: { publishedAt: 'desc' },
         take: 50,
-      })
-    : [];
+      });
+    } catch {
+      // DB read-blocked — fall back to in-memory snapshot search.
+      const all = await listPublished({ take: 1000 });
+      results = all
+        .filter((a: any) =>
+          (a.title?.toLowerCase().includes(ql)) ||
+          (a.subtitle?.toLowerCase().includes(ql)) ||
+          (a.excerpt?.toLowerCase().includes(ql)) ||
+          (a.content?.toLowerCase().includes(ql)) ||
+          (a.tags?.toLowerCase().includes(ql))
+        )
+        .slice(0, 50);
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">

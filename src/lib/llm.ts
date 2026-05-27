@@ -73,15 +73,15 @@ function providerConfig(p: LLMProvider): ProviderConfig {
         baseURL: 'https://api.groq.com/openai/v1',
         apiKey: process.env.GROQ_API_KEY,
         defaults: {
-          // 70B for all roles. 8B-instant was tested for reviewer/translator
-          // but its strict-JSON adherence is unreliable (it returned
-          // verdict='reject' alongside score=84, inconsistent). On Groq's
-          // free tier 70B is still fast enough and the rate-limit headroom
-          // is plenty for a single-article pipeline every 30 min.
+          // 70B for writer + humanizer (long-form quality), 8B-instant for
+          // reviewer + translator (short JSON, latency-sensitive). 70B for
+          // all four pushed the full pipeline past Vercel's 60s ceiling.
+          // The 8B verdict/score inconsistency is now caught by the score-
+          // only publish gate in orchestrator (verdict is advisory).
           writer:     'llama-3.3-70b-versatile',
           humanizer:  'llama-3.3-70b-versatile',
-          reviewer:   'llama-3.3-70b-versatile',
-          translator: 'llama-3.3-70b-versatile',
+          reviewer:   'llama-3.1-8b-instant',
+          translator: 'llama-3.1-8b-instant',
         },
       };
   }

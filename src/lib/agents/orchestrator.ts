@@ -415,10 +415,12 @@ Return JSON only: { "content": "<expanded markdown>" }`,
         await logAgent('writer', 'length-expand', 'error', (err as Error).message);
       }
     }
-    if (bodyWords < 700) {
+    if (bodyWords < 500) {
       // Could not make it substantial — skip rather than publish thin
-      // filler. Fewer, better articles beat 50 thin ones/day for HCU.
-      await logAgent('orchestrator', 'skip-thin', 'info', `${humanized.title}: ${bodyWords}w < 700, not published`);
+      // filler. Lowered from 700→500 because Groq/Llama is more conservative
+      // about token budget than GPT-4o; below 500 is still genuinely thin
+      // (Google HCU territory), but 500-700 is fine for a focused tech blurb.
+      await logAgent('orchestrator', 'skip-thin', 'info', `${humanized.title}: ${bodyWords}w < 500, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

@@ -43,3 +43,4 @@ scripts/x-*.png
 scripts/gen-x-profile-assets.mjs
 scripts/update-x-profile.mjs
 .gsc-service-account.json
+HANDOFF.md

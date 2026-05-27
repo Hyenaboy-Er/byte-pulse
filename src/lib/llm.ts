@@ -73,13 +73,15 @@ function providerConfig(p: LLMProvider): ProviderConfig {
         baseURL: 'https://api.groq.com/openai/v1',
         apiKey: process.env.GROQ_API_KEY,
         defaults: {
-          // Llama 3.3 70B is the workhorse — high quality, free tier, fast.
-          // Reviewer/translator on the smaller 8B variant: cheaper rate-limit
-          // bucket so the writer's longer prompts don't get throttled.
+          // 70B for all roles. 8B-instant was tested for reviewer/translator
+          // but its strict-JSON adherence is unreliable (it returned
+          // verdict='reject' alongside score=84, inconsistent). On Groq's
+          // free tier 70B is still fast enough and the rate-limit headroom
+          // is plenty for a single-article pipeline every 30 min.
           writer:     'llama-3.3-70b-versatile',
           humanizer:  'llama-3.3-70b-versatile',
-          reviewer:   'llama-3.1-8b-instant',
-          translator: 'llama-3.1-8b-instant',
+          reviewer:   'llama-3.3-70b-versatile',
+          translator: 'llama-3.3-70b-versatile',
         },
       };
   }

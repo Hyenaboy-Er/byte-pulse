@@ -5,11 +5,14 @@
 # die TikTok-Queue. ffmpeg + gh + Node sind auf ubuntu-latest vorinstalliert.
 #
 # EINMALIGES SETUP (du, in GitHub → Settings → Secrets and variables → Actions):
-#   OPENAI_API_KEY   = dein OpenAI-Key (Skript + TTS)
+#   GROQ_API_KEY     = dein Groq-Key (Skript-Text, free tier reicht locker)
 #   BUFFER_API_KEY   = dein Buffer-Key (Auto-Post zu TikTok)
 #   Optional als Variable:
-#     TTS_VOICE  = onyx (default) | echo | nova | …
-#     MUSIC_URL  = direkte URL zu einem CC0-Musik-Bett (Pixabay), stereo
+#     TTS_VOICE      = Edge-TTS-Stimme (default en-US-ChristopherNeural,
+#                      ≈ OpenAI "onyx"). Andere: en-US-GuyNeural,
+#                      en-US-AndrewNeural, en-US-AriaNeural, …
+#     MUSIC_URL      = direkte URL zu einem CC0-Musik-Bett (Pixabay), stereo
+#     GROQ_MODEL     = default llama-3.3-70b-versatile
 #
 # Läuft 1×/Tag. Manuell auslösbar über "Run workflow".
 
@@ -43,11 +46,15 @@ jobs:
       - name: Install ffmpeg + ffprobe
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
 
+      - name: Install edge-tts (free Microsoft TTS, no auth)
+        run: pip install --quiet edge-tts
+
       - name: Render tech-highlight video
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           SITE_URL: 'https://www.byte-pulse.net'
           TTS_VOICE: ${{ vars.TTS_VOICE }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
           MUSIC_URL: ${{ vars.MUSIC_URL }}
         run: node scripts/video-generator.mjs
 
@@ -58,7 +65,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
         run: |
           TAG="clip-$(date +%Y%m%d-%H%M%S)"
           gh release create "$TAG" out/highlight.mp4 \

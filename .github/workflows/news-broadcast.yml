@@ -5,11 +5,14 @@
 # YouTube hoch (YouTube Data API). ffmpeg ist auf ubuntu-latest vorinstalliert.
 #
 # SECRETS (in GitHub bereits hinterlegt):
-#     OPENAI_API_KEY    — Skript + TTS + Metadaten
+#     GROQ_API_KEY      — Skript (Llama 3.3 70B, Groq Free Tier)
+#     OPENAI_API_KEY    — nur noch für KI-Metadaten-Optimierer (optional);
+#                         wenn nicht gesetzt, fällt der Upload auf Klartext-
+#                         Titel/Description zurück.
 #     YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN — YouTube-Upload
 #   Optional als "Variable" (nicht Secret):
 #     BROADCAST_STORIES = Anzahl Storys, default 8 (mehr = längere Sendung)
-#     TTS_VOICE         = onyx (default) | echo | nova | …
+#     GROQ_MODEL        = default llama-3.3-70b-versatile
 
 name: Byte-Pulse Nightly
 
@@ -34,12 +37,15 @@ jobs:
       - name: Install ffmpeg + ffprobe
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
 
+      - name: Install edge-tts (free Microsoft TTS, no auth)
+        run: pip install --quiet edge-tts
+
       - name: Render nightly broadcast
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           SITE_URL: 'https://www.byte-pulse.net'
           BROADCAST_STORIES: ${{ vars.BROADCAST_STORIES }}
-          TTS_VOICE: ${{ vars.TTS_VOICE }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
         run: node scripts/news-broadcast.mjs
 
       - name: Upload broadcast (Backup-Artifact)
@@ -56,5 +62,6 @@ jobs:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL }}
         run: node scripts/youtube-upload.mjs out/broadcast/nightly.mp4 out/broadcast/broadcast-meta.json

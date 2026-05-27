@@ -9,7 +9,11 @@
 // youtubeTitle, youtubeDescription }. Bei LLM-Fehler: robuste Fallbacks aus
 // den Artikeldaten, damit ein Post nie an fehlenden Metadaten scheitert.
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
+// Groq Free Tier (Llama 3.3 70B) als Primary — kostenlos, gleiche API.
+// Falls GROQ_API_KEY fehlt, fällt das Skript auf Fallback-Metadaten zurück
+// (kein OpenAI-Quota-Crash mehr).
+const GROQ_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 const SYSTEM = `You are an elite social-media growth strategist for "Byte-Pulse",
 a tech-news brand targeting a US / English-speaking audience. Given one tech
@@ -47,13 +51,13 @@ function fallback(article) {
 }
 
 export async function optimizeMetadata(article) {
-  if (!OPENAI_KEY) return fallback(article);
+  if (!GROQ_KEY) return fallback(article);
   try {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: GROQ_MODEL,
         temperature: 0.8,
         response_format: { type: 'json_object' },
         messages: [
@@ -69,7 +73,10 @@ export async function optimizeMetadata(article) {
     });
     if (!r.ok) return fallback(article);
     const data = await r.json();
-    const p = JSON.parse(data.choices[0].message.content);
+    const raw = data.choices[0].message.content;
+    // Llama occasionally wraps JSON in ```json fences — strip them.
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    const p = JSON.parse(cleaned);
     // Robuste Übernahme mit Fallback pro Feld.
     const fb = fallback(article);
     const clean = (a) => Array.isArray(a) ? a.map((s) => String(s).replace(/^#/, '').trim()).filter(Boolean) : null;

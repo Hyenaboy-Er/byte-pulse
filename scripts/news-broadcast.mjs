@@ -10,22 +10,26 @@
 //
 // Lokal: node --env-file=.env scripts/news-broadcast.mjs
 // Env:
-//   OPENAI_API_KEY      Pflicht (Skript + TTS)
+//   GROQ_API_KEY        Pflicht — Llama 3.3 70B für das Skript (Groq Free Tier)
 //   SITE_URL            optional, default https://www.byte-pulse.net
 //   BROADCAST_STORIES   optional, Anzahl Storys (default 8)
-//   TTS_VOICE           optional, default 'onyx' (tiefe Anchor-Stimme)
+//   GROQ_MODEL          optional, default llama-3.3-70b-versatile
+//
+// TTS: edge-tts (Microsoft, kostenlos, kein API-Key). Festgepinnte Stimme,
+// damit Danny in jeder Sendung gleich klingt — Marken-Konsistenz.
 
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import { platform } from 'node:os';
 
-const KEY = process.env.OPENAI_API_KEY;
+const GROQ_KEY = process.env.GROQ_API_KEY;
 const SITE = (process.env.SITE_URL || 'https://www.byte-pulse.net').replace(/\/$/, '');
 const STORY_COUNT = Math.max(3, Math.min(20, Number(process.env.BROADCAST_STORIES || 8)));
-// Dannys Stimme ist Teil seiner Identität — FEST auf 'onyx', bewusst NICHT
-// per Env überschreibbar, damit der Anchor in jeder Sendung identisch klingt.
-const VOICE = 'onyx';
-if (!KEY) { console.error('FEHLER: OPENAI_API_KEY fehlt.'); process.exit(1); }
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+// Dannys Stimme — fest auf en-US-ChristopherNeural (tief, anchor-like).
+// Bewusst NICHT per Env überschreibbar, damit der Anchor immer gleich klingt.
+const VOICE = 'en-US-ChristopherNeural';
+if (!GROQ_KEY) { console.error('FEHLER: GROQ_API_KEY fehlt.'); process.exit(1); }
 
 const OUT = 'out/broadcast';
 mkdirSync(OUT, { recursive: true });
@@ -94,14 +98,14 @@ async function enrich(a) {
   return a;
 }
 
-// KI schreibt das komplette Sendungs-Skript.
+// KI schreibt das komplette Sendungs-Skript (Groq, Llama 3.3 70B).
 async function writeScript(stories) {
   const list = stories.map((s, i) => `${i + 1}. ${s.title}\n   ${s.excerpt || ''}`).join('\n');
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: GROQ_MODEL,
       temperature: 0.6,
       response_format: { type: 'json_object' },
       messages: [
@@ -126,19 +130,27 @@ async function writeScript(stories) {
       ],
     }),
   });
-  if (!r.ok) throw new Error(`script LLM ${r.status}`);
-  const j = JSON.parse((await r.json()).choices[0].message.content);
-  return j;
+  if (!r.ok) throw new Error(`script LLM (Groq) ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const raw = (await r.json()).choices[0].message.content;
+  // Llama sometimes wraps JSON in code fences — strip those before parsing.
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+  return JSON.parse(cleaned);
 }
 
+// Edge-TTS via Python CLI (kostenlos, no auth).
 async function tts(text, path) {
-  const r = await fetch('https://api.openai.com/v1/audio/speech', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'tts-1', voice: VOICE, input: text, response_format: 'mp3' }),
-  });
-  if (!r.ok) throw new Error(`TTS ${r.status}`);
-  writeFileSync(path, Buffer.from(await r.arrayBuffer()));
+  // Stash script in a temp file so we don't fight shell escaping with quotes
+  // and newlines on the GitHub-Actions runner.
+  const tmp = `${OUT}/_tts-${Date.now()}.txt`;
+  writeFileSync(tmp, text);
+  try {
+    execFileSync('edge-tts', ['--voice', VOICE, '--file', tmp, '--write-media', path], {
+      stdio: 'inherit',
+    });
+  } catch (e) {
+    throw new Error(`Edge-TTS failed: ${e.message}`);
+  }
+  if (!existsSync(path)) throw new Error('Edge-TTS produced no output file');
 }
 
 // Custom-YouTube-Thumbnail (1280×720) — Hero abgedunkelt, Danny rechts hell,

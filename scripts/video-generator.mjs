@@ -20,18 +20,25 @@
 // MUSS es eine echte Aufnahme sein (Pixabay/freesoundslibrary CC0).
 //
 // Env:
-//   OPENAI_API_KEY   Pflicht — Skript-Text + TTS
+//   GROQ_API_KEY     Pflicht — Llama 3.3 70B für den Skript-Text (Groq Free Tier).
 //   SITE_URL         optional, default https://www.byte-pulse.net
 //   MUSIC_URL        optional — direkte URL zu einem CC0-Musik-Bett (stereo)
+//   TTS_VOICE        optional — Edge-TTS-Stimme, default en-US-ChristopherNeural
+//                    (tief / professionell, OpenAI-"onyx"-Pendant, kostenlos)
+//
+// TTS: edge-tts (Microsoft, kostenlos, kein API-Key) statt OpenAI TTS.
+// Workflow muss `pip install edge-tts` vorher ausführen.
 
 import { execFileSync } from 'node:child_process';
 import { writeFileSync, readFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import { platform } from 'node:os';
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
+const GROQ_KEY = process.env.GROQ_API_KEY;
 const SITE = (process.env.SITE_URL || 'https://www.byte-pulse.net').replace(/\/$/, '');
-// Feste Byte-Pulse-Stimme (onyx) — überall identisch, Marken-Konsistenz.
-const VOICE = 'onyx';
+// Edge-TTS-Stimme — deep/professional, default ChristopherNeural (≈ OpenAI "onyx").
+const VOICE = process.env.TTS_VOICE || 'en-US-ChristopherNeural';
+// Groq model. llama-3.3-70b-versatile = sehr stark + im free tier hochzuverlässig.
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const MUSIC_URL = process.env.MUSIC_URL || '';
 // Anchor-Portrait — muss vorhanden sein (Teil jeder Sendung UND jedes Shorts).
 const DANNY = 'assets/anchor-danny.png';
@@ -44,7 +51,7 @@ const SRC_FONT = platform() === 'win32'
   : '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
 const FONT = 'out/font.ttf';
 
-if (!OPENAI_KEY) { console.error('FEHLER: OPENAI_API_KEY fehlt.'); process.exit(1); }
+if (!GROQ_KEY) { console.error('FEHLER: GROQ_API_KEY fehlt.'); process.exit(1); }
 if (!existsSync(DANNY)) {
   console.error(`FEHLER: ${DANNY} fehlt — erst scripts/generate-anchor.mjs laufen lassen.`);
   process.exit(1);
@@ -90,14 +97,15 @@ async function pickArticle(postedSet) {
   return { url, title, image: image ? decodeEntities(image) : null, excerpt };
 }
 
-// 2. KI-Voiceover-Skript — knapp, gesprochen, ~25 Sek.
+// 2. KI-Voiceover-Skript via Groq (Llama 3.3 70B). OpenAI-kompatible API.
 async function voiceScript(article) {
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: GROQ_MODEL,
       temperature: 0.7,
+      max_tokens: 200,
       messages: [
         { role: 'system', content:
           'You write 25-second voiceover scripts for a tech-news short video ' +
@@ -111,26 +119,35 @@ async function voiceScript(article) {
           '(2) Why it matters in one plain-language beat. ' +
           '(3) Close with a CLEAR subscribe call — e.g. "Follow Byte-Pulse for daily tech" ' +
           'or "Hit follow, Byte-Pulse drops a story like this every day." ' +
-          'Output ONLY the script text.' },
+          'Output ONLY the script text — no preamble, no quotation marks, no labels.' },
         { role: 'user', content:
           `Headline: ${article.title}\nSummary: ${article.excerpt || '(none)'}` },
       ],
     }),
   });
-  if (!r.ok) throw new Error(`script LLM ${r.status}: ${(await r.text()).slice(0, 150)}`);
+  if (!r.ok) throw new Error(`script LLM (Groq) ${r.status}: ${(await r.text()).slice(0, 200)}`);
   const data = await r.json();
-  return (data.choices?.[0]?.message?.content || article.title).trim();
+  // Llama sometimes echos a quoted script — strip leading/trailing quotes + labels.
+  let script = (data.choices?.[0]?.message?.content || article.title).trim();
+  script = script.replace(/^["'`]+|["'`]+$/g, '').trim();
+  script = script.replace(/^(script|voiceover|here['']s [^:]+):?\s*/i, '').trim();
+  return script;
 }
 
-// 3. OpenAI TTS → MP3.
+// 3. Edge-TTS (Microsoft, kostenlos, kein API-Key) — MP3 via Python CLI.
 async function tts(text, path) {
-  const r = await fetch('https://api.openai.com/v1/audio/speech', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'tts-1', voice: VOICE, input: text, response_format: 'mp3' }),
-  });
-  if (!r.ok) throw new Error(`TTS ${r.status}: ${(await r.text()).slice(0, 150)}`);
-  writeFileSync(path, Buffer.from(await r.arrayBuffer()));
+  // Write script to a temp file so we don't have to deal with shell escaping
+  // of multi-line or special-char text on Windows / Bash on Linux runners.
+  const tmpScript = `${OUT}/_voice-script.txt`;
+  writeFileSync(tmpScript, text);
+  try {
+    execFileSync('edge-tts', ['--voice', VOICE, '--file', tmpScript, '--write-media', path], {
+      stdio: 'inherit',
+    });
+  } catch (e) {
+    throw new Error(`Edge-TTS failed: ${e.message}. Is 'pip install edge-tts' done?`);
+  }
+  if (!existsSync(path)) throw new Error('Edge-TTS produced no output file');
 }
 
 async function download(url, path) {

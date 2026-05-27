@@ -7,10 +7,14 @@
 //   LLM_PROVIDER=openai      (default, current behavior — uses OPENAI_API_KEY)
 //                gemini      (Google Gemini — uses GEMINI_API_KEY, OAI-compat endpoint)
 //                deepseek    (DeepSeek — uses DEEPSEEK_API_KEY)
+//                groq        (Groq Cloud — uses GROQ_API_KEY, FREE TIER with
+//                             Llama 3.3 70B + Llama 4 Scout/Maverick. OpenAI-
+//                             compatible API at api.groq.com/openai/v1)
 //
 // Why this matters: with GPT-4o at $5/M input we burn ~$390-$750/mo at 100 articles/day.
 // Gemini 2.5 Flash is ~$0.10/M input ($0.30/M output). Same quality on tech-news
 // editing tasks, 25-50x cheaper. DeepSeek V3 is similarly priced and very capable.
+// Groq Free is $0/M — fastest inference on the market (10x typical latency).
 //
 // Per-role overrides (so writer can use a smarter/bigger model than the reviewer):
 //   LLM_WRITER_MODEL=...
@@ -21,7 +25,7 @@
 import OpenAI from 'openai';
 
 export type LLMRole = 'writer' | 'humanizer' | 'reviewer' | 'translator';
-export type LLMProvider = 'openai' | 'gemini' | 'deepseek';
+export type LLMProvider = 'openai' | 'gemini' | 'deepseek' | 'groq';
 
 type ProviderConfig = {
   baseURL?: string;
@@ -64,12 +68,26 @@ function providerConfig(p: LLMProvider): ProviderConfig {
           translator: 'deepseek-chat',
         },
       };
+    case 'groq':
+      return {
+        baseURL: 'https://api.groq.com/openai/v1',
+        apiKey: process.env.GROQ_API_KEY,
+        defaults: {
+          // Llama 3.3 70B is the workhorse — high quality, free tier, fast.
+          // Reviewer/translator on the smaller 8B variant: cheaper rate-limit
+          // bucket so the writer's longer prompts don't get throttled.
+          writer:     'llama-3.3-70b-versatile',
+          humanizer:  'llama-3.3-70b-versatile',
+          reviewer:   'llama-3.1-8b-instant',
+          translator: 'llama-3.1-8b-instant',
+        },
+      };
   }
 }
 
 function activeProvider(): LLMProvider {
   const raw = (process.env.LLM_PROVIDER ?? 'openai').toLowerCase();
-  if (raw === 'gemini' || raw === 'deepseek') return raw;
+  if (raw === 'gemini' || raw === 'deepseek' || raw === 'groq') return raw as LLMProvider;
   return 'openai';
 }
 
@@ -79,7 +97,7 @@ function activeProvider(): LLMProvider {
 // for those shorter calls)". Falls back to the global LLM_PROVIDER if unset.
 function providerForRole(role: LLMRole): LLMProvider {
   const raw = (process.env[`LLM_${role.toUpperCase()}_PROVIDER`] ?? '').toLowerCase();
-  if (raw === 'gemini' || raw === 'deepseek' || raw === 'openai') return raw as LLMProvider;
+  if (raw === 'gemini' || raw === 'deepseek' || raw === 'openai' || raw === 'groq') return raw as LLMProvider;
   return activeProvider();
 }
 

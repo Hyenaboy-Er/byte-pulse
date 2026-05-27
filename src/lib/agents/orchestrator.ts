@@ -200,12 +200,25 @@ export async function runOnce(): Promise<RunReport> {
     // order and recently-inserted hashes can fall outside the take limit, causing
     // the orchestrator to re-pick the same trending story every iteration even
     // though it was just marked seen seconds ago.
-    const seen = await prisma.seenSource.findMany({
-      select: { hash: true },
-      orderBy: { fetchedAt: 'desc' },
-      take: 10000,
-    });
-    const seenHashes = new Set(seen.map((s) => s.hash));
+    // Resilient: when the DB is read-blocked (Turso quota), fall back to an
+    // empty set. SeenSource is dedup-only — without it we may revisit URLs,
+    // but the slug-uniqueness check on Article.create still prevents true
+    // duplicates from being published. Better to keep the pipeline running.
+    let seenHashes: Set<string>;
+    try {
+      const seen = await prisma.seenSource.findMany({
+        select: { hash: true },
+        orderBy: { fetchedAt: 'desc' },
+        take: 10000,
+      });
+      seenHashes = new Set(seen.map((s) => s.hash));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await logAgent('orchestrator', 'degraded', 'warn',
+        'seenSource read blocked — running without URL dedup (slug check still enforced)',
+        { error: msg.split('\n')[0].slice(0, 200) });
+      seenHashes = new Set();
+    }
     const fresh = items.filter((i) => !seenHashes.has(i.hash));
     report.freshCandidates = fresh.length;
 
@@ -218,11 +231,25 @@ export async function runOnce(): Promise<RunReport> {
     // Semantic dedup data — loaded ONCE per runOnce() call, reused across pick retries.
     // Window widened to 7 days because Google flags near-duplicates as "Duplikat – vom
     // Nutzer nicht als kanonisch festgelegt" even when published days apart.
-    const recentPublished = await prisma.article.findMany({
-      where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 7 * 24 * 3600_000) } },
-      select: { title: true, slug: true, sourceUrl: true, originalTitle: true },
-      take: 500,
-    });
+    // Resilient: when DB reads are blocked, fall back to the snapshot. The
+    // snapshot is up to a few hours stale but still catches the bulk of
+    // recent duplicates.
+    let recentPublished: Array<{ title: string; slug: string; sourceUrl: string | null; originalTitle: string | null }>;
+    try {
+      recentPublished = await prisma.article.findMany({
+        where: { status: 'published', publishedAt: { gte: new Date(Date.now() - 7 * 24 * 3600_000) } },
+        select: { title: true, slug: true, sourceUrl: true, originalTitle: true },
+        take: 500,
+      });
+    } catch {
+      const { snapshotListPublished } = await import('@/lib/articles-snapshot');
+      recentPublished = snapshotListPublished({ take: 500 }).map((a) => ({
+        title: a.title,
+        slug: a.slug,
+        sourceUrl: a.sourceUrl || null,
+        originalTitle: a.originalTitle ?? null,
+      }));
+    }
 
     // Pick-and-dedup loop: when a pick fails the dedup gate (typical for trending
     // stories that already have coverage), advance to the next-best candidate
@@ -399,8 +426,16 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // 5. Persist
     const finalTitle = review.fixedTitle && review.fixedTitle.length > 20 ? review.fixedTitle : humanized.title;
     const slug = await uniqueSlug(finalTitle, async (s) => {
-      const existing = await prisma.article.findUnique({ where: { slug: s } });
-      return existing !== null;
+      // Slug duplicate check. When DB reads are blocked, the unique constraint
+      // on Article.slug at INSERT time will still reject true duplicates — we
+      // just lose this proactive check.
+      try {
+        const existing = await prisma.article.findUnique({ where: { slug: s } });
+        return existing !== null;
+      } catch {
+        const { snapshotFindBySlug } = await import('@/lib/articles-snapshot');
+        return snapshotFindBySlug(s) !== null;
+      }
     });
 
     // Inject Amazon affiliate links into article body (idempotent: only first

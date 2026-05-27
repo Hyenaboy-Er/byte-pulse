@@ -471,6 +471,41 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     report.published = { slug };
     await logAgent('orchestrator', 'published', 'success', slug, { score: review.score });
 
+    // Fire-and-forget snapshot-sync: commit the new article to
+    // data/articles-snapshot.json so the read-side (which currently can't
+    // hit Turso due to the read quota) can serve it within ~3 min via the
+    // auto-redeploy. No await — we don't want a GitHub-API hiccup to make
+    // the cron return failure when the article is already safely persisted.
+    (async () => {
+      try {
+        const { appendArticleToSnapshot } = await import('@/lib/snapshot-append');
+        const res = await appendArticleToSnapshot({
+          id: created.id,
+          slug: created.slug,
+          title: created.title,
+          subtitle: created.subtitle,
+          excerpt: created.excerpt,
+          content: created.content,
+          category: created.category,
+          tags: created.tags,
+          imageUrl: created.imageUrl,
+          imageCredit: created.imageCredit,
+          sourceUrl: created.sourceUrl,
+          sourceName: created.sourceName,
+          originalTitle: created.originalTitle,
+          qualityScore: created.qualityScore,
+          status: created.status,
+          views: created.views,
+          publishedAt: created.publishedAt?.toISOString() ?? null,
+          createdAt: created.createdAt?.toISOString() ?? null,
+          updatedAt: created.updatedAt?.toISOString() ?? null,
+        });
+        await logAgent('snapshot-sync', 'append', res.ok ? 'success' : 'warn', slug, res.error ? { error: res.error } : {});
+      } catch (e: any) {
+        await logAgent('snapshot-sync', 'append', 'error', slug, { error: (e?.message ?? String(e)).slice(0, 200) }).catch(() => null);
+      }
+    })();
+
     // Ping IndexNow (Bing/Yandex) so the new URL is crawled within minutes
     // instead of waiting for the next bot pass. Non-fatal on failure — Google
     // doesn't use IndexNow yet but Bing does, and Bing-indexed pages also

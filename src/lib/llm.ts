@@ -206,7 +206,11 @@ export async function llmChat(opts: {
   try {
     return await callProvider(primary, opts);
   } catch (err) {
-    if (primary !== 'openai' && isRateLimit(err) && process.env.OPENAI_API_KEY) {
+    // Opt-in OpenAI fallback. Default OFF: otherwise a temporarily
+    // throttled free-tier provider (Gemini, Groq) silently bleeds the
+    // OpenAI quota on every retry. Set LLM_OPENAI_FALLBACK=1 to enable.
+    const fallbackOn = process.env.LLM_OPENAI_FALLBACK === '1';
+    if (fallbackOn && primary !== 'openai' && isRateLimit(err) && process.env.OPENAI_API_KEY) {
       await alertFallback(primary, 'openai');
       return await callProvider('openai', opts);
     }

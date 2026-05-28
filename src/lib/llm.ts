@@ -25,7 +25,7 @@
 import OpenAI from 'openai';
 
 export type LLMRole = 'writer' | 'humanizer' | 'reviewer' | 'translator';
-export type LLMProvider = 'openai' | 'gemini' | 'deepseek' | 'groq';
+export type LLMProvider = 'openai' | 'gemini' | 'deepseek' | 'groq' | 'ollama';
 
 type ProviderConfig = {
   baseURL?: string;
@@ -84,12 +84,32 @@ function providerConfig(p: LLMProvider): ProviderConfig {
           translator: 'llama-3.1-8b-instant',
         },
       };
+    case 'ollama':
+      // Local-only — set OLLAMA_BASE_URL=http://127.0.0.1:11434/v1 when
+      // running on the same machine as the Ollama server, or point it
+      // at a Cloudflare-tunnel'd public hostname. Ollama serves an OpenAI-
+      // compatible /v1/chat/completions endpoint out of the box.
+      // The OpenAI SDK requires apiKey to be a non-empty string even when
+      // the upstream ignores it — Ollama doesn't check it.
+      return {
+        baseURL: process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434/v1',
+        apiKey: process.env.OLLAMA_API_KEY || 'ollama-no-auth',
+        defaults: {
+          // gemma4:e4b is the user's current best local model (8B params,
+          // Q4_K_M). For shorter JSON tasks we still send to gemma4:e4b —
+          // the local 4B variant exists but its JSON adherence is fragile.
+          writer:     process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          humanizer:  process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          reviewer:   process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          translator: process.env.OLLAMA_MODEL || 'gemma4:e4b',
+        },
+      };
   }
 }
 
 function activeProvider(): LLMProvider {
   const raw = (process.env.LLM_PROVIDER ?? 'openai').toLowerCase();
-  if (raw === 'gemini' || raw === 'deepseek' || raw === 'groq') return raw as LLMProvider;
+  if (raw === 'gemini' || raw === 'deepseek' || raw === 'groq' || raw === 'ollama') return raw as LLMProvider;
   return 'openai';
 }
 
@@ -99,7 +119,7 @@ function activeProvider(): LLMProvider {
 // for those shorter calls)". Falls back to the global LLM_PROVIDER if unset.
 function providerForRole(role: LLMRole): LLMProvider {
   const raw = (process.env[`LLM_${role.toUpperCase()}_PROVIDER`] ?? '').toLowerCase();
-  if (raw === 'gemini' || raw === 'deepseek' || raw === 'openai' || raw === 'groq') return raw as LLMProvider;
+  if (raw === 'gemini' || raw === 'deepseek' || raw === 'openai' || raw === 'groq' || raw === 'ollama') return raw as LLMProvider;
   return activeProvider();
 }
 

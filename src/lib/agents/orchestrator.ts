@@ -13,6 +13,7 @@ import { chat, MODELS, extractJson } from '../openai';
 import { broadcastNewArticle } from '../social';
 import { pingIndexNow } from '../indexnow';
 import { submitUrlsToBing } from '../bing-submit';
+import { appendArticleToSnapshot as snapshotAppend } from '../snapshot-append';
 import { SITE } from '../site';
 
 export type RunReport = {
@@ -478,8 +479,7 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // is sent, killing any pending background promises. We need to finish
     // before returning. ~3-5s on a warm GitHub API.
     try {
-      const { appendArticleToSnapshot } = await import('@/lib/snapshot-append');
-      const res = await appendArticleToSnapshot({
+      const res = await snapshotAppend({
         id: created.id,
         slug: created.slug,
         title: created.title,

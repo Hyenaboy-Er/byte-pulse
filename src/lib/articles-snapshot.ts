@@ -7,6 +7,10 @@
 // existing code that consumes findMany/findUnique can swap in seamlessly.
 import indexData from '../../data/articles-index.json';
 import fullData from '../../data/articles-snapshot.json';
+// articles-recent.json is the live append-target. The Vercel function appends
+// new articles here after every successful publish so the read-side picks
+// them up without us needing to rewrite the 4+ MB main snapshot.
+import recentData from '../../data/articles-recent.json';
 
 export type SnapshotArticle = {
   id: string;
@@ -32,8 +36,22 @@ export type SnapshotArticle = {
   wordCount?: number;
 };
 
-const index = indexData as unknown as Omit<SnapshotArticle, 'content'>[];
-const full = fullData as unknown as SnapshotArticle[];
+const recent = recentData as unknown as SnapshotArticle[];
+const baseIndex = indexData as unknown as Omit<SnapshotArticle, 'content'>[];
+const baseFull = fullData as unknown as SnapshotArticle[];
+
+// Merge recent in front of the base snapshot. Skip recent entries already in
+// base (re-run safety). New articles published since the last full crawl
+// land in `recent` and take precedence when slugs overlap.
+const baseFullSlugs = new Set(baseFull.map((a) => a.slug));
+const recentOnly = recent.filter((a) => !baseFullSlugs.has(a.slug));
+const full = [...recentOnly, ...baseFull];
+
+const recentIndexed = recentOnly.map(({ content, ...rest }) => rest);
+const baseIndexSlugs = new Set(baseIndex.map((a) => a.slug));
+const recentIndexOnly = recentIndexed.filter((a) => !baseIndexSlugs.has(a.slug));
+const index = [...recentIndexOnly, ...baseIndex];
+
 const bySlug = new Map(full.map((a) => [a.slug, a]));
 
 // Sorted desc by publishedAt — same order Prisma returns with orderBy desc.

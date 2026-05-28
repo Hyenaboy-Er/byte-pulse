@@ -83,43 +83,59 @@ async function getFile(path: string): Promise<{ content: string; sha: string }> 
   return { content, sha: j.sha };
 }
 
+// Cap on data/articles-recent.json: keep at most this many newest articles.
+// Sized to stay safely under GitHub's 1 MB Contents-API file limit
+// (~6 KB per article × 130 ≈ 780 KB, room for richer content).
+const RECENT_CAP = 130;
+
 export async function appendArticleToSnapshot(a: SnapshotArticle): Promise<{ ok: boolean; error?: string }> {
   if (!TOKEN) return { ok: false, error: 'GITHUB_TOKEN_FOR_COMMITS not set' };
 
   try {
-    // Pull both files in parallel.
-    const [snap, idx] = await Promise.all([
-      getFile('data/articles-snapshot.json'),
-      getFile('data/articles-index.json'),
-    ]);
+    // articles-recent.json is a separate, small append-only file. The main
+    // articles-snapshot.json (4+ MB) exceeds GitHub Contents-API's hard 1 MB
+    // file limit, so PUTs there fail silently. articles-source.ts reads
+    // recent FIRST, then falls back to the big snapshot — so a new article
+    // appearing only in `recent` is fully visible on the site.
+    let recentList: SnapshotArticle[] = [];
+    let recentSha: string | null = null;
+    try {
+      const recent = await getFile('data/articles-recent.json');
+      recentSha = recent.sha;
+      recentList = JSON.parse(recent.content) as SnapshotArticle[];
+    } catch (e: any) {
+      // File doesn't exist yet — first run will create it.
+      if (!String(e?.message ?? '').includes('404')) throw e;
+    }
 
-    const snapList = JSON.parse(snap.content) as SnapshotArticle[];
-    const idxList = JSON.parse(idx.content) as Omit<SnapshotArticle, 'content'>[];
-
-    // Skip if already present (re-run safety).
-    if (snapList.some((x) => x.slug === a.slug)) {
+    if (recentList.some((x) => x.slug === a.slug)) {
       return { ok: true };
     }
 
-    // Snapshot has full content; index drops it.
-    const { content, ...rest } = a;
-    snapList.unshift(a);
-    idxList.unshift(rest);
+    recentList.unshift(a);
+    const capped = recentList.slice(0, RECENT_CAP);
+    const newJson = JSON.stringify(capped);
+    if (newJson.length > 950_000) {
+      // Should not happen with cap=130, but safeguard.
+      return { ok: false, error: `recent json too large: ${newJson.length} bytes` };
+    }
 
-    // Keep memory reasonable — cap snapshot at 1500, index at 1500 too.
-    const snapCapped = snapList.slice(0, 1500);
-    const idxCapped = idxList.slice(0, 1500);
+    const msg = `chore: append ${a.slug} to recent [skip ci]`;
 
-    const newSnap = JSON.stringify(snapCapped);
-    const newIdx = JSON.stringify(idxCapped);
-
-    const msg = `chore: append article ${a.slug} to snapshot [skip ci]`;
-
-    // Sequential PUT (one PUT per blob; can't batch via Contents API).
-    await putFile('data/articles-snapshot.json', newSnap, snap.sha, msg);
-    // refetch idx sha since first PUT may have touched the tree, but contents API
-    // is file-scoped so the idx.sha is still valid here. Best effort:
-    await putFile('data/articles-index.json', newIdx, idx.sha, msg);
+    if (recentSha) {
+      await putFile('data/articles-recent.json', newJson, recentSha, msg);
+    } else {
+      // First-time create — Contents API treats omitted sha as "create new".
+      const r = await gh(`/repos/${REPO}/contents/data/articles-recent.json`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          message: msg,
+          content: Buffer.from(newJson).toString('base64'),
+          branch: BRANCH,
+        }),
+      });
+      if (!r.ok) throw new Error(`create recent.json: ${r.status} ${(await r.text()).slice(0, 220)}`);
+    }
 
     return { ok: true };
   } catch (e: any) {

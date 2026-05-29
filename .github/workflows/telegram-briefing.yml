@@ -1,0 +1,27 @@
+name: Telegram Daily Briefing
+
+# Schickt jeden Morgen einen Status-Report via Telegram an den Operator —
+# publizierte Artikel, Video-Posts, Bing-Clicks, Mastodon/Bluesky Follower.
+# Quelle der Wahrheit: externe APIs + GitHub Commits (kein DB-Read nötig).
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 06:00 UTC = 08:00 Europe/Berlin (Sommerzeit)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger /api/telegram-briefing
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          CODE=$(curl -sS -o /tmp/out.json -w "%{http_code}" \
+            "https://www.byte-pulse.net/api/telegram-briefing?token=${CRON_SECRET}")
+          echo "HTTP: $CODE"
+          cat /tmp/out.json
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Briefing endpoint returned $CODE"
+            exit 1
+          fi

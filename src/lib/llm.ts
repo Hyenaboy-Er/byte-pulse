@@ -214,6 +214,20 @@ async function callProvider(p: LLMProvider, opts: {
  * rate-limited Telegram alert fires the first time fallback triggers per
  * 30-minute window so the operator knows to enable provider billing.
  */
+// Free-tier fallback chain: if the primary provider 429s, walk through any
+// other configured free-tier providers before giving up. Each one has its
+// own daily-token bucket that resets at a different moment of the day, so
+// one bucket being empty doesn't take the whole pipeline down.
+function freeFallbackChain(primary: LLMProvider): LLMProvider[] {
+  const chain: LLMProvider[] = [];
+  // Most pragmatic order: Gemini and Groq are roughly interchangeable for
+  // quality on this workload. Whichever isn't primary goes next.
+  for (const cand of ['gemini', 'groq', 'deepseek'] as LLMProvider[]) {
+    if (cand !== primary && providerConfig(cand).apiKey) chain.push(cand);
+  }
+  return chain;
+}
+
 export async function llmChat(opts: {
   role: LLMRole;
   system: string;
@@ -226,13 +240,22 @@ export async function llmChat(opts: {
   try {
     return await callProvider(primary, opts);
   } catch (err) {
-    // Opt-in OpenAI fallback. Default OFF: otherwise a temporarily
-    // throttled free-tier provider (Gemini, Groq) silently bleeds the
-    // OpenAI quota on every retry. Set LLM_OPENAI_FALLBACK=1 to enable.
-    const fallbackOn = process.env.LLM_OPENAI_FALLBACK === '1';
-    if (fallbackOn && primary !== 'openai' && isRateLimit(err) && process.env.OPENAI_API_KEY) {
-      await alertFallback(primary, 'openai');
-      return await callProvider('openai', opts);
+    if (isRateLimit(err)) {
+      // Try every other configured free-tier provider in order.
+      for (const next of freeFallbackChain(primary)) {
+        try {
+          await alertFallback(primary, next);
+          return await callProvider(next, opts);
+        } catch (e2) {
+          if (!isRateLimit(e2)) throw e2;
+          // next provider also rate-limited — keep walking the chain.
+        }
+      }
+      // Last-resort OpenAI fallback (opt-in, costs real money).
+      if (process.env.LLM_OPENAI_FALLBACK === '1' && primary !== 'openai' && process.env.OPENAI_API_KEY) {
+        await alertFallback(primary, 'openai');
+        return await callProvider('openai', opts);
+      }
     }
     throw err;
   }

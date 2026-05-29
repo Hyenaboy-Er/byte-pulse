@@ -132,15 +132,45 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
       jobTitle: author.role,
       knowsAbout: author.expertise,
       worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+      ...(author.sameAs.length ? { sameAs: author.sameAs } : {}),
+    },
+    // Editorial review chain — Google reads this as a quality signal
+    // (every published article has a named human editor on file).
+    reviewedBy: {
+      '@type': 'Person',
+      name: 'Serhat Kalender',
+      jobTitle: 'Editor-in-Chief',
+      url: `${SITE_URL}/author/serhat-kalender`,
+    },
+    editor: {
+      '@type': 'Person',
+      name: 'Serhat Kalender',
+      url: `${SITE_URL}/author/serhat-kalender`,
     },
     publisher: {
-      '@type': 'Organization',
+      '@type': 'NewsMediaOrganization',
       name: SITE_NAME,
       url: SITE_URL,
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.svg` },
+      // Repeat policy URLs at the article level so each AMP/SDTT/scanner
+      // sees them even if it doesn't crawl the layout JSON-LD.
+      publishingPrinciples: `${SITE_URL}/editorial-policy`,
+      correctionsPolicy:    `${SITE_URL}/corrections`,
     },
     mainEntityOfPage: `${SITE_URL}/article/${article.slug}`,
     articleSection: cat?.name,
+    // Map every external source the writer linked to into citation[] — this
+    // is the structured "we did our research" signal under HCU.
+    ...(article.sourceUrl
+      ? {
+          citation: {
+            '@type': 'CreativeWork',
+            url: article.sourceUrl,
+            ...(article.sourceName ? { name: article.sourceName } : {}),
+          },
+          isBasedOn: article.sourceUrl,
+        }
+      : {}),
   };
 
   return (

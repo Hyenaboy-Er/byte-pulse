@@ -30,24 +30,38 @@ export type Author = {
 
 // Three personas so the byline rotates and looks like an editorial team.
 // All articles disclose AI-assistance + human review in the global /about page.
+// Public brand-channel URLs — used to anchor the editorial team's sameAs
+// arrays. Google's E-E-A-T evaluation treats an empty sameAs as "this
+// author cannot be verified" and downweights the byline. Linking to
+// brand-owned social profiles (each manually checked, not random) gives
+// Google a graph it can verify.
+const BRAND_X         = 'https://x.com/bytePulsenew';
+const BRAND_MASTODON  = 'https://mastodon.social/@BytePulseNet';
+const BRAND_BLUESKY   = 'https://bsky.app/profile/byte-pulse.bsky.social';
+const BRAND_YOUTUBE   = 'https://www.youtube.com/@Byte-PulseNet';
+const BRAND_TIKTOK    = 'https://www.tiktok.com/@bytepulse.net';
+const BRAND_SITE      = SITE.url;
+
 export const AUTHORS: Author[] = [
   {
     slug: 'serhat-kalender',
     name: 'Serhat Kalender',
     role: 'Editor-in-Chief',
-    bioEn: `Serhat founded ${BRAND} to cover European tech that US blogs miss. He oversees the editorial direction, reviews coverage of AI and security stories, and signs off on every article before publish. Based in Germany.`,
-    bioDe: `Serhat hat ${BRAND} gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft alle KI- und Security-Stories und gibt jeden Artikel vor Veröffentlichung frei. Basiert in Deutschland.`,
+    bioEn: `Serhat founded ${BRAND} to cover European tech that US blogs miss. He oversees the editorial direction, reviews coverage of AI and security stories, and signs off on every article before publish. Based in Germany. Reach out at editorial@byte-pulse.net.`,
+    bioDe: `Serhat hat ${BRAND} gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft alle KI- und Security-Stories und gibt jeden Artikel vor Veröffentlichung frei. Basiert in Deutschland. Kontakt: editorial@byte-pulse.net.`,
     expertise: ['AI', 'Security', 'European tech policy'],
-    sameAs: [],
+    // Editor-in-Chief is fronted by the brand's own channels — anchor him
+    // to those so Schema.org Person.sameAs is non-empty and verifiable.
+    sameAs: [BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_SITE],
   },
   {
     slug: 'byte-pulse-newsroom',
     name: `${BRAND} Newsroom`,
     role: 'Editorial Team',
-    bioEn: `The ${BRAND} newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review — before it's published.`,
-    bioDe: `Das ${BRAND}-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review — bevor sie veröffentlicht wird.`,
+    bioEn: `The ${BRAND} newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review — before it's published. Tips: editorial@byte-pulse.net.`,
+    bioDe: `Das ${BRAND}-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review — bevor sie veröffentlicht wird. Hinweise: editorial@byte-pulse.net.`,
     expertise: ['Hardware', 'Gaming', 'Mobile'],
-    sameAs: [],
+    sameAs: [BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_YOUTUBE, BRAND_TIKTOK, BRAND_SITE],
   },
   {
     slug: 'serhat-er',
@@ -56,7 +70,7 @@ export const AUTHORS: Author[] = [
     bioEn: `${SITE.founderName} is the founder of ${BRAND} and writes its in-depth buying guides and head-to-head comparisons. He digs through spec sheets, pricing and real-world trade-offs so readers don't have to — and always ends with a clear, opinionated recommendation. Based in Germany.`,
     bioDe: `${SITE.founderName} ist Gründer von ${BRAND} und schreibt die ausführlichen Kaufberatungen und Direktvergleiche. Er gräbt sich durch Datenblätter, Preise und Praxis-Kompromisse, damit die Leser es nicht müssen — und endet immer mit einer klaren, meinungsstarken Empfehlung. Basiert in Deutschland.`,
     expertise: ['Buying guides', 'Hardware comparisons', 'Consumer tech'],
-    sameAs: [],
+    sameAs: [BRAND_X, BRAND_BLUESKY, BRAND_SITE],
   },
   {
     slug: 'leah-becker',
@@ -65,7 +79,7 @@ export const AUTHORS: Author[] = [
     bioEn: "Leah covers software releases, dev tools, web platforms and crypto. She writes the deeper-take pieces on what new tools mean for working developers and prosumers. Background in backend engineering.",
     bioDe: "Leah berichtet über Software-Releases, Dev-Tools, Web-Plattformen und Krypto. Sie schreibt die tiefergehenden Analysen darüber, was neue Tools für Entwickler und Power-User bedeuten. Hintergrund: Backend-Engineering.",
     expertise: ['Software', 'Web', 'Crypto', 'Developer tools'],
-    sameAs: [],
+    sameAs: [BRAND_MASTODON, BRAND_BLUESKY, BRAND_SITE],
   },
 ];
 

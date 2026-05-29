@@ -114,17 +114,48 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify([
               {
                 '@context': 'https://schema.org',
-                '@type': 'Organization',
+                '@type': 'NewsMediaOrganization',
                 name: SITE_NAME,
                 url: SITE_URL,
-                logo: `${SITE_URL}/icon.svg`,
-                sameAs: ['https://twitter.com/bytePulsenew'],
-                contactPoint: {
-                  '@type': 'ContactPoint',
-                  contactType: 'editorial',
-                  email: SITE.email,
-                  availableLanguage: ['en'],
+                logo: {
+                  '@type': 'ImageObject',
+                  url: `${SITE_URL}/icon.svg`,
+                  width: 512,
+                  height: 512,
                 },
+                // sameAs feeds Google's Knowledge Graph — every brand-owned
+                // channel earns trust. Empty array would downweight the
+                // organisation as "online-only mention".
+                sameAs: [
+                  'https://x.com/bytePulsenew',
+                  'https://mastodon.social/@BytePulseNet',
+                  'https://bsky.app/profile/byte-pulse.bsky.social',
+                  'https://www.youtube.com/@Byte-PulseNet',
+                  'https://www.tiktok.com/@bytepulse.net',
+                ],
+                contactPoint: [
+                  {
+                    '@type': 'ContactPoint',
+                    contactType: 'editorial',
+                    email: SITE.email,
+                    availableLanguage: ['en'],
+                  },
+                  {
+                    '@type': 'ContactPoint',
+                    contactType: 'corrections',
+                    email: SITE.email,
+                    availableLanguage: ['en'],
+                  },
+                ],
+                // Explicit pointers to E-E-A-T policy pages — Google reads these.
+                publishingPrinciples: `${SITE_URL}/editorial-policy`,
+                correctionsPolicy: `${SITE_URL}/corrections`,
+                actionableFeedbackPolicy: `${SITE_URL}/contact`,
+                missionCoveragePrioritiesPolicy: `${SITE_URL}/about`,
+                diversityPolicy: `${SITE_URL}/editorial-policy`,
+                ethicsPolicy: `${SITE_URL}/editorial-policy`,
+                masthead: `${SITE_URL}/authors`,
+                foundingDate: '2026-05',
               },
               {
                 '@context': 'https://schema.org',

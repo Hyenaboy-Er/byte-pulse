@@ -110,6 +110,20 @@ function oauth1Header(opts: {
 }
 
 async function postToX(t: BroadcastTarget): Promise<ChannelResult> {
+  // X posting moved to a separate scheduled agent (scripts/x-poster.mjs,
+  // .github/workflows/x-poster.yml) that drains 1 tweet every 3h. The
+  // immediate-on-publish path burned through X Free-Tier credits within
+  // ~12 days (last successful tweet 12 May). Returning a benign "ok" here
+  // keeps the orchestrator's broadcast tally clean and prevents the social-
+  // retry agent from re-attempting via the same dead path.
+  void t;
+  return { channel: 'x', ok: true };
+}
+
+// Vom alten Live-Pfad uebrig, nicht mehr verwendet — Logik vollstaendig in
+// scripts/x-poster.mjs. Hier nur belassen, falls jemand das alte Verhalten
+// schnell zurueckschalten will.
+async function postToXLegacy(t: BroadcastTarget): Promise<ChannelResult> {
   const consumerKey = process.env.X_API_KEY;
   const consumerSecret = process.env.X_API_SECRET;
   const accessToken = process.env.X_ACCESS_TOKEN;

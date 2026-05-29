@@ -1,0 +1,42 @@
+# X-Poster — 1 Tweet alle 3 Stunden (= 8/Tag).
+#
+# Das Skript wählt den NEUESTEN ungeposteten Artikel aus data/articles-recent.json,
+# postet ihn via X-API v2 (OAuth 1.0a) und committet data/posted-to-x.json zurück.
+# Schedule respektiert X-Free-Tier-Limits (max 17 Tweets/24h auf typischen Accounts).
+
+name: X Auto-Poster
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # alle 3 Stunden auf der vollen Stunde
+  workflow_dispatch: {}
+
+permissions:
+  contents: write  # zum Commit von data/posted-to-x.json
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Tweet next article
+        env:
+          X_API_KEY:              ${{ secrets.X_API_KEY }}
+          X_API_SECRET:           ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:         ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET:  ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          TELEGRAM_BOT_TOKEN:     ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:       ${{ secrets.TELEGRAM_CHAT_ID }}
+          SITE_URL:               https://www.byte-pulse.net
+        run: node scripts/x-poster.mjs
+
+      - name: Persist queue state
+        run: |
+          git add data/posted-to-x.json
+          git -c user.name="byte-pulse-bot" \
+              -c user.email="byte-pulse-bot@users.noreply.github.com" \
+              commit -m "chore: record x-post [skip ci]" || echo "nichts zu committen"
+          git push || echo "push uebersprungen"

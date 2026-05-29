@@ -26,13 +26,16 @@ const BUFFER_KEY = process.env.BUFFER_API_KEY;
 const CHANNELS = {
   tiktok:  process.env.BUFFER_TIKTOK_CHANNEL_ID  || '6a106ccd090476fb994ac0fe',
   youtube: process.env.BUFFER_YOUTUBE_CHANNEL_ID || '6a10ba31090476fb994c7ae9',
+  // X-Channel-ID kommt aus BUFFER_X_CHANNEL_ID — füllen wir, sobald der
+  // Operator X einmalig in Buffer verknüpft hat. Bis dahin no-op.
+  x:       process.env.BUFFER_X_CHANNEL_ID       || '',
 };
 const YT_CATEGORY = process.env.YOUTUBE_CATEGORY_ID || '28'; // Science & Technology
 
 const videoUrl = process.argv[2];
 const metaFile = process.argv[3] || 'out/video-meta.json';
 const targets = (process.argv[4] || 'tiktok,youtube')
-  .split(',').map((s) => s.trim().toLowerCase()).filter((s) => CHANNELS[s]);
+  .split(',').map((s) => s.trim().toLowerCase()).filter((s) => CHANNELS[s]); // empty channel id = silently skipped
 
 if (!BUFFER_KEY) { console.error('FEHLER: BUFFER_API_KEY fehlt.'); process.exit(1); }
 if (!videoUrl || !/^https?:\/\//.test(videoUrl)) {
@@ -58,6 +61,23 @@ function addUtm(text, source) {
 }
 const captionTikTok  = addUtm(`${opt.caption}\n\n${hashtagLine}`, 'tiktok');
 const captionYouTube = addUtm(`${opt.youtubeDescription}\n\n${hashtagLine}`, 'youtube_short');
+
+// X-Caption: 280-Zeichen-Limit, Hashtag-Spam abgewöhnt (X-Algorithmus
+// throttled Posts mit >2 Hashtags). Wir nehmen Caption, hängen Article-URL
+// dran, optional die 2 stärksten Hashtags am Ende. UTM für Klick-Tracking.
+function buildXCaption() {
+  const articleUrl = (meta.url || 'https://byte-pulse.net').replace(/\/$/, '');
+  const urlWithUtm = articleUrl + (articleUrl.includes('?') ? '&' : '?') + 'utm_source=x&utm_medium=social';
+  const topTags = opt.hashtags.slice(0, 2).map((h) => '#' + h).join(' ');
+  const reservedForUrl = urlWithUtm.length + 1; // space before url
+  const reservedForTags = topTags.length ? topTags.length + 2 : 0; // \n\n#a #b
+  const captionBudget = 280 - reservedForUrl - reservedForTags;
+  let body = opt.caption.replace(/\n+/g, ' ').trim();
+  if (body.length > captionBudget) body = body.slice(0, captionBudget - 1).trimEnd() + '…';
+  return `${body} ${urlWithUtm}${topTags ? `\n\n${topTags}` : ''}`;
+}
+const captionX = buildXCaption();
+
 console.log(`[buffer] KI-Metadaten fertig (${opt.hashtags.length} Hashtags) — Ziele: ${targets.join(', ')}`);
 
 // Mutation mit Variablen — verschachtelte YouTube-Metadaten als GraphQL-Literal
@@ -91,6 +111,9 @@ function inputFor(target) {
         },
       },
     };
+  }
+  if (target === 'x') {
+    return { ...base, text: captionX };
   }
   return { ...base, text: captionTikTok }; // tiktok
 }

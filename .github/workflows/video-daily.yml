@@ -75,7 +75,7 @@ jobs:
           URL="https://github.com/${{ github.repository }}/releases/download/$TAG/highlight.mp4"
           echo "Public video URL: $URL"
           # 9:16-Kurzvideo → TikTok + YouTube (wird dort als Short eingestuft).
-          node scripts/post-to-buffer.mjs "$URL" out/video-meta.json tiktok,youtube
+          node scripts/post-to-buffer.mjs "$URL" out/video-meta.json tiktok,youtube,x
 
       # Gepostete Artikel-URL festhalten, damit kein Duplikat entsteht.
       - name: Persist dedup state

@@ -371,12 +371,13 @@ export async function runOnce(): Promise<RunReport> {
       factualityIssues: review.factualityIssues,
     };
 
-    // Pragmatic gate: publish on score. Reviewer is overly strict on "factuality"
-    // (flags any rumor/leak as low-confidence), but rumors ARE legit tech news as
-    // long as we mark them as such in the article. Block only on hard real risks.
-    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 75;
-    const blockedByFactuality = (review.factualityScore ?? 100) < 35;
-    const tooLow = review.score < 50;
+    // Pragmatic gate: publish on score. Tightened from 50 → 70 because AdSense
+    // manual review penalises borderline-quality bulk content. Plagiarism &
+    // factuality bars also tightened. Better fewer-but-stronger articles than
+    // a flood of barely-passing ones — Google's HCU rewards consistency.
+    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 60;
+    const blockedByFactuality = (review.factualityScore ?? 100) < 55;
+    const tooLow = review.score < 70;
     const shouldPublish = !blockedByPlagiarism && !blockedByFactuality && !tooLow;
     if (!shouldPublish) {
       report.finishedAt = new Date().toISOString();

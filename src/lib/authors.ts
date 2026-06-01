@@ -49,7 +49,7 @@ const BRAND_SITE      = SITE.url;
 // signal for a one-founder publication. Set via env SITE_FOUNDER_LINKEDIN
 // to make corrections trivial. Default points at his public slug.
 export const FOUNDER_LINKEDIN = process.env.SITE_FOUNDER_LINKEDIN
-  ?? 'https://www.linkedin.com/in/serhat-er';
+  ?? 'https://www.linkedin.com/in/serhat-er-brlvision/';
 
 export const AUTHORS: Author[] = [
   {

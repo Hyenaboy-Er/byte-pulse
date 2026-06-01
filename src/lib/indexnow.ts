@@ -24,7 +24,9 @@ export async function pingIndexNow(urls: string[]): Promise<{ ok: boolean; statu
   const body = {
     host,
     key: INDEXNOW_KEY,
-    keyLocation: `${SITE_URL}/indexnow/${INDEXNOW_KEY}`,
+    // Spec-konform: KEY.txt im Root. Die /indexnow/<key>-Route bleibt
+    // zusätzlich erreichbar (Backwards-Compatibility).
+    keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
     urlList: urls.slice(0, 10_000), // spec allows up to 10k per request
   };
   try {

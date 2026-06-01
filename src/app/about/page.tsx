@@ -30,7 +30,7 @@ export default function About() {
           </p>
           <div className="flex flex-wrap gap-2">
             <a
-              href="https://www.linkedin.com/in/serhat-er"
+              href="https://www.linkedin.com/in/serhat-er-brlvision/"
               target="_blank"
               rel="noopener noreferrer me"
               className="px-3 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-xs font-semibold transition"

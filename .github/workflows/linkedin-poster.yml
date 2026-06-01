@@ -1,0 +1,38 @@
+# LinkedIn Auto-Poster — 2 Posts pro Tag.
+#
+# Picks newest unposted article from data/articles-recent.json, posts as
+# Article Share (mit Link-Preview), committed dedup-state zurück.
+
+name: LinkedIn Auto-Poster
+
+on:
+  schedule:
+    - cron: '15 9 * * *'    # 09:15 UTC = 11:15 Berlin (morning)
+    - cron: '15 17 * * *'   # 17:15 UTC = 19:15 Berlin (after work)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Share latest article on LinkedIn
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_AUTHOR_URN:   ${{ secrets.LINKEDIN_AUTHOR_URN }}
+          SITE_URL: https://www.byte-pulse.net
+        run: node scripts/linkedin-poster.mjs
+
+      - name: Persist queue state
+        run: |
+          git add data/posted-to-linkedin.json
+          git -c user.name="byte-pulse-bot" \
+              -c user.email="byte-pulse-bot@users.noreply.github.com" \
+              commit -m "chore: record linkedin post [skip ci]" || echo "nichts zu committen"
+          git push || echo "push uebersprungen"

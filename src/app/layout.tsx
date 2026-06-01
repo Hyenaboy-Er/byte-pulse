@@ -164,7 +164,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   jobTitle: 'Founder & Editor-in-Chief',
                   url: `${SITE_URL}/author/serhat-er`,
                   sameAs: [
-                    process.env.SITE_FOUNDER_LINKEDIN ?? 'https://www.linkedin.com/in/serhat-er',
+                    process.env.SITE_FOUNDER_LINKEDIN ?? 'https://www.linkedin.com/in/serhat-er-brlvision/',
                     'https://x.com/bytePulsenew',
                   ],
                 },

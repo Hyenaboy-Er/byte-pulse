@@ -1,7 +1,7 @@
-// Danny-Williams-Hero — kleiner Anchor-Block für die Homepage, der den
-// jüngsten Broadcast embeddet. Ohne Client-State: wir lesen das YouTube-
-// Channel-Feed-RSS, schnappen die neueste Video-ID, fertig. Kein API-Key,
-// keine OAuth-Komplexität, kein Quota.
+// Byte-Pulse Nightly mit Danny Williams — Homepage-Block für den letzten
+// nächtlichen Broadcast. Ohne Client-State: wir lesen das YouTube-Channel-
+// Feed-RSS, schnappen die neueste Video-ID, fertig. Kein API-Key, keine
+// OAuth-Komplexität, kein Quota.
 //
 // Server-Komponente mit ISR (revalidate 30 Min) — Caching durch Next.js.
 import Link from 'next/link';
@@ -30,7 +30,7 @@ async function fetchLatestVideoId(): Promise<{ id: string; title: string }> {
   return { id: FALLBACK_ID, title: 'Byte-Pulse Nightly' };
 }
 
-export default async function DannyHero() {
+export default async function DannyWilliamsBroadcast() {
   const { id, title } = await fetchLatestVideoId();
   const youtubeUrl = `https://www.youtube.com/watch?v=${id}`;
   const channelUrl = `https://www.youtube.com/@${CHANNEL_HANDLE}`;

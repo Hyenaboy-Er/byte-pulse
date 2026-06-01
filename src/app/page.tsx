@@ -3,7 +3,7 @@ import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import TrendingTicker from '@/components/TrendingTicker';
 import NewsletterSection from '@/components/NewsletterSection';
-import DannyHero from '@/components/DannyHero';
+import DannyWilliamsBroadcast from '@/components/DannyWilliamsBroadcast';
 import { CATEGORIES } from '@/lib/categories';
 import { relativeTime, readingTime } from '@/lib/readingTime';
 import Link from 'next/link';
@@ -98,11 +98,11 @@ export default async function HomePage() {
 
         <AdSlot slot="home-mid" label="Sponsored" />
 
-        {/* Danny Williams Nightly — anchor-style YouTube broadcast embed.
-            High-trust E-E-A-T + monetisation signal (multi-format publisher),
-            drives YouTube channel subscribers. Auto-updates to the latest
-            broadcast via YT RSS (ISR 30min). */}
-        <DannyHero />
+        {/* Byte-Pulse Nightly mit Danny Williams — anchor-style YouTube
+            broadcast embed. High-trust E-E-A-T + monetisation signal
+            (multi-format publisher), drives YouTube channel subscribers.
+            Auto-updates to the latest broadcast via YT RSS (ISR 30 min). */}
+        <DannyWilliamsBroadcast />
 
         {/* MAIN + TRENDING SIDEBAR */}
         <div className="grid lg:grid-cols-[1fr_300px] gap-10 mt-10">

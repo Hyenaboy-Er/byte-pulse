@@ -9,6 +9,50 @@ export default function About() {
     <div className="max-w-2xl mx-auto px-4 py-12 prose-tech">
       <h1 className="text-3xl font-display font-extrabold mb-6">About Byte-Pulse</h1>
 
+      {/* Founder spotlight — E-E-A-T signal: real human, real photo, real
+          credentials, real social profiles. */}
+      <section className="not-prose flex flex-col sm:flex-row items-start gap-5 mb-8 p-5 rounded-2xl bg-bg-card border border-white/5">
+        <img
+          src="/authors/serhat-er.jpg"
+          alt="Serhat Er, Founder & Editor-in-Chief of Byte-Pulse"
+          className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-2 ring-accent/30 shrink-0"
+          loading="eager"
+        />
+        <div>
+          <div className="text-xs uppercase tracking-wider text-accent font-bold">
+            Founder &amp; Editor-in-Chief
+          </div>
+          <h2 className="font-display font-extrabold text-2xl mt-0.5 mb-2">Serhat Er</h2>
+          <p className="text-white/85 leading-relaxed mb-3">
+            I founded Byte-Pulse because European tech coverage rarely lands in US blogs
+            in time. I run the editorial direction, review every AI and security story
+            personally, and sign off on each article before publish. Based in Leverkusen.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="https://www.linkedin.com/in/serhat-er"
+              target="_blank"
+              rel="noopener noreferrer me"
+              className="px-3 py-1.5 rounded-full bg-accent hover:bg-accent-hover text-xs font-semibold transition"
+            >
+              LinkedIn
+            </a>
+            <a
+              href="/author/serhat-er"
+              className="px-3 py-1.5 rounded-full border border-white/15 hover:border-white/40 text-xs font-semibold transition"
+            >
+              Author page
+            </a>
+            <a
+              href="mailto:editorial@byte-pulse.net"
+              className="px-3 py-1.5 rounded-full border border-white/15 hover:border-white/40 text-xs font-semibold transition"
+            >
+              editorial@byte-pulse.net
+            </a>
+          </div>
+        </div>
+      </section>
+
       <p>
         Byte-Pulse is a bilingual (English &amp; German) tech news magazine. We track the
         most important sources in AI, gaming, hardware, mobile, software, security and EVs,

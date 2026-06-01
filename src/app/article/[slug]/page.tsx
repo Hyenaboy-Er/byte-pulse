@@ -133,6 +133,9 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
       knowsAbout: author.expertise,
       worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
       ...(author.sameAs.length ? { sameAs: author.sameAs } : {}),
+      ...(author.photo
+        ? { image: { '@type': 'ImageObject', url: `${SITE_URL}${author.photo}` } }
+        : {}),
     },
     // Editorial review chain — Google reads this as a quality signal
     // (every published article has a named human editor on file).

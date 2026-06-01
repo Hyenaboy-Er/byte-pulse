@@ -26,6 +26,9 @@ export type Author = {
   expertise: string[];
   // sameAs feeds Schema.org Person.sameAs; left empty until real socials exist.
   sameAs: string[];
+  // Public photo (path under /public). Empty string → falls back to initials
+  // avatar in the UI but Schema.org Person.image is omitted, not lied about.
+  photo?: string;
 };
 
 // Three personas so the byline rotates and looks like an editorial team.
@@ -62,6 +65,7 @@ export const AUTHORS: Author[] = [
     bioDe: `${SITE.founderName} hat ${BRAND} gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft persönlich alle KI- und Security-Stories, gibt jeden Artikel vor Veröffentlichung frei und schreibt die Kaufberatungen und Direktvergleiche. Basiert in Leverkusen, Deutschland. Kontakt: editorial@byte-pulse.net.`,
     expertise: ['AI', 'Security', 'European tech policy', 'Buying guides', 'Hardware comparisons', 'Consumer tech'],
     sameAs: [FOUNDER_LINKEDIN, BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_SITE],
+    photo: '/authors/serhat-er.jpg',
   },
   {
     slug: 'byte-pulse-newsroom',

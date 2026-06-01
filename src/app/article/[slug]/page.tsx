@@ -9,6 +9,7 @@ import AdsterraNative from '@/components/AdsterraNative';
 import ReadingProgress from '@/components/ReadingProgress';
 import ShareBar from '@/components/ShareBar';
 import ContinueReading from '@/components/ContinueReading';
+import AuthorBioBlock from '@/components/AuthorBioBlock';
 import SaveButton from '@/components/SaveButton';
 import ViewCounter from '@/components/ViewCounter';
 import { SITE } from '@/lib/site';
@@ -313,6 +314,15 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           </div>
         </section>
       )}
+
+      {/* Visible Author Bio — E-E-A-T signal that every story carries a
+          verifiable human byline with photo + bio + social proofs.
+          Required-ish for AdSense manual review; HCU rewards strong author
+          identity at the article footer level. */}
+      <AuthorBioBlock
+        author={author}
+        reviewedAt={article.updatedAt?.toISOString?.() ?? undefined}
+      />
 
       <ContinueReading excludeId={article.id} excludeCategory={article.category} />
     </article>

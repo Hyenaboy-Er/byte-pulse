@@ -13,8 +13,13 @@ name: Writer Poke
 
 on:
   schedule:
-    # Alle 30 Minuten — :00 und :30 jeder Stunde.
-    - cron: '*/30 * * * *'
+    # Alle 10 Minuten. Server-Side enforced PUBLIC_POKE_MIN_GAP_MS=20min,
+    # also wird trotzdem max 1 Artikel pro 20-Min-Fenster publiziert.
+    # Häufigeres Pokeing = robuster gegen GitHub-Actions-Free-Tier-Drops
+    # (Cron-Jobs werden bei Load gerne mal 30-90 Min skipped, also gleichen
+    # wir mit höherer Frequenz aus). Effektiv ergibt das ~36-72 Artikel/Tag
+    # Cap durch das 20-Min-Backoff, nicht den Cron.
+    - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 jobs:

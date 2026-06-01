@@ -38,6 +38,10 @@ const nextConfig = {
       // '/privacy-policy' or '/datenschutz' path and falsely report "no
       // privacy policy". Redirect the conventional paths to the real page
       // so no tool or crawler can miss it.
+      // Merged-identity author redirect. /author/serhat-kalender was the
+      // pseudonymous Editor-in-Chief; the persona has been merged into the
+      // founder's real profile. 301 preserves any backlinks Google indexed.
+      { source: '/author/serhat-kalender', destination: '/author/serhat-er', permanent: true },
       { source: '/privacy-policy', destination: '/privacy', permanent: true },
       { source: '/datenschutz', destination: '/de/privacy', permanent: true },
       { source: '/de/privacy-policy', destination: '/de/privacy', permanent: true },

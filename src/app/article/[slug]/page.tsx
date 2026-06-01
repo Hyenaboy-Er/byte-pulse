@@ -138,14 +138,14 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
     // (every published article has a named human editor on file).
     reviewedBy: {
       '@type': 'Person',
-      name: 'Serhat Kalender',
-      jobTitle: 'Editor-in-Chief',
-      url: `${SITE_URL}/author/serhat-kalender`,
+      name: 'Serhat Er',
+      jobTitle: 'Founder & Editor-in-Chief',
+      url: `${SITE_URL}/author/serhat-er`,
     },
     editor: {
       '@type': 'Person',
-      name: 'Serhat Kalender',
-      url: `${SITE_URL}/author/serhat-kalender`,
+      name: 'Serhat Er',
+      url: `${SITE_URL}/author/serhat-er`,
     },
     publisher: {
       '@type': 'NewsMediaOrganization',

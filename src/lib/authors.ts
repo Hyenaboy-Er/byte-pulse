@@ -42,35 +42,35 @@ const BRAND_YOUTUBE   = 'https://www.youtube.com/@Byte-PulseNet';
 const BRAND_TIKTOK    = 'https://www.tiktok.com/@bytepulse.net';
 const BRAND_SITE      = SITE.url;
 
+// Founder's verified personal LinkedIn — the single strongest E-E-A-T
+// signal for a one-founder publication. Set via env SITE_FOUNDER_LINKEDIN
+// to make corrections trivial. Default points at his public slug.
+export const FOUNDER_LINKEDIN = process.env.SITE_FOUNDER_LINKEDIN
+  ?? 'https://www.linkedin.com/in/serhat-er';
+
 export const AUTHORS: Author[] = [
   {
-    slug: 'serhat-kalender',
-    name: 'Serhat Kalender',
-    role: 'Editor-in-Chief',
-    bioEn: `Serhat founded ${BRAND} to cover European tech that US blogs miss. He oversees the editorial direction, reviews coverage of AI and security stories, and signs off on every article before publish. Based in Germany. Reach out at editorial@byte-pulse.net.`,
-    bioDe: `Serhat hat ${BRAND} gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft alle KI- und Security-Stories und gibt jeden Artikel vor Veröffentlichung frei. Basiert in Deutschland. Kontakt: editorial@byte-pulse.net.`,
-    expertise: ['AI', 'Security', 'European tech policy'],
-    // Editor-in-Chief is fronted by the brand's own channels — anchor him
-    // to those so Schema.org Person.sameAs is non-empty and verifiable.
-    sameAs: [BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_SITE],
+    // Merged identity: the founder is also the editor-in-chief. No more
+    // "Serhat Kalender" pseudonym — Google penalises ambiguous identity
+    // and the user prefers ONE verifiable byline. Old /author/serhat-kalender
+    // is kept as an alias by getAuthor() below so any indexed URLs still
+    // resolve.
+    slug: 'serhat-er',
+    name: SITE.founderName,
+    role: 'Founder & Editor-in-Chief',
+    bioEn: `${SITE.founderName} founded ${BRAND} to cover European tech that US blogs miss. He owns the editorial direction, reviews every AI and security story personally, signs off on each article before publish, and writes the in-depth buying guides and head-to-head comparisons. Based in Leverkusen, Germany. Reach out at editorial@byte-pulse.net.`,
+    bioDe: `${SITE.founderName} hat ${BRAND} gegründet, um europäische Tech-Themen abzudecken, die US-Blogs übersehen. Er verantwortet die redaktionelle Linie, prüft persönlich alle KI- und Security-Stories, gibt jeden Artikel vor Veröffentlichung frei und schreibt die Kaufberatungen und Direktvergleiche. Basiert in Leverkusen, Deutschland. Kontakt: editorial@byte-pulse.net.`,
+    expertise: ['AI', 'Security', 'European tech policy', 'Buying guides', 'Hardware comparisons', 'Consumer tech'],
+    sameAs: [FOUNDER_LINKEDIN, BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_SITE],
   },
   {
     slug: 'byte-pulse-newsroom',
     name: `${BRAND} Newsroom`,
     role: 'Editorial Team',
-    bioEn: `The ${BRAND} newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review — before it's published. Tips: editorial@byte-pulse.net.`,
-    bioDe: `Das ${BRAND}-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review — bevor sie veröffentlicht wird. Hinweise: editorial@byte-pulse.net.`,
+    bioEn: `The ${BRAND} newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review by ${SITE.founderName} — before it's published. Tips: editorial@byte-pulse.net.`,
+    bioDe: `Das ${BRAND}-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review durch ${SITE.founderName} — bevor sie veröffentlicht wird. Hinweise: editorial@byte-pulse.net.`,
     expertise: ['Hardware', 'Gaming', 'Mobile'],
     sameAs: [BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_YOUTUBE, BRAND_TIKTOK, BRAND_SITE],
-  },
-  {
-    slug: 'serhat-er',
-    name: SITE.founderName,
-    role: SITE.founderRole,
-    bioEn: `${SITE.founderName} is the founder of ${BRAND} and writes its in-depth buying guides and head-to-head comparisons. He digs through spec sheets, pricing and real-world trade-offs so readers don't have to — and always ends with a clear, opinionated recommendation. Based in Germany.`,
-    bioDe: `${SITE.founderName} ist Gründer von ${BRAND} und schreibt die ausführlichen Kaufberatungen und Direktvergleiche. Er gräbt sich durch Datenblätter, Preise und Praxis-Kompromisse, damit die Leser es nicht müssen — und endet immer mit einer klaren, meinungsstarken Empfehlung. Basiert in Deutschland.`,
-    expertise: ['Buying guides', 'Hardware comparisons', 'Consumer tech'],
-    sameAs: [BRAND_X, BRAND_BLUESKY, BRAND_SITE],
   },
   {
     slug: 'leah-becker',
@@ -83,15 +83,21 @@ export const AUTHORS: Author[] = [
   },
 ];
 
+// Legacy slug aliases — old /author/serhat-kalender URLs (Google may have
+// indexed them) redirect to the merged founder profile via the same lookup.
+const SLUG_ALIASES: Record<string, string> = {
+  'serhat-kalender': 'serhat-er',
+};
+
 const AUTHOR_BY_SLUG: Record<string, Author> = Object.fromEntries(AUTHORS.map((a) => [a.slug, a]));
 
-// Map article categories to the most plausible author. Editor-in-Chief gets
-// AI/security; Newsroom gets hardware/gaming/mobile; Software lead gets
-// the rest. This is what a real magazine's byline mapping looks like.
+// Map article categories to the most plausible author. Founder gets the
+// expert categories (AI/security/science + buying guides); Newsroom takes
+// hardware/gaming/mobile/ev; Software lead handles software/web/crypto.
 const CATEGORY_TO_AUTHOR: Record<string, string> = {
-  ai: 'serhat-kalender',
-  security: 'serhat-kalender',
-  science: 'serhat-kalender',
+  ai: 'serhat-er',
+  security: 'serhat-er',
+  science: 'serhat-er',
   hardware: 'byte-pulse-newsroom',
   gaming: 'byte-pulse-newsroom',
   mobile: 'byte-pulse-newsroom',
@@ -115,12 +121,21 @@ export function authorForArticle(
   // Derived from SITE.name (not imported from the agent) to keep this
   // page-side module free of the heavy agent graph while staying in sync.
   if (sourceName === `${BRAND} Original`) {
-    return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[1];
+    return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[0];
   }
   const wanted = CATEGORY_TO_AUTHOR[category] ?? 'byte-pulse-newsroom';
-  return AUTHOR_BY_SLUG[wanted] ?? AUTHORS[1];
+  return AUTHOR_BY_SLUG[wanted] ?? AUTHORS[0];
 }
 
 export function getAuthor(slug: string): Author | null {
-  return AUTHOR_BY_SLUG[slug] ?? null;
+  const resolved = SLUG_ALIASES[slug] ?? slug;
+  return AUTHOR_BY_SLUG[resolved] ?? null;
+}
+
+/**
+ * Canonical slug for an author — follows aliases. Used by article pages
+ * and JSON-LD to avoid emitting a /author URL Google would treat as 404.
+ */
+export function canonicalAuthorSlug(slug: string): string {
+  return SLUG_ALIASES[slug] ?? slug;
 }

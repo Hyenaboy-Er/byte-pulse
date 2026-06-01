@@ -3,6 +3,7 @@ import { ArticleCard } from '@/components/ArticleCard';
 import AdSlot from '@/components/AdSlot';
 import TrendingTicker from '@/components/TrendingTicker';
 import NewsletterSection from '@/components/NewsletterSection';
+import DannyHero from '@/components/DannyHero';
 import { CATEGORIES } from '@/lib/categories';
 import { relativeTime, readingTime } from '@/lib/readingTime';
 import Link from 'next/link';
@@ -96,6 +97,12 @@ export default async function HomePage() {
         </section>
 
         <AdSlot slot="home-mid" label="Sponsored" />
+
+        {/* Danny Williams Nightly — anchor-style YouTube broadcast embed.
+            High-trust E-E-A-T + monetisation signal (multi-format publisher),
+            drives YouTube channel subscribers. Auto-updates to the latest
+            broadcast via YT RSS (ISR 30min). */}
+        <DannyHero />
 
         {/* MAIN + TRENDING SIDEBAR */}
         <div className="grid lg:grid-cols-[1fr_300px] gap-10 mt-10">

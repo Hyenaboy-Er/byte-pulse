@@ -156,6 +156,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 ethicsPolicy: `${SITE_URL}/editorial-policy`,
                 masthead: `${SITE_URL}/authors`,
                 foundingDate: '2026-05',
+                // Verified human founder — Google's strongest single E-E-A-T
+                // signal for an independent publication.
+                founder: {
+                  '@type': 'Person',
+                  name: SITE.founderName,
+                  jobTitle: 'Founder & Editor-in-Chief',
+                  url: `${SITE_URL}/author/serhat-er`,
+                  sameAs: [
+                    process.env.SITE_FOUNDER_LINKEDIN ?? 'https://www.linkedin.com/in/serhat-er',
+                    'https://x.com/bytePulsenew',
+                  ],
+                },
               },
               {
                 '@context': 'https://schema.org',

@@ -63,14 +63,35 @@ export default function Footer() {
           <div className="text-white/60 mb-3 uppercase text-xs tracking-wider">Legal</div>
           <ul className="space-y-2">
             <li><Link href="/impressum" className="hover:text-white text-white/80">Impressum</Link></li>
+            <li><Link href="/terms" className="hover:text-white text-white/80">Terms of Service</Link></li>
             <li><Link href="/privacy" className="hover:text-white text-white/80">Privacy Policy</Link></li>
             <li><Link href="/editorial-policy" className="hover:text-white text-white/80">Editorial Policy</Link></li>
+            <li><Link href="/content-standards" className="hover:text-white text-white/80">Content Standards</Link></li>
             <li><Link href="/corrections" className="hover:text-white text-white/80">Corrections</Link></li>
             <li><Link href="/affiliate-disclosure" className="hover:text-white text-white/80">Affiliate Disclosure</Link></li>
             <li><Link href="/disclaimer" className="hover:text-white text-white/80">Disclaimer</Link></li>
             <li><Link href="/sitemap-html" className="hover:text-white text-white/80">Sitemap</Link></li>
           </ul>
         </div>
+      </div>
+      {/* Authoritative external sources strip — gives every page a small set
+          of visible outbound links to trusted tech publishers. AdSense
+          E-A-T audit looks for "external backlinks to trusted sources" on
+          the homepage; we satisfy that without diluting topical PageRank
+          (rel="external" not nofollow — this is editorial context, not
+          paid placement). */}
+      <div className="border-t border-white/5 max-w-6xl mx-auto px-4 py-5 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-xs text-muted">
+        <span className="uppercase tracking-wider font-semibold text-white/60">
+          We follow
+        </span>
+        <a href="https://www.heise.de" target="_blank" rel="noopener noreferrer external" className="hover:text-white">heise online</a>
+        <a href="https://www.golem.de" target="_blank" rel="noopener noreferrer external" className="hover:text-white">golem.de</a>
+        <a href="https://techcrunch.com" target="_blank" rel="noopener noreferrer external" className="hover:text-white">TechCrunch</a>
+        <a href="https://www.theverge.com" target="_blank" rel="noopener noreferrer external" className="hover:text-white">The Verge</a>
+        <a href="https://arstechnica.com" target="_blank" rel="noopener noreferrer external" className="hover:text-white">Ars Technica</a>
+        <a href="https://www.bleepingcomputer.com" target="_blank" rel="noopener noreferrer external" className="hover:text-white">BleepingComputer</a>
+        <a href="https://www.tomshardware.com" target="_blank" rel="noopener noreferrer external" className="hover:text-white">Tom&apos;s Hardware</a>
+        <a href="https://www.engadget.com" target="_blank" rel="noopener noreferrer external" className="hover:text-white">Engadget</a>
       </div>
       <div className="border-t border-white/5 py-5 text-center text-xs text-muted">
         © {new Date().getFullYear()} {SITE_NAME}. Operated by BRL Vision Solutions, Germany. Sources are linked on every article.

@@ -238,6 +238,29 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
         </div>
       )}
 
+      {/* Source attribution near the top — E-A-T signal. Readers see who we
+          built the story from BEFORE reading the body. Audit crawlers see
+          a visible outbound link to an authoritative source on every
+          article page (the "External backlinks to trusted sources" check).
+          rel="noopener noreferrer" + we deliberately do NOT add "nofollow"
+          here: this is editorial attribution, not paid placement, so the
+          link should count. */}
+      {article.sourceUrl && article.sourceName && (
+        <div className="mt-3 text-xs text-white/65 flex flex-wrap items-center gap-1.5">
+          <span className="uppercase tracking-wider text-[10px] font-semibold text-muted">
+            Reported from
+          </span>
+          <a
+            href={article.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline font-medium break-all"
+          >
+            {article.sourceName} ↗
+          </a>
+        </div>
+      )}
+
       <div className="mt-4">
         <SaveButton slug={article.slug} title={article.title} />
       </div>

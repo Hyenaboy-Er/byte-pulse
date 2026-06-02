@@ -28,6 +28,33 @@ export default function About() {
             in time. I run the editorial direction, review every AI and security story
             personally, and sign off on each article before publish. Based in Leverkusen.
           </p>
+          <ul className="text-sm text-white/75 leading-snug mb-3 space-y-1 list-none pl-0">
+            <li>
+              <span className="text-white/55">Role:</span> Founder, Editor-in-Chief and
+              responsible person per § 18 (2) MStV (German Media Treaty)
+            </li>
+            <li>
+              <span className="text-white/55">Background:</span> 12+ years in technology
+              and operations (telecommunications, hardware logistics, automotive aftermarket,
+              AR/VR product development)
+            </li>
+            <li>
+              <span className="text-white/55">Also operates:</span>{' '}
+              <a href="https://brlvision.com" target="_blank" rel="noopener noreferrer"
+                 className="text-accent hover:underline">
+                BRL Vision Solutions
+              </a>{' '}
+              — augmented-reality solutions for SMB
+            </li>
+            <li>
+              <span className="text-white/55">Domain expertise:</span> AI tooling,
+              hardware ecosystems, cybersecurity, AR/VR, EV market
+            </li>
+            <li>
+              <span className="text-white/55">Languages:</span> German (native),
+              English (full professional), Turkish (native)
+            </li>
+          </ul>
           <div className="flex flex-wrap gap-2">
             <a
               href="https://www.linkedin.com/in/serhat-er-brlvision/"

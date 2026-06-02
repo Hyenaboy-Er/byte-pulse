@@ -12,6 +12,7 @@ import ContinueReading from '@/components/ContinueReading';
 import AuthorBioBlock from '@/components/AuthorBioBlock';
 import SaveButton from '@/components/SaveButton';
 import ViewCounter from '@/components/ViewCounter';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { SITE } from '@/lib/site';
 import NewsletterForm from '@/components/NewsletterForm';
 import { getCategory } from '@/lib/categories';
@@ -184,7 +185,13 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
       <ReadingProgress />
       <ShareBar title={article.title} />
 
-      <Link href="/" className="text-sm text-muted hover:text-accent">← Home</Link>
+      <Breadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          ...(cat ? [{ label: cat.name, href: `/category/${cat.slug}` }] : []),
+          { label: article.title },
+        ]}
+      />
 
       {cat && (
         <div className="mt-6">

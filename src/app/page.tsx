@@ -48,6 +48,14 @@ export default async function HomePage() {
       />
 
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+        {/* H1 — single, descriptive heading for SEO + AdSense structural compliance.
+            Visually subtle (sr-only on small screens, small label on desktop) so it
+            doesn't compete with the hero article headline, but present in the DOM
+            and to crawlers/screen-readers. */}
+        <h1 className="sr-only md:not-sr-only md:text-xs md:font-semibold md:tracking-[0.18em] md:uppercase md:text-muted md:mb-3">
+          Byte-Pulse — Independent Tech News, AI, Hardware &amp; Gaming
+        </h1>
+
         {lastUpdated && (
           <div className="flex items-center gap-2 text-xs text-muted mb-5">
             <span className="relative inline-flex w-2 h-2 rounded-full bg-green-400 live-dot" />
@@ -69,7 +77,7 @@ export default async function HomePage() {
                   {a.imageUrl ? (
                     <img
                       src={a.imageUrl}
-                      alt=""
+                      alt={a.title}
                       loading="lazy"
                       className="w-24 sm:w-28 h-full aspect-square object-cover bg-bg-elevated shrink-0"
                     />

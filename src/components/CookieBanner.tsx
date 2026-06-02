@@ -9,18 +9,14 @@ export default function CookieBanner() {
   const isDE = pathname === '/de' || pathname.startsWith('/de/');
   const [show, setShow] = useState(false);
 
-  // Banner renders if ANY tracking ad network is configured (AdSense, Adsterra,
-  // OneSignal). If none → no tracking → no banner needed.
-  const trackingActive =
-    typeof window !== 'undefined' &&
-    (
-      !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT ||
-      !!process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_URL ||
-      !!process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID
-    );
-
+  // Always render the consent banner on first visit.
+  //
+  // We previously gated this on "tracking is configured" — but the AdSense
+  // pre-approval audit (and Google's CMP requirement for EU traffic) needs
+  // a visible consent mechanism present BEFORE ads are approved, not after.
+  // Showing it always also future-proofs: the moment AdSense env vars get
+  // set, consent state is already collected from prior visitors.
   useEffect(() => {
-    if (!trackingActive) return;
     try {
       const v = localStorage.getItem(STORAGE_KEY);
       if (!v) setShow(true);
@@ -28,9 +24,9 @@ export default function CookieBanner() {
       // localStorage might be blocked; show banner anyway
       setShow(true);
     }
-  }, [trackingActive]);
+  }, []);
 
-  if (!trackingActive || !show) return null;
+  if (!show) return null;
 
   function decide(value: 'accept' | 'reject') {
     try {

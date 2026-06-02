@@ -67,6 +67,8 @@ export default function Footer() {
             <li><Link href="/editorial-policy" className="hover:text-white text-white/80">Editorial Policy</Link></li>
             <li><Link href="/corrections" className="hover:text-white text-white/80">Corrections</Link></li>
             <li><Link href="/affiliate-disclosure" className="hover:text-white text-white/80">Affiliate Disclosure</Link></li>
+            <li><Link href="/disclaimer" className="hover:text-white text-white/80">Disclaimer</Link></li>
+            <li><Link href="/sitemap-html" className="hover:text-white text-white/80">Sitemap</Link></li>
           </ul>
         </div>
       </div>

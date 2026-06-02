@@ -47,7 +47,7 @@ export function ArticleCard({
           {article.imageUrl ? (
             <img
               src={article.imageUrl}
-              alt=""
+              alt={article.title}
               loading="eager"
               className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-700"
             />
@@ -92,7 +92,7 @@ export function ArticleCard({
     return (
       <Link href={articleHref} className="group flex gap-3 py-3 border-b border-white/5 last:border-0">
         {article.imageUrl ? (
-          <img src={article.imageUrl} alt="" className="w-16 h-16 rounded-md object-cover flex-shrink-0 bg-bg-elevated" loading="lazy" />
+          <img src={article.imageUrl} alt={article.title} className="w-16 h-16 rounded-md object-cover flex-shrink-0 bg-bg-elevated" loading="lazy" />
         ) : (
           <div className="w-16 h-16 rounded-md gradient-mesh flex-shrink-0" />
         )}
@@ -112,7 +112,7 @@ export function ArticleCard({
     >
       {article.imageUrl ? (
         <div className="aspect-[16/9] w-full overflow-hidden bg-bg-elevated relative">
-          <img src={article.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.05] transition duration-500" />
+          <img src={article.imageUrl} alt={article.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.05] transition duration-500" />
           <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         </div>
       ) : (

@@ -1,0 +1,17 @@
+# Writer-Poke #4 — parallel cron queue (siehe writer-poke-2.yml für Rationale).
+name: Writer Poke #4
+
+on:
+  schedule:
+    # :00, :20, :40 jeder Stunde
+    - cron: '0,20,40 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire /api/cron
+        run: |
+          POKE='pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick'
+          curl -sS -m 60 "https://www.byte-pulse.net/api/cron?token=$POKE&batch=1" || true

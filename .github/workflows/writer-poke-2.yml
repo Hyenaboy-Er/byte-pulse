@@ -1,0 +1,27 @@
+# Writer-Poke #2 — parallel cron queue.
+#
+# GitHub Actions Free-Tier-Cron drops runs unter Last (heute z.B. 14h Lücke
+# zwischen Run #23 und #24 trotz */10-Cron). Lösung: mehrere Workflow-Files
+# mit gestaffelten Cron-Zeiten — JEDER Workflow hat eine eigene Queue bei
+# GitHub, sodass ein gedrosselter Workflow nicht die anderen aufhält.
+#
+# Server-Side 20-Min-Cooldown bleibt — max 1 Artikel/20 Min unabhängig von
+# Poke-Frequency. Mehr Pokes = mehr Trefferchancen wenn einzelne skipped
+# werden, kein Über-Publish-Risiko.
+
+name: Writer Poke #2
+
+on:
+  schedule:
+    # :05, :25, :45 jeder Stunde — versetzt zu writer-poke.yml (*/10)
+    - cron: '5,25,45 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire /api/cron
+        run: |
+          POKE='pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick'
+          curl -sS -m 60 "https://www.byte-pulse.net/api/cron?token=$POKE&batch=1" || true

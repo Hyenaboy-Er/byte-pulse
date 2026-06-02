@@ -7,22 +7,22 @@ const STORAGE_KEY = 'bp_consent_v1';
 export default function CookieBanner() {
   const pathname = usePathname() || '/';
   const isDE = pathname === '/de' || pathname.startsWith('/de/');
-  const [show, setShow] = useState(false);
-
-  // Always render the consent banner on first visit.
+  // Initial state = true so the banner is present in the SSR HTML.
   //
-  // We previously gated this on "tracking is configured" — but the AdSense
-  // pre-approval audit (and Google's CMP requirement for EU traffic) needs
-  // a visible consent mechanism present BEFORE ads are approved, not after.
-  // Showing it always also future-proofs: the moment AdSense env vars get
-  // set, consent state is already collected from prior visitors.
+  // AdSense pre-approval scrapers + GDPR/CMP audit tools fetch the page
+  // server-side and parse the raw HTML; they don't run JS. If we start
+  // with `useState(false)` the banner is invisible in the SSR HTML and
+  // the audit reports "no consent mechanism" even though one renders
+  // after hydration. Starting from `true` and hiding via useEffect when
+  // consent already exists is the SSR-correct order.
+  const [show, setShow] = useState(true);
+
   useEffect(() => {
     try {
       const v = localStorage.getItem(STORAGE_KEY);
-      if (!v) setShow(true);
+      if (v) setShow(false);
     } catch {
-      // localStorage might be blocked; show banner anyway
-      setShow(true);
+      /* localStorage blocked → keep banner shown */
     }
   }, []);
 

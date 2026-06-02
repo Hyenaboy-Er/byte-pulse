@@ -56,12 +56,48 @@ const nextConfig = {
     ];
   },
   async headers() {
+    // Content-Security-Policy — moderate strictness designed to:
+    //   1. Satisfy automated AdSense / security audits (CSP header present
+    //      and not 'unsafe-*' all the way to default-src),
+    //   2. Not break Next.js hydration (needs 'unsafe-inline' for inline
+    //      <script> from the framework and our JSON-LD blocks),
+    //   3. Allow AdSense, Vercel Analytics, YouTube embeds, RSS-img hosts.
+    //
+    // 'unsafe-eval' is included for script-src because Next.js 15 uses Eval
+    // in dev/turbopack code paths and a few framework chunks still rely on
+    // it in production. Removing it tends to silently break hydration on
+    // older browsers without a clear error.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "style-src 'self' 'unsafe-inline'",
+      // Images come from many news-source CDNs; locking down is impractical.
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://www.google-analytics.com https://pagead2.googlesyndication.com",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net",
+      "media-src 'self' https:",
+      // Vercel Speed Insights spawns a Web Worker from a blob: URL to
+      // collect Core Web Vitals without blocking the main thread. Without
+      // this entry the CSP blocks the worker and CWV reporting silently
+      // dies (Gemini-flagged during PAL cross-check).
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+      "upgrade-insecure-requests",
+    ].join('; ');
+
     const security = [
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+      { key: 'Content-Security-Policy', value: csp },
+      { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+      { key: 'X-DNS-Prefetch-Control', value: 'on' },
     ];
     // Aggressive CDN cache for article pages: content rarely changes after
     // publish, and the writer re-pings IndexNow when it does. 1h browser

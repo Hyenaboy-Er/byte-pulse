@@ -89,6 +89,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {braveCreatorToken && (
           <meta name="brave-rewards-verification" content={braveCreatorToken} />
         )}
+        {/* Domain & publication age signals. Many automated audit tools
+            (AdSense readiness checkers, broker reports) try WHOIS first;
+            when WHOIS is privacy-protected (which our registrar is) they
+            fall back to scraping meta tags / JSON-LD. We expose the
+            founding date through every channel a parser might check. */}
+        <meta name="dcterms.created" content="2026-05-12" />
+        <meta name="dcterms.modified" content={new Date().toISOString().slice(0, 10)} />
+        <meta name="article:published_time" content="2026-05-12T00:00:00Z" />
+        <meta name="organization-founding-date" content="2026-05-12" />
+        <meta name="generator" content="Byte-Pulse newsroom (Next.js, founded 2026)" />
         {adsenseClient ? (
           <>
             <script
@@ -155,7 +165,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 diversityPolicy: `${SITE_URL}/editorial-policy`,
                 ethicsPolicy: `${SITE_URL}/editorial-policy`,
                 masthead: `${SITE_URL}/authors`,
-                foundingDate: '2026-05',
+                foundingDate: '2026-05-12',
                 // Verified human founder — Google's strongest single E-E-A-T
                 // signal for an independent publication.
                 founder: {

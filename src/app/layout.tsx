@@ -124,6 +124,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             />
           </>
         ) : null}
+        {/* Google Analytics 4 — activated by NEXT_PUBLIC_GA4_ID env var.
+            AdSense eligibility audits look for either GA or GTM tags as a
+            "site is actively measured" signal. We default-deny consent and
+            let CookieBanner flip it via gtag('consent', 'update', …). When
+            AdSense is also active they share the same dataLayer + gtag. */}
+        {process.env.NEXT_PUBLIC_GA4_ID ? (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA4_ID}',{anonymize_ip:true,send_page_view:true});`,
+              }}
+            />
+          </>
+        ) : null}
       </head>
       <body className="min-h-screen flex flex-col">
         {/* Organization + WebSite JSON-LD — global trust signal. Google

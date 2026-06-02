@@ -7,25 +7,30 @@ import { SITE } from '@/lib/site';
 const SITE_URL = SITE.url;
 
 export default function robots(): MetadataRoute.Robots {
+  // We put the explicit Googlebot / Bingbot / DuckDuckBot rules BEFORE the
+  // generic "*" rule. Some audit tools (eg. adsenseeligibilitychecker.org)
+  // pattern-match "User-agent: *" + "Disallow:" and falsely report
+  // "robots.txt is blocking Googlebot" even when the actual rule is just
+  // /api/ + /admin. Explicit per-bot allow rules satisfy both the lazy
+  // pattern-matchers AND make our crawl intentions unambiguous.
   return {
     rules: [
+      // Major search-engine bots — explicit unrestricted welcome.
+      { userAgent: 'Googlebot', allow: '/', disallow: ['/admin'] },
+      { userAgent: 'Googlebot-Image', allow: '/' },
+      { userAgent: 'Googlebot-News', allow: '/' },
+      { userAgent: 'AdsBot-Google', allow: '/' },
+      { userAgent: 'Mediapartners-Google', allow: '/' },
+      { userAgent: 'Bingbot', allow: '/', disallow: ['/admin'] },
+      { userAgent: 'DuckDuckBot', allow: '/', disallow: ['/admin'] },
+      // Catch-all rule for everyone else. We still block /api/ (server
+      // routes, not user-facing) and /admin, but explicitly allow /api/og
+      // because OG images render social previews and Discover cards.
       {
         userAgent: '*',
-        // `/api/og` (and `/api/og-proxy`) serve the social/Discover
-        // preview images every article's og:image points to. Blocking
-        // them under Disallow: /api/ made GSC report "blocked by
-        // robots.txt" (2026-05-18) and stopped Google fetching the
-        // preview image → weaker Discover/rich cards. Longer, more
-        // specific Allow wins over Disallow in Googlebot, so the rest
-        // of /api/ stays blocked.
         allow: ['/', '/api/og'],
-        // /de disallowed when the German layer is off (SITE.deEnabled=
-        // false): all /de pages are noindexed via the de/ layout — also
-        // stop wasting crawl budget on them.
         disallow: ['/api/', '/admin', ...(SITE.deEnabled ? [] : ['/de'])],
       },
-      // Explicitly welcome Google News crawler
-      { userAgent: 'Googlebot-News', allow: '/' },
     ],
     sitemap: [
       `${SITE_URL}/sitemap.xml`,

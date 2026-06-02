@@ -82,9 +82,10 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
     model: MODELS.writer,
     system: DRAFTER_PERSONA,
     user: userPrompt,
-    // Higher token budget than single-pass writer — we WANT length here.
-    // Editor (next stage) compresses to publish length.
-    maxTokens: 6500,
+    // Bumped to 8500 on 2026-06-02 — Drafter now targets 2500-3000 words
+    // (was 1700-2200) per Serhat's depth mandate. 8500 tokens output ≈
+    // 6300 words, leaving 2-3x JSON headroom.
+    maxTokens: 8500,
     json: true,
   });
 
@@ -98,8 +99,10 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
 // ---------------------------------------------------------------------------
 
 async function editToPublishLength(draft: WrittenArticle): Promise<WrittenArticle> {
-  const userPrompt = `Marcus's draft is below. Cut it to 900-1300 words per your persona
-instructions. Preserve every fact, number, quote and named entity.
+  const userPrompt = `Marcus's long draft is below. Cut it to 1400-1800 words per your
+persona instructions. Preserve every fact, number, quote and named entity.
+Keep ALL signature sections (Context / Compared to / What this means for you /
+What's still unclear / Why this matters).
 
 DRAFT:
 """
@@ -118,7 +121,7 @@ Return the edited version as JSON.`;
     model: MODELS.writer,
     system: EDITOR_PERSONA,
     user: userPrompt,
-    maxTokens: 4500,
+    maxTokens: 6000,
     json: true,
   });
 
@@ -221,7 +224,7 @@ Polish per your persona instructions. Return final JSON.`;
     model: MODELS.writer,
     system: POLISHER_PERSONA,
     user: userPrompt,
-    maxTokens: 4500,
+    maxTokens: 6000,
     json: true,
   });
 

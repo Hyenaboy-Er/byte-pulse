@@ -166,6 +166,9 @@ export default async function HomePage() {
                       src={a.imageUrl}
                       alt={a.title}
                       loading="lazy"
+                      decoding="async"
+                      width={112}
+                      height={112}
                       className="w-24 sm:w-28 h-full aspect-square object-cover bg-bg-elevated shrink-0"
                     />
                   ) : (

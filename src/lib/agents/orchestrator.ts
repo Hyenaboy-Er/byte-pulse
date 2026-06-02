@@ -2,7 +2,16 @@ import { prisma } from '../db';
 import { fetchAllSources, findTrending, type FeedItem } from '../rss';
 import { research } from './researcher';
 import { writeArticle } from './writer';
+import { runMultiAgentPipeline } from './multi-agent-pipeline';
 import { humanize } from './humanizer';
+
+// Feature flag: turn the multi-agent newsroom pipeline on. When false the
+// orchestrator falls back to the legacy single-pass writer. Default true on
+// 2026-06-02 — content depth has been the recurring blocker for AdSense
+// quality signals, and the 4-stage pipeline (drafter → editor → fact-checker
+// → polisher) substantially improves both depth and originality. Set
+// MULTI_AGENT_PIPELINE=0 in env to disable temporarily.
+const MULTI_AGENT_ENABLED = process.env.MULTI_AGENT_PIPELINE !== '0';
 import { reviewArticle } from './reviewer';
 import { uniqueSlug } from '../slugify';
 import { getCurrentTrends, trendsBoost, type TrendsSnapshot } from './keyword-research';
@@ -315,12 +324,37 @@ export async function runOnce(): Promise<RunReport> {
     report.researched = { fullTextLen: researchResult.fullText.length, hasImage: !!researchResult.imageUrl };
     await logAgent('researcher', 'fetched', 'success', `len=${researchResult.fullText.length}`, { hasImage: !!researchResult.imageUrl });
 
-    // 2. Write — generate English article (with trending keywords for SEO)
+    // 2. Write — newsroom multi-agent pipeline OR legacy single-pass writer.
+    //
+    // Multi-agent (default): Drafter (Marcus) writes long-form 1700-2200w,
+    // Editor (Eva) cuts to 900-1300w, Fact-Checker (Theo) verifies every
+    // claim, Polisher (Carmen) applies fixes and removes AI tells. Real
+    // newsroom flow, dramatically deeper output than single-pass.
+    //
+    // Legacy: single chat() call producing 900-1300w directly.
     let draft;
     try {
-      draft = await writeArticle(researchResult, trends?.topics.slice(0, 12));
-      report.written = { title: draft.title, category: draft.category };
-      await logAgent('writer', 'wrote', 'success', draft.title);
+      if (MULTI_AGENT_ENABLED) {
+        const result = await runMultiAgentPipeline(
+          researchResult,
+          trends?.topics.slice(0, 12),
+        );
+        draft = result.article;
+        report.written = { title: draft.title, category: draft.category };
+        await logAgent(
+          'multi-agent',
+          'pipeline-done',
+          'success',
+          `drafter=${result.stages.drafterWords}w editor=${result.stages.editorWords}w polisher=${result.stages.polisherWords}w fc=${result.stages.factCheck.factuality_score}`,
+        );
+      } else {
+        draft = await writeArticle(
+          researchResult,
+          trends?.topics.slice(0, 12),
+        );
+        report.written = { title: draft.title, category: draft.category };
+        await logAgent('writer', 'wrote', 'success', draft.title);
+      }
     } catch (err) {
       const msg = (err as Error).message;
       report.error = `Writer: ${msg}`;

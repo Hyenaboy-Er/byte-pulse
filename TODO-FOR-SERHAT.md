@@ -85,7 +85,25 @@ Code aktiviert sich automatisch (alle gated auf `process.env.*`).
 
 ---
 
-## 5. Brave Creators verifizieren (~5 Min, kleine Einnahmen)
+## 5. Google Analytics 4 anlegen (~5 Min, AdSense-Audit-Signal)
+
+**Was:** GA4 zeigt Traffic-Signale die AdSense im Re-Review als „Site
+is actively measured" liest. Code ist ready, braucht nur die Measurement-ID.
+
+**Schritte:**
+1. https://analytics.google.com → „Start measuring"
+2. Property anlegen: Name `Byte-Pulse`, Timezone Berlin, Currency EUR
+3. Stream anlegen: Web, URL `https://www.byte-pulse.net`
+4. **Measurement ID** kopieren (sieht aus wie `G-XXXXXXXXXX`)
+5. In Vercel Env Vars: `NEXT_PUBLIC_GA4_ID=G-XXXXXXXXXX`
+6. Re-deploy → GA4 aktiv
+
+GA4 + AdSense teilen sich denselben dataLayer + Consent — kein
+Doppelt-Tracking, ein Cookie-Banner für beide.
+
+---
+
+## 6. Brave Creators verifizieren (~5 Min, kleine Einnahmen)
 
 **Was:** Brave-Browser-User können dir BAT-Tokens (~3-5 ct pro engaged Reader)
 passiv schicken, plus Brave teilt Werbe-Einnahmen.

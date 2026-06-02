@@ -6,11 +6,23 @@
   color-scheme: dark;
 }
 
+/* Base typography — guarantees body text is at least 16px on every viewport
+   (AdSense / WCAG 2.1 readable-font requirement). Tailwind's default
+   text-base is 1rem = 16px, but only IF the root font-size is at its
+   browser default. We pin it here so user-override stylesheets or future
+   Tailwind config changes can't accidentally drop us below 16px. */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 html, body {
   background: #0a0a0f;
   color: #e8e8ee;
   font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
+  font-size: 1rem;        /* 16px guaranteed */
+  line-height: 1.55;      /* WCAG comfortable */
 }
 
 ::selection { background: #ff3366; color: white; }

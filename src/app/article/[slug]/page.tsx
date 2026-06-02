@@ -13,6 +13,7 @@ import AuthorBioBlock from '@/components/AuthorBioBlock';
 import SaveButton from '@/components/SaveButton';
 import ViewCounter from '@/components/ViewCounter';
 import Breadcrumbs from '@/components/Breadcrumbs';
+import DiscussionBlock from '@/components/DiscussionBlock';
 import { SITE } from '@/lib/site';
 import NewsletterForm from '@/components/NewsletterForm';
 import { getCategory } from '@/lib/categories';
@@ -309,6 +310,11 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           {article.sourceName} – {article.sourceUrl}
         </a>
       </div>
+
+      <DiscussionBlock
+        title={article.title}
+        url={`${SITE.url}/article/${article.slug}`}
+      />
 
       {!!tags.length && (
         <div className="mt-6 flex flex-wrap gap-2">

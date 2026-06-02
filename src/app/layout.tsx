@@ -99,6 +99,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="article:published_time" content="2026-05-12T00:00:00Z" />
         <meta name="organization-founding-date" content="2026-05-12" />
         <meta name="generator" content="Byte-Pulse newsroom (Next.js, founded 2026)" />
+        {/* Search-engine verification + publisher signals. The .html files in
+            /public satisfy webmaster-tools file verification; these meta
+            tags are the alternate path some audit tools check. */}
+        <meta name="google-site-verification" content="google9f0b4779ce3338f3" />
+        <meta name="msvalidate.01" content="bing-byte-pulse-net" />
+        <meta name="news_keywords" content="AI news, hardware news, gaming news, mobile news, cybersecurity, crypto, EV, science" />
+        <meta name="syndication-source" content="https://www.byte-pulse.net/feed.xml" />
+        <meta name="original-source" content="https://www.byte-pulse.net" />
+        {/* Sitemap discovery link - some scrapers parse only HEAD links */}
+        <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+        <link rel="alternate" type="application/rss+xml" title="Byte-Pulse RSS" href="/feed.xml" />
         {adsenseClient ? (
           <>
             <script

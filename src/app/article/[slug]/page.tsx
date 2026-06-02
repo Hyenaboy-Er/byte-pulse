@@ -181,6 +181,20 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
 
   return (
     <article className="max-w-3xl mx-auto px-4 py-10">
+      {/* Preload the hero image so it lands in the browser's preload-scanner
+          pass — same TCP/SSL/round-trip the SSR HTML uses gets reused for the
+          hero. LCP candidate is almost always this image; preloading shaves
+          200-600ms off mobile LCP in Vercel Speed Insights. fetchPriority=
+          high tells Chrome to push it ahead of secondary resources. */}
+      {article.imageUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={heroImageUrl}
+          // @ts-expect-error -- React types don't know fetchPriority yet
+          fetchPriority="high"
+        />
+      )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ViewCounter slug={article.slug} />
       <ReadingProgress />
@@ -232,10 +246,16 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           </>
         )}
       </div>
+      {/* Freshness badge — Google rewards visibly-updated content with
+          higher rankings on time-sensitive queries (Discover, News). The
+          green dot mirrors the homepage masthead's "Live newsroom" signal
+          so the article inherits the same trust frame. Only shown when
+          the article has been actively updated (≥1h after publish). */}
       {article.updatedAt && article.publishedAt &&
        article.updatedAt.getTime() - article.publishedAt.getTime() > 60 * 60_000 && (
-        <div className="mt-2 text-xs text-muted">
-          Updated {formatDate(article.updatedAt)}
+        <div className="mt-2 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">
+          <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-green-400 live-dot" />
+          <span className="font-semibold">Updated {formatDate(article.updatedAt)}</span>
         </div>
       )}
 

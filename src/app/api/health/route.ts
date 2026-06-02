@@ -14,6 +14,21 @@ type HealthState = {
   total: number;
   lastWriterRun?: string;
   lastPublishedAgo?: string;
+  // Extended monitoring (added 2026-06-02): operational status of every
+  // moving part. Keeps the check route a single endpoint I can curl to see
+  // the whole stack at a glance.
+  pipeline?: {
+    multiAgentEnabled: boolean;
+    plagiarismThreshold: number;
+    parallelCronWorkflows: number;
+  };
+  monetization?: {
+    adsenseConfigured: boolean;
+    skimlinksConfigured: boolean;
+    braveConfigured: boolean;
+    amazonConfigured: boolean;
+    linkedinPosterConfigured: boolean;
+  };
 };
 
 async function checkDb(): Promise<HealthState['checks'][string]> {
@@ -88,6 +103,18 @@ export async function GET(req: Request) {
     checks,
     total: totalCount,
     lastWriterRun: activity.lastAt?.toISOString(),
+    pipeline: {
+      multiAgentEnabled: process.env.MULTI_AGENT_PIPELINE !== '0',
+      plagiarismThreshold: 70,
+      parallelCronWorkflows: 4,
+    },
+    monetization: {
+      adsenseConfigured: !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT,
+      skimlinksConfigured: !!process.env.NEXT_PUBLIC_SKIMLINKS_ID,
+      braveConfigured: !!process.env.NEXT_PUBLIC_BRAVE_VERIFICATION_TOKEN,
+      amazonConfigured: !!process.env.AMAZON_ASSOC_TAG,
+      linkedinPosterConfigured: !!process.env.LINKEDIN_ACCESS_TOKEN && !!process.env.LINKEDIN_AUTHOR_URN,
+    },
   };
 
   // Alert on failure (rate-limited via AgentLog so we don't spam)

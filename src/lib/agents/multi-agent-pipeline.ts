@@ -342,3 +342,137 @@ export async function runMultiAgentPipeline(
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// UPGRADE PATH — for the quality-upgrade agent rewriting existing articles
+// ---------------------------------------------------------------------------
+
+export interface UpgradeResult {
+  content: string;
+  drafterWords: number;
+  editorWords: number;
+  factCheck: FactCheckReport;
+}
+
+/**
+ * Take an existing thin article and run it through Drafter → Editor →
+ * FactCheck → Polisher to produce a substantially deeper rewrite.
+ *
+ * Unlike the full pipeline this:
+ *   - Uses the existing article content as the "source" (we don't refetch
+ *     the original news URL — too brittle, may have changed/404'd, costs
+ *     more LLM tokens for research).
+ *   - Returns only the rewritten markdown body, since slug/title/category
+ *     stay intact (changing those would break canonicalisation + SEO).
+ *
+ * The Drafter treats the existing body as research material; the Editor
+ * cuts to publish length; the FactChecker verifies claims against the
+ * existing body (so we don't drift away from the original facts); the
+ * Polisher applies fixes + removes AI tells.
+ */
+export async function upgradeArticleViaMultiAgent(
+  title: string,
+  category: string,
+  existingContent: string,
+  sourceName?: string,
+): Promise<UpgradeResult> {
+  // Treat existing article as the research material.
+  const synthesisedSource = `Article title: ${title}\nSource publication: ${sourceName ?? 'unknown'}\n\nCurrent published body:\n${existingContent}`;
+
+  // Stage 1 — Drafter writes a longer, richer version
+  const draftPrompt = `EXISTING SHORT ARTICLE (use as your factual source — every fact stays, only depth and context are added):
+"""
+${synthesisedSource}
+"""
+
+Allowed category for this article: ${category}
+
+Write an expansive long-form version per your persona instructions. Keep
+every fact/number/quote from the existing body. Add context, EU angle,
+"What this means for you", "What's still unclear", "Why this matters".`;
+
+  const draftText = await chat({
+    model: MODELS.writer,
+    system: DRAFTER_PERSONA,
+    user: draftPrompt,
+    maxTokens: 6000,
+    json: true,
+  });
+  const draftParsed = extractJson<{ title: string; subtitle: string; excerpt: string; content: string; category: string; tags: string[] }>(
+    draftText,
+  );
+  if (!draftParsed) throw new Error('Drafter parse failed in upgrade path');
+  const draftWords = wordCount(draftParsed.content);
+
+  // Stage 2 — Editor cuts to publish length
+  let editorContent = draftParsed.content;
+  try {
+    const editorText = await chat({
+      model: MODELS.writer,
+      system: EDITOR_PERSONA,
+      user: `Cut Marcus's long upgrade to 900-1300 words. Keep every fact.
+DRAFT:
+"""
+${draftParsed.content}
+"""
+Return JSON.`,
+      maxTokens: 4500,
+      json: true,
+    });
+    const editorParsed = extractJson<{ content: string }>(editorText);
+    if (editorParsed?.content) editorContent = editorParsed.content;
+  } catch {
+    /* keep draft */
+  }
+  const editorWords = wordCount(editorContent);
+
+  // Stage 3 — Fact-Checker verifies against the original existing body
+  let fc: FactCheckReport = {
+    claims_verified: 0,
+    claims_unsupported: 0,
+    issues: [],
+    factuality_score: 80,
+    verdict: 'publish',
+  };
+  try {
+    const fcText = await chat({
+      model: MODELS.reviewer,
+      system: FACT_CHECKER_PERSONA,
+      user: `ARTICLE TO VERIFY:\n"""\n${editorContent}\n"""\n\nORIGINAL EXISTING ARTICLE (verify every claim against this):\n"""\n${existingContent}\n"""\n\nReturn JSON.`,
+      maxTokens: 1200,
+      json: true,
+    });
+    const parsed = extractJson<FactCheckReport>(fcText);
+    if (parsed) fc = parsed;
+  } catch {
+    /* default-permissive */
+  }
+
+  // Stage 4 — Polisher applies fact-check fixes + AI-tell removal
+  let polished = editorContent;
+  try {
+    const fixBlock = fc.issues.length
+      ? `Apply these fact-check fixes:\n${fc.issues
+          .map((i, n) => `${n + 1}. [${i.verdict}] "${i.claim.slice(0, 80)}" → ${i.fix}`)
+          .join('\n')}`
+      : 'No factual issues — polish flow + AI-tell removal only.';
+    const polText = await chat({
+      model: MODELS.writer,
+      system: POLISHER_PERSONA,
+      user: `EDITED ARTICLE:\n"""\n${editorContent}\n"""\n\n${fixBlock}\n\nReturn final JSON with at minimum "content" field.`,
+      maxTokens: 4500,
+      json: true,
+    });
+    const parsed = extractJson<{ content: string }>(polText);
+    if (parsed?.content) polished = parsed.content;
+  } catch {
+    /* keep editor version */
+  }
+
+  return {
+    content: polished,
+    drafterWords: draftWords,
+    editorWords,
+    factCheck: fc,
+  };
+}

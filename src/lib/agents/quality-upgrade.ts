@@ -28,6 +28,12 @@ import { prisma } from '../db';
 import { llmChat, extractJson } from '../llm';
 import { pingIndexNow } from '../indexnow';
 import { SITE } from '../site';
+import { upgradeArticleViaMultiAgent } from './multi-agent-pipeline';
+
+// Feature flag: use the 4-stage Drafter→Editor→FactCheck→Polisher pipeline
+// to upgrade thin articles. Default ON 2026-06-02 — produces noticeably
+// deeper rewrites than the single-pass expand prompt.
+const MULTI_AGENT_UPGRADE = process.env.MULTI_AGENT_UPGRADE !== '0';
 
 const SITE_URL = SITE.url;
 const WORD_FLOOR = 700;        // below this = "thin", needs upgrade
@@ -112,11 +118,27 @@ export async function runQualityUpgrade(opts?: { maxPerRun?: number }): Promise<
     if (seen) { report.skipped++; continue; }
 
     let expanded: string | null = null;
-    try {
-      const raw = await llmChat({
-        role: 'writer',
-        system: SYSTEM,
-        user: `Title: ${a.title}
+    if (MULTI_AGENT_UPGRADE) {
+      // 4-stage multi-agent path: Drafter → Editor → FactCheck → Polisher.
+      try {
+        const r = await upgradeArticleViaMultiAgent(
+          a.title,
+          a.category,
+          a.content,
+          a.sourceName ?? undefined,
+        );
+        expanded = r.content;
+      } catch (e) {
+        // Fall through to legacy single-pass on failure.
+        report.errors.push(`multi-agent ${a.slug}: ${(e as Error).message}`);
+      }
+    }
+    if (!expanded) {
+      try {
+        const raw = await llmChat({
+          role: 'writer',
+          system: SYSTEM,
+          user: `Title: ${a.title}
 Source: ${a.sourceName}
 Category: ${a.category}
 Current length: ${before} words (too thin).
@@ -127,13 +149,14 @@ ${a.content}
 """
 
 Rewrite into a substantial 850-1050 word version per the rules. Same facts, deeper.`,
-        maxTokens: MAX_TOKENS,
-        json: true,
-      });
-      const parsed = extractJson<{ content: string }>(raw);
-      expanded = parsed?.content ?? null;
-    } catch (e) {
-      report.errors.push(`llm ${a.slug}: ${(e as Error).message}`);
+          maxTokens: MAX_TOKENS,
+          json: true,
+        });
+        const parsed = extractJson<{ content: string }>(raw);
+        expanded = parsed?.content ?? null;
+      } catch (e) {
+        report.errors.push(`llm ${a.slug}: ${(e as Error).message}`);
+      }
     }
 
     if (!expanded || wc(expanded) < TARGET_MIN) {

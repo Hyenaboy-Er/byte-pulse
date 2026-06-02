@@ -48,20 +48,37 @@ export default async function HomePage() {
       />
 
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-        {/* H1 — single descriptive heading.  AdSense + Google's reviewers
-            expect a visually-present H1 on ALL viewports (mobile-first
-            ranking signals it's the page's primary topic). Small typography
-            so it doesn't compete with hero article headlines below. */}
-        <h1 className="text-xs sm:text-sm font-semibold tracking-[0.18em] uppercase text-muted mb-3">
-          Byte-Pulse — Independent Tech News: AI, Hardware &amp; Gaming
-        </h1>
-
-        {lastUpdated && (
-          <div className="flex items-center gap-2 text-xs text-muted mb-5">
+        {/* Editorial masthead — newspaper-style H1 + tagline + live indicator.
+            Built for both humans (clear, professional identity above the
+            hero article) and machines (single semantic H1, brand + topic
+            keywords, BreadcrumbList-friendly hierarchy). Sized to read as
+            a magazine title, not as a header that competes with the hero. */}
+        <header className="mb-7 md:mb-9 pb-6 border-b border-white/10">
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.22em] text-muted mb-3">
             <span className="relative inline-flex w-2 h-2 rounded-full bg-green-400 live-dot" />
-            <span>Last update {relativeTime(lastUpdated)} · Updated every 30 min</span>
+            <span>Live newsroom</span>
+            {lastUpdated && (
+              <>
+                <span className="text-white/30" aria-hidden="true">·</span>
+                <span className="font-normal tracking-normal normal-case">
+                  Last update {relativeTime(lastUpdated)}
+                </span>
+              </>
+            )}
           </div>
-        )}
+
+          <h1 className="font-display font-extrabold tracking-tight leading-[1.05]
+                         text-3xl sm:text-4xl md:text-5xl lg:text-[3.4rem]">
+            Today in tech,{' '}
+            <span className="text-accent">no hype.</span>
+          </h1>
+
+          <p className="mt-4 text-base sm:text-lg text-white/70 leading-snug max-w-2xl">
+            <span className="font-semibold text-white/90">Byte-Pulse</span> — independent
+            coverage of <span className="text-white/85">AI, hardware, gaming, mobile and
+            security</span>. Fact-checked against the original source, refreshed every 30 minutes.
+          </p>
+        </header>
 
         {/* HERO + 4-up side stack */}
         <section className="grid lg:grid-cols-[1.6fr_1fr] gap-5 mb-12">

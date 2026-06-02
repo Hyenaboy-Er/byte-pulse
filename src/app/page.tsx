@@ -48,12 +48,12 @@ export default async function HomePage() {
       />
 
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-        {/* H1 — single, descriptive heading for SEO + AdSense structural compliance.
-            Visually subtle (sr-only on small screens, small label on desktop) so it
-            doesn't compete with the hero article headline, but present in the DOM
-            and to crawlers/screen-readers. */}
-        <h1 className="sr-only md:not-sr-only md:text-xs md:font-semibold md:tracking-[0.18em] md:uppercase md:text-muted md:mb-3">
-          Byte-Pulse — Independent Tech News, AI, Hardware &amp; Gaming
+        {/* H1 — single descriptive heading.  AdSense + Google's reviewers
+            expect a visually-present H1 on ALL viewports (mobile-first
+            ranking signals it's the page's primary topic). Small typography
+            so it doesn't compete with hero article headlines below. */}
+        <h1 className="text-xs sm:text-sm font-semibold tracking-[0.18em] uppercase text-muted mb-3">
+          Byte-Pulse — Independent Tech News: AI, Hardware &amp; Gaming
         </h1>
 
         {lastUpdated && (

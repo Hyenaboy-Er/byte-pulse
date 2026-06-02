@@ -53,19 +53,19 @@ export default function CookieBanner() {
   const t = isDE
     ? {
         title: 'Cookies & Werbung',
-        body: 'Wir nutzen Google AdSense, um diese Seite kostenfrei anzubieten. AdSense kann Cookies setzen, um relevante Werbung anzuzeigen. Du kannst entscheiden, ob du das erlauben möchtest.',
+        body: 'Wir finanzieren die Seite über Werbeanzeigen (Google AdSense u.a.) und nutzen Analytics, um zu sehen, was gut funktioniert. Beides kann Cookies setzen. Du entscheidest, was OK ist — deine Wahl bleibt gespeichert.',
         accept: 'Akzeptieren',
-        reject: 'Ablehnen',
-        more: 'Mehr in der',
+        reject: 'Nur Essentielle',
+        more: 'Details in der',
         privacy: 'Datenschutzerklärung',
         privacyHref: '/de/privacy',
       }
     : {
         title: 'Cookies & ads',
-        body: 'We use Google AdSense to keep this site free. AdSense may set cookies to show relevant ads. You decide whether that’s OK.',
+        body: 'We fund this site through ads (Google AdSense and others) and use analytics to see what works. Both may set cookies. You decide what is OK — your choice is remembered.',
         accept: 'Accept',
-        reject: 'Reject',
-        more: 'More in our',
+        reject: 'Essential only',
+        more: 'Details in our',
         privacy: 'Privacy Policy',
         privacyHref: '/privacy',
       };

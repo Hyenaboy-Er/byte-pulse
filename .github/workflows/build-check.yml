@@ -1,0 +1,124 @@
+# Build-Check — runs `next build` on every push BEFORE Vercel sees it.
+#
+# Why: when the build breaks (multi-agent commit 2026-06-02 22:34 broke
+# every Vercel deploy for 11 hours), Vercel only catches it AFTER the
+# auto-snapshot-append cron has already piled up 6+ broken deploys, each
+# sending a Telegram alert. This workflow catches the same error 60-90
+# seconds after push and tells us in ONE clear message instead of six
+# noisy ones.
+#
+# Also: if THIS workflow fails on a commit by byte-pulse-bot
+# (auto-snapshot-append) it auto-reverts. Human commits we just alert and
+# let the human decide.
+
+name: Build Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write     # to push the auto-revert commit
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2     # need parent for revert
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Type check (fast feedback)
+        id: tsc
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: Next.js build (full)
+        id: nextbuild
+        if: steps.tsc.outcome == 'success'
+        env:
+          # Stub the DB-dependent env vars so the build can statically render.
+          # Real values come from Vercel project env at deploy time.
+          DATABASE_URL: 'libsql://stub.invalid'
+          NEXT_PUBLIC_SITE_URL: 'https://www.byte-pulse.net'
+        run: npm run build
+        continue-on-error: true
+
+      - name: Decide outcome
+        id: verdict
+        run: |
+          if [ "${{ steps.tsc.outcome }}" != "success" ]; then
+            echo "verdict=tsc-failed" >> "$GITHUB_OUTPUT"
+            echo "stage=TypeScript" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.nextbuild.outcome }}" != "success" ]; then
+            echo "verdict=build-failed" >> "$GITHUB_OUTPUT"
+            echo "stage=Next.js Build" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"
+            echo "stage=All Checks" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Telegram alert on failure
+        if: steps.verdict.outputs.verdict != 'ok'
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT:  ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          set +e
+          AUTHOR='${{ github.event.head_commit.author.name }}'
+          SHA='${{ github.sha }}'
+          MSG=$(echo '${{ github.event.head_commit.message }}' | head -1)
+          STAGE='${{ steps.verdict.outputs.stage }}'
+          TEXT="🚨 Build broken on main
+          Stage: ${STAGE}
+          Author: ${AUTHOR}
+          Commit: ${SHA:0:8}
+          Msg: ${MSG}
+          → Vercel deploys will fail until this is fixed.
+          → Run logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ]; then
+            curl -sS "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT}" \
+              --data-urlencode "text=${TEXT}" > /dev/null || true
+          fi
+
+      - name: Auto-revert if bot commit
+        if: steps.verdict.outputs.verdict != 'ok' && github.event.head_commit.author.name == 'byte-pulse-bot'
+        run: |
+          set -e
+          git config user.name "byte-pulse-bot"
+          git config user.email "byte-pulse-bot@users.noreply.github.com"
+          git revert --no-edit HEAD
+          git push origin main
+
+      - name: Fail the workflow if not ok
+        if: steps.verdict.outputs.verdict != 'ok'
+        run: exit 1
+
+      - name: Telegram OK ping on first push of the day
+        if: steps.verdict.outputs.verdict == 'ok' && github.event.head_commit.author.name != 'byte-pulse-bot'
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT:  ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ]; then
+            MSG=$(echo '${{ github.event.head_commit.message }}' | head -1)
+            TEXT="✅ Build green: ${MSG:0:80}"
+            curl -sS "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT}" \
+              --data-urlencode "text=${TEXT}" > /dev/null || true
+          fi

@@ -7,6 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start -p 3000",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky || true",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "agent:run": "tsx --env-file=.env src/scripts/run-agents.ts",

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Pre-push hook — runs `tsc --noEmit` before any push to catch TS errors
+# that would break the Vercel build. Activated on 2026-06-03 after a
+# multi-agent-pipeline commit broke the build for 11 hours.
+#
+# To bypass in an emergency (e.g. doc-only changes), use:
+#   git push --no-verify
+# But that should be a deliberate exception, not the default.
+#
+# Install once: npm run prepare    (sets up husky via package.json script)
+
+set -e
+
+echo "▶ pre-push: running tsc --noEmit ..."
+npx --no-install tsc --noEmit
+
+echo "✅ pre-push: TypeScript clean. Pushing."

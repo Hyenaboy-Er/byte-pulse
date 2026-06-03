@@ -27,6 +27,10 @@ type HealthState = {
     skimlinksConfigured: boolean;
     braveConfigured: boolean;
     amazonConfigured: boolean;
+    amazonTagDE?: string;
+    amazonTagUS?: string;
+    amazonSourceDE?: string;
+    amazonSourceUS?: string;
     linkedinPosterConfigured: boolean;
   };
 };
@@ -112,7 +116,16 @@ export async function GET(req: Request) {
       adsenseConfigured: !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT,
       skimlinksConfigured: !!process.env.NEXT_PUBLIC_SKIMLINKS_ID,
       braveConfigured: !!process.env.NEXT_PUBLIC_BRAVE_VERIFICATION_TOKEN,
-      amazonConfigured: !!process.env.AMAZON_ASSOC_TAG,
+      // Amazon Associates: src/lib/affiliate.ts has hardcoded fallbacks
+      // bytepulse-21 (DE) + bytepulse01-20 (US), so affiliate links
+      // ALWAYS render even without env override. This field shows the
+      // tag that's actually live, plus whether it came from env or the
+      // hardcoded fallback.
+      amazonConfigured: true,
+      amazonTagDE: process.env.AMAZON_ASSOCIATE_TAG_DE ?? process.env.AMAZON_ASSOCIATE_TAG ?? 'bytepulse-21',
+      amazonTagUS: process.env.AMAZON_ASSOCIATE_TAG_US ?? process.env.AMAZON_ASSOCIATE_TAG ?? 'bytepulse01-20',
+      amazonSourceDE: process.env.AMAZON_ASSOCIATE_TAG_DE || process.env.AMAZON_ASSOCIATE_TAG ? 'env' : 'hardcoded-default',
+      amazonSourceUS: process.env.AMAZON_ASSOCIATE_TAG_US || process.env.AMAZON_ASSOCIATE_TAG ? 'env' : 'hardcoded-default',
       linkedinPosterConfigured: !!process.env.LINKEDIN_ACCESS_TOKEN && !!process.env.LINKEDIN_AUTHOR_URN,
     },
   };

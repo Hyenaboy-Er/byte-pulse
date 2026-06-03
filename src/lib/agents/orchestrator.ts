@@ -420,10 +420,20 @@ export async function runOnce(): Promise<RunReport> {
     // these while still blocking the truly weak ones (40-55 range we see
     // on PSAs and ad posts). Originality default 70 (?? above) keeps the
     // originality bar honest.
-    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 70;
-    const blockedByFactuality = (review.factualityScore ?? 100) < 55;
-    const tooLow = review.score < 60;
-    const shouldPublish = !blockedByPlagiarism && !blockedByFactuality && !tooLow;
+    // 2026-06-03 (Serhat: "BIS SAMSTAG NUR HOCHWERTIG"): vor AdSense-
+    // Antrag harte Tightening. Jeder publishter Artikel muss durchgehend
+    // bestehen — kein "knapp drüber" Material. Originalität + Reviewer-
+    // Verdict werden jetzt scharf ausgewertet, nicht mehr ignoriert.
+    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 60;
+    const blockedByFactuality = (review.factualityScore ?? 100) < 70;
+    const blockedByOriginality = (review.originalityAdded ?? 100) < 65;
+    const blockedByReviewer    = review.verdict === 'reject';
+    const tooLow               = review.score < 70;
+    const shouldPublish = !blockedByPlagiarism
+                       && !blockedByFactuality
+                       && !blockedByOriginality
+                       && !blockedByReviewer
+                       && !tooLow;
     if (!shouldPublish) {
       report.finishedAt = new Date().toISOString();
       return report;

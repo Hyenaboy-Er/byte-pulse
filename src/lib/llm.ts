@@ -76,11 +76,14 @@ function providerConfig(p: LLMProvider): ProviderConfig {
           humanizer:             'gemini-2.5-flash',
           reviewer:              'gemini-2.5-flash-lite',
           translator:            'gemini-2.5-flash-lite',
-          // Drafter on Pro: best long-form creative depth in the Gemini
-          // family. Free tier 50 req/day → covers ~30 articles/day with
-          // headroom. Pipeline falls back to Flash via 429-handler when
-          // the Pro quota's exhausted, so this is upside-only.
-          'persona-drafter':     'gemini-2.5-pro',
+          // Drafter was briefly on gemini-2.5-pro for max long-form
+          // quality, but the free tier is throttled to ~5 RPM / 25 RPD
+          // which gets hammered by our 4-parallel cron stack (429 within
+          // seconds). Flash gives ~95% of Pro's quality on long-form
+          // tech-news + has 1500 RPD = stable. Cross-family verification
+          // for the FactChecker is the remaining diversity lever; set
+          // LLM_PERSONA-FACTCHECKER_PROVIDER=groq in env to activate.
+          'persona-drafter':     'gemini-2.5-flash',
           'persona-editor':      'gemini-2.5-flash',
           'persona-factchecker': 'gemini-2.5-flash',
           'persona-polisher':    'gemini-2.5-flash',

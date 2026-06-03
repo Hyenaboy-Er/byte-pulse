@@ -495,11 +495,20 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // Score + originality + plag gates remain the real quality bar; length
     // is secondary.
     if (bodyWords < 500) {
+      report.error = `skip-thin: ${bodyWords}w < 500`;
       await logAgent('orchestrator', 'skip-thin', 'info',
         `${humanized.title}: ${bodyWords}w < 500 — too short for any analysis to land, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }
+    // Surface bodyWords + orig in the report so live debugging via /api/cron
+    // can distinguish "skipped on length / orig" from "skipped on review gates"
+    // from "crashed on persist". Cheap, doesn't change behaviour.
+    (report as RunReport & { _diag?: object })._diag = {
+      bodyWords,
+      originalityAdded: orig,
+      originalityFromReviewer: review.originalityAdded ?? null,
+    };
 
     // 5. Persist
     const finalTitle = review.fixedTitle && review.fixedTitle.length > 20 ? review.fixedTitle : humanized.title;

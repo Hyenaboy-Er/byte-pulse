@@ -396,7 +396,18 @@ export async function runMultiAgentPipeline(
     );
     // If Theo says kill, abort the pipeline — don't ship a story with too
     // many unsupported claims.
-    if (factCheckResult.verdict === 'kill') {
+    // Only kill on catastrophically broken articles. 'kill' verdict from
+    // Theo on a single-source breaking-news story is often a false positive
+    // (the fact-checker LLM doesn't know June 2026 actually happened and
+    // flags every dated claim as "unverifiable future"). Real kills are
+    // when zero claims verify OR more than 10 are flagged. Below that we
+    // demote to revise — let the reviewer + downstream gates make the
+    // publish call.
+    if (
+      factCheckResult.verdict === 'kill'
+      && (factCheckResult.claims_verified === 0
+          || factCheckResult.claims_unsupported > 10)
+    ) {
       throw new Error(
         `Fact-checker killed article: ${factCheckResult.claims_unsupported} unsupported claims`,
       );

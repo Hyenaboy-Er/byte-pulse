@@ -4,6 +4,7 @@ import AdSlot from '@/components/AdSlot';
 import TrendingTicker from '@/components/TrendingTicker';
 import NewsletterSection from '@/components/NewsletterSection';
 import DannyWilliamsBroadcast from '@/components/DannyWilliamsBroadcast';
+import HotSearchTerms from '@/components/HotSearchTerms';
 import { CATEGORIES } from '@/lib/categories';
 import { relativeTime, readingTime } from '@/lib/readingTime';
 import { SITE } from '@/lib/site';
@@ -166,6 +167,14 @@ export default async function HomePage() {
             }),
           }}
         />
+
+        {/* Hot search-term pills — what U.S. readers actually type into
+            Google right now (iPhone 18 Pro Max, RTX 5090, Galaxy S26
+            Ultra, etc.). Each chip links to /search?q=… so the homepage
+            HTML carries the long-tail keywords as visible anchor text
+            and the click flow lands readers on the most-recent coverage
+            for that exact phrase. */}
+        <HotSearchTerms />
 
         {/* HERO + 4-up side stack */}
         <section className="grid lg:grid-cols-[1.6fr_1fr] gap-5 mb-12">

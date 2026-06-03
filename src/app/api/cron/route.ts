@@ -19,12 +19,25 @@ export const maxDuration = 300;
 //     Writer max. ~3 Artikel/Stunde. Keine kalkulierbare Kosten-Falle.
 //   - Beim regulären CRON_SECRET-Pfad gilt das Limit NICHT.
 const PUBLIC_POKE_TOKEN = 'pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick';
-// 15-min cooldown — quality-first since 2026-06-03. The pipeline tries
-// every 15 minutes; most attempts fail the Reviewer's originality + score
-// gate (intended behaviour). When something does pass, the cooldown
-// prevents back-to-back publishes from a single pipeline lucky-streak.
-// We no longer chase a daily article-count target.
-const PUBLIC_POKE_MIN_GAP_MS = 15 * 60_000;
+
+// VARIABLE cooldown 2026-06-03 per Serhat: 'mindestens alle 2h, manchmal
+// 90 Min, immer unterschiedlich — nicht selber Rhythmus'. Each window
+// gets a different gap derived deterministically from the last
+// published-article slug, so the pattern looks organic, not cronned.
+//
+// Range: 80-130 minutes. Deterministic from slug hash so a refresh of
+// the cron endpoint always picks the same gap until the next publish
+// changes the input slug.
+function dynamicGapMs(seed: string): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  }
+  const minGap = 80; // minutes
+  const span = 50;   // → 80-130 minutes
+  const offset = Math.abs(h) % (span + 1);
+  return (minGap + offset) * 60_000;
+}
 
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization');
@@ -50,13 +63,18 @@ export async function GET(req: Request) {
       const lastArticle = await prisma.article.findFirst({
         where: { status: 'published' },
         orderBy: { createdAt: 'desc' },
-        select: { createdAt: true },
+        select: { createdAt: true, slug: true },
       });
-      if (lastArticle && Date.now() - lastArticle.createdAt.getTime() < PUBLIC_POKE_MIN_GAP_MS) {
-        return NextResponse.json({
-          ok: true, skipped: true, reason: 'public-poke rate-limit',
-          lastPublishedAt: lastArticle.createdAt.toISOString(),
-        });
+      if (lastArticle) {
+        const gap = dynamicGapMs(lastArticle.slug);
+        if (Date.now() - lastArticle.createdAt.getTime() < gap) {
+          return NextResponse.json({
+            ok: true, skipped: true, reason: 'public-poke rate-limit',
+            lastPublishedAt: lastArticle.createdAt.toISOString(),
+            nextWindowAfterMs: gap - (Date.now() - lastArticle.createdAt.getTime()),
+            currentGapMinutes: Math.round(gap / 60_000),
+          });
+        }
       }
     } catch (e) {
       // DB read blocked — skip the rate-limit check and proceed. Better to

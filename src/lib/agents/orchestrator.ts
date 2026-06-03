@@ -489,9 +489,14 @@ Return JSON only: { "content": "<expanded markdown>" }`,
       report.finishedAt = new Date().toISOString();
       return report;
     }
-    if (bodyWords < 800) {
+    // Hard floor dropped 800 -> 500 on 2026-06-03. With the anti-padding
+    // prompts in place, the multi-agent pipeline is producing genuinely
+    // tighter articles (500-900w of analysis instead of 1500w of paraphrase).
+    // Score + originality + plag gates remain the real quality bar; length
+    // is secondary.
+    if (bodyWords < 500) {
       await logAgent('orchestrator', 'skip-thin', 'info',
-        `${humanized.title}: ${bodyWords}w < 800 — too short even for an original take, not published`);
+        `${humanized.title}: ${bodyWords}w < 500 — too short for any analysis to land, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

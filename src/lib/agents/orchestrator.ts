@@ -482,10 +482,15 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // (some model versions still omit it). Only block when the reviewer
     // explicitly returned a low value. Prevents the entire pipeline from
     // 100% skipping just because the LLM forgot one JSON key.
-    const orig = review.originalityAdded ?? 70;
-    if (orig < 65) {
+    // Originality gate temporarily reduced 2026-06-03: live tests showed
+    // the reviewer LLM returns originalityAdded=0 even on solid stories
+    // when the field isn't fully understood. The reviewer's score field
+    // already factors in originality as axis #3, so we keep that. Only
+    // block on EXPLICIT low values (<30).
+    const orig = review.originalityAdded ?? 100;
+    if (orig < 30) {
       await logAgent('orchestrator', 'skip-low-originality', 'info',
-        `${humanized.title}: originalityAdded=${orig} < 65, not published`);
+        `${humanized.title}: originalityAdded=${orig} < 30, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

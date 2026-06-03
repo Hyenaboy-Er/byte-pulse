@@ -11,10 +11,10 @@
     }
   ],
   "functions": {
-    "src/app/api/cron/route.ts": { "maxDuration": 60 },
-    "src/app/api/admin/run/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron/route.ts": { "maxDuration": 300 },
+    "src/app/api/admin/run/route.ts": { "maxDuration": 300 },
     "src/app/api/admin/monitor/route.ts": { "maxDuration": 60 },
-    "src/app/api/daily/route.ts": { "maxDuration": 60 },
+    "src/app/api/daily/route.ts": { "maxDuration": 300 },
     "src/app/api/newsletter/send/route.ts": { "maxDuration": 60 }
   }
 }

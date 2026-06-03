@@ -424,14 +424,26 @@ export async function runOnce(): Promise<RunReport> {
       return report;
     }
 
-    // 4c. LENGTH GATE — targets the 8-12 minute reading time Serhat
-    // wants for every published article (= 1700-2400 words at the
-    // standard 200 wpm reading speed). Drafter writes 3000-3500w,
-    // Editor cuts to 1700-2400w. If a stage collapses and Eva ships
-    // under 1700w, the expand pass kicks in. Below 1400w hard skip.
+    // 4c. ORIGINALITY-FIRST PUBLISH GATE — pivoted 2026-06-03.
+    //
+    // Was: 1400w hard floor + expand-pass below 1700w. Serhat correctly
+    //   pointed out this rewards padding source rephrases instead of
+    //   real analysis. AdSense's "scaled content abuse" detector
+    //   doesn't care about length; it cares whether the article adds
+    //   original value above the source.
+    // Now: originalityAdded >= 60 is the publish gate (already enforced
+    //   in reviewer.ts SYSTEM). The length expand-pass only triggers
+    //   below 1300w AND when originality is borderline (60-70), so
+    //   thinner-but-sharper analyses ship as-is. Hard floor 800w
+    //   (~4-min read) — below that even the best analysis can't carry
+    //   the full Compared-to / Reader-impact / Open-questions structure.
     const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
     let bodyWords = wc(humanized.content);
-    if (bodyWords < 1700) {
+    // Expand-pass only fires when BOTH (1) too short for the full editorial
+    // skeleton AND (2) originality borderline. A sharp 900-word analysis
+    // with originality 80 ships as-is and doesn't get padded.
+    const originalityOk = (review.originalityAdded ?? 100) >= 70;
+    if (bodyWords < 1300 && !originalityOk) {
       try {
         const exp = await chat({
           model: MODELS.writer,
@@ -459,12 +471,18 @@ Return JSON only: { "content": "<expanded markdown>" }`,
         await logAgent('writer', 'length-expand', 'error', (err as Error).message);
       }
     }
-    if (bodyWords < 1400) {
-      // 1400w = 7 min read at 200 wpm. Anything below that means the
-      // pipeline collapsed and we ship a thin stub. Skip — better to
-      // miss a publish window than to add a sub-7-min article to a
-      // long-form publication.
-      await logAgent('orchestrator', 'skip-thin', 'info', `${humanized.title}: ${bodyWords}w < 1400 (< 7 min read), not published`);
+    // Originality gate — replaces the 1400w hard floor. A 900-word
+    // genuine analysis ships; a 2000-word source paraphrase does not.
+    const orig = review.originalityAdded ?? 0;
+    if (orig < 60) {
+      await logAgent('orchestrator', 'skip-low-originality', 'info',
+        `${humanized.title}: originalityAdded=${orig} < 60, not published`);
+      report.finishedAt = new Date().toISOString();
+      return report;
+    }
+    if (bodyWords < 800) {
+      await logAgent('orchestrator', 'skip-thin', 'info',
+        `${humanized.title}: ${bodyWords}w < 800 — too short even for an original take, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

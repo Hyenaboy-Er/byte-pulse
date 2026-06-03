@@ -31,12 +31,30 @@ incapable of writing a thin story.
 
 YOUR JOB IN THIS STAGE — write a FULL, EXPANSIVE FIRST DRAFT.
 
-Imagine you're opening a Word document and writing what you'd LIKE to publish
-before any editor gets to cut it. Target: **2500-3000 words**. Long, generous,
-context-rich. This is the "Word" stage in our Word→Notepad→Publish workflow,
-so write GENEROUSLY — Eva (the editor) trims to 1700-2400w (= 8-12 minute
-read), and starting from a smaller draft means she'd ship thin. Better to
-over-deliver on depth than to ship thin.
+CRITICAL RULE (the difference between AdSense approved vs rejected): the
+length of the article is NOT what makes it valuable. Padding the source
+into longer prose hurts more than helps. What makes the article valuable
+is original ANALYSIS the source does NOT contain.
+
+Every paragraph must do one of these things — and you should be able to
+name which:
+  (a) report a fact from the source (small portion of the article)
+  (b) add a CONCRETE comparison to a predecessor / competitor with
+      specific specs, prices, dates the source does NOT provide
+  (c) estimate market impact, reader impact, or business consequence
+      based on industry pattern (your knowledge, not source)
+  (d) name an honest open question or unverified claim the reader
+      should track
+  (e) operator-pov aside ("anyone who's shipped hardware knows…")
+
+If you can only do (a), don't write the article — return category "skip".
+Quote three or four facts from the source; everything else must be (b)
+through (e). A 1000-word article where 80% is (b)-(e) beats a 2500-word
+article where 80% is (a).
+
+Target length: 1500-2200 words. Don't force longer if you don't have
+the (b)-(e) substance to fill it. Eva can ship a tight 1500-word piece
+with strong analysis; she cannot rescue a 2500-word source paraphrase.
 
 What "long and rich" means concretely:
 - 12-15 substantial paragraphs

@@ -63,11 +63,17 @@ HEADLINE EXAMPLES that FAIL (and why):
   - "Important Debian Update" (no verb, no consequence)
 - Subtitle 80-130 chars.
 - Excerpt 140-160 chars for meta-description / cards.
-- Content 900-1300 words in Markdown — substantial enough to add value over the source, not a thin rewrite:
-  - 7-9 paragraphs with 3-4 ## subheadings
-  - 2-3 bold pull-quotes (**...**)
+- Content **1700-2400 words** in Markdown (= 8-12 minute read at 200 wpm). This
+  is the Serhat-set spec: byte-pulse is explicitly a long-form publication.
+  Articles under 1400w are skipped by the orchestrator. Structure:
+  - 10-14 paragraphs with 5-6 ## subheadings
+  - 3-4 bold pull-quotes (**...**)
   - One bullet list of 3-5 items where it makes sense
   - A "Context:" paragraph with relevant industry knowledge (Byte-Pulse's European POV — what's the EU angle? compare to similar EU/global stories from your training data, NO invented specs)
+  - A "Compared to:" paragraph (mandatory — compare to the closest
+    predecessor, competitor or related event by name, with concrete specs
+    or numbers. This is the section that turns RSS-rewrite into real
+    analysis.)
   - A "What this means for you:" paragraph addressing the READER directly with concrete consequences (price impact, time impact, what to do or watch for). This is THE most important section — it's what people screenshot.
   - A "What's still unclear:" paragraph — honest list of open questions
   - A "Why this matters:" closing paragraph — your editorial take (1-sentence headline-style + 2-3 supporting sentences)
@@ -149,7 +155,12 @@ Write a standalone English article from this source.`;
     // function timeout when chained with humanizer + reviewer + translator.
     // Once Gemini Pro (which has explicit thinking-budget control) is
     // available via OpenAI-compat, we can switch back.
-    maxTokens: 5000,
+    // 7500 tokens out = ~5500 word capacity, plenty for the 1700-2400w
+    // article body + the JSON envelope (title/subtitle/excerpt/category/
+    // tags). gpt-4o-mini generates this in ~25-30s = fits in the Vercel
+    // 60s function ceiling with margin even when the orchestrator's
+    // length-gate expand-pass also runs.
+    maxTokens: 7500,
     json: true,
   });
 

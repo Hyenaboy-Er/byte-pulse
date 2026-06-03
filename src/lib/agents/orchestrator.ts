@@ -173,6 +173,20 @@ function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnap
   const fresh = items.filter((i) => !seenHashes.has(i.hash) && !looksOffTopic(i.title));
   if (!fresh.length) return null;
   const trending = findTrending(fresh);
+
+  // 2026-06-03 (Serhat): pre-compute multi-source topic clusters and
+  // give a strong boost to picks that appear in a cluster with 2+
+  // outlets. These are exactly the stories where our cross-source
+  // synthesis path lights up — and where the article ends up with
+  // 85+ originality instead of 60. Picking them first is the single
+  // highest-leverage move for AdSense-grade output.
+  const clusters = clusterByTopic(fresh, { similarityThreshold: 0.20, minClusterSize: 2 });
+  const multiSourceLinks = new Set<string>();
+  for (const c of clusters) {
+    multiSourceLinks.add(c.primary.link);
+    for (const a of c.alternates) multiSourceLinks.add(a.link);
+  }
+
   let best: FeedItem | null = null;
   let bestBoost = 0;
   let bestScore = -1;
@@ -184,7 +198,9 @@ function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnap
     const titleLen = Math.min(top.title.length, 80) / 80;
     // External trends boost (HN + Reddit + Google Suggest match)
     const extBoost = trends ? trendsBoost(top.title, trends) : 0;
-    const score = recency * 0.40 + cluster * 0.25 + titleLen * 0.05 + extBoost * 0.30;
+    // Multi-source boost: pick stories where multiple outlets are reporting.
+    const multiBoost = multiSourceLinks.has(top.link) ? 0.50 : 0;
+    const score = recency * 0.30 + cluster * 0.15 + titleLen * 0.05 + extBoost * 0.20 + multiBoost;
     if (score > bestScore) { bestScore = score; best = top; bestBoost = extBoost; }
   }
   return best ? { item: best, boost: bestBoost } : null;

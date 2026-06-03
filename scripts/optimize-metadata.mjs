@@ -16,37 +16,68 @@ const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 const SYSTEM = `You are an elite social-media growth strategist for "Byte-Pulse",
-a tech-news brand targeting a US / English-speaking audience. Given one tech
-article, produce the HIGHEST-PERFORMING metadata for short-form video
-(TikTok / Reels / Shorts) and for YouTube.
+a tech-news brand. CRITICAL TARGETING RULE: the audience is U.S.-based.
+Every signal you produce — copy, hashtags, hooks, references — must tell
+both human viewers and the TikTok / YouTube recommendation algorithm that
+this content is for an American audience.
 
-You deeply understand: scroll-stopping hooks, curiosity gaps, the TikTok and
-YouTube recommendation algorithms, and search SEO. Never use clickbait that the
-content can't deliver. US English only.
+WHY: byte-pulse is currently being algorithmically classified as German
+because Serhat is in Germany; we need every metadata field to overwhelm
+that geo-signal with American context.
+
+US-TARGETING REQUIREMENTS (enforced in every output):
+- AMERICAN ENGLISH spellings + idioms only ("color" not "colour",
+  "customize" not "customise", "fall" not "autumn", "$" symbol).
+- US REFERENCE FRAME: prices in dollars, dates in MM/DD/YYYY or "Month Day",
+  reference American companies/regulators (FCC, FTC, Apple, Google,
+  Microsoft) over European ones when both apply.
+- HASHTAGS must include at least 3 explicitly US/algorithm tags from this
+  pool: usa, american, americatechnews, ustech, siliconvalley, fyp,
+  foryou, foryoupage, shorts, youtubeshorts. The remaining 3-5 hashtags
+  are topic-specific (e.g. ai, iphone, gaming).
+- YOUTUBE DESCRIPTION must start with "U.S. tech news from Byte-Pulse" or
+  reference "America" / "the U.S." in the first sentence.
+- AVOID German place names, "EU", "European" framing in caption /
+  description / hashtags. Use them inside the body only if the story is
+  genuinely EU-policy.
+
+You deeply understand: scroll-stopping hooks, curiosity gaps, the TikTok
+and YouTube recommendation algorithms, and search SEO. Never use clickbait
+the content can't deliver.
 
 Return STRICT JSON, nothing else:
 {
-  "title": "<punchy curiosity-driven hook headline, <= 70 chars>",
+  "title": "<punchy curiosity-driven hook headline, <= 70 chars, US English>",
   "caption": "<1-3 short punchy sentences for the post body, ends with a soft
-              call-to-action, NO hashtags inside>",
-  "hashtags": ["<6-10 hashtags WITHOUT the # sign, no spaces, lowercase; mix
-                2-3 broad high-volume ones (technews, tech, ai) with topic-
-                specific ones>"],
-  "tags": ["<8-12 plain SEO keyword tags/phrases for discovery, no # sign>"],
-  "youtubeTitle": "<SEO + click-worthy YouTube title, <= 90 chars>",
-  "youtubeDescription": "<2-3 sentences, naturally keyword-rich, then a new line
-                          with: Read the full story: <the article url>>"
+              call-to-action, NO hashtags inside, US English>",
+  "hashtags": ["<6-10 hashtags WITHOUT the # sign, no spaces, lowercase;
+                MUST include at least 3 from {usa, american, americatechnews,
+                ustech, siliconvalley, fyp, foryou, foryoupage, shorts,
+                youtubeshorts}; remainder topic-specific>"],
+  "tags": ["<8-12 plain SEO keyword tags/phrases for discovery, no # sign,
+            include at least 2 with 'US' / 'America' framing like
+            'US tech news' or 'American tech'>"],
+  "youtubeTitle": "<SEO + click-worthy YouTube title, <= 90 chars,
+                    explicitly American audience>",
+  "youtubeDescription": "<First line MUST start with 'U.S. tech news from
+                          Byte-Pulse' or similar America-anchor phrase.
+                          Then 1-2 keyword-rich sentences, then a blank
+                          line, then 'Read the full story: <the article url>'>"
 }`;
 
 function fallback(article) {
   const t = article.title || 'Tech news that matters';
+  // Fallback metadata still encodes the US-targeting signal we want from
+  // the LLM path — hashtags include #usa/#fyp/#shorts, description leads
+  // with the America-anchor phrase. If Groq is down, we should not lose
+  // the geo signal.
   return {
     title: t.slice(0, 70),
-    caption: `${t}\n\nFull story on Byte-Pulse.Net — link in bio.`,
-    hashtags: ['technews', 'tech', 'ai', 'gadgets', 'breakingnews'],
-    tags: ['tech news', 'technology', 'ai', 'gadgets', 'byte-pulse'],
+    caption: `${t}\n\nFull story at Byte-Pulse.Net — link in bio.`,
+    hashtags: ['usa', 'fyp', 'shorts', 'technews', 'ustech', 'ai', 'breakingnews'],
+    tags: ['US tech news', 'American tech', 'tech news', 'technology', 'ai', 'gadgets', 'byte-pulse'],
     youtubeTitle: t.slice(0, 90),
-    youtubeDescription: `${article.excerpt || t}\n\nRead the full story: ${article.url || 'https://byte-pulse.net'}`,
+    youtubeDescription: `U.S. tech news from Byte-Pulse. ${article.excerpt || t}\n\nRead the full story: ${article.url || 'https://byte-pulse.net'}`,
   };
 }
 

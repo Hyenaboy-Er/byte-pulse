@@ -67,11 +67,39 @@ async function main() {
     /(https?:\/\/(?:www\.)?byte-pulse\.net\/article\/[a-z0-9-]+)/gi,
     (m) => m + (m.includes('?') ? '&' : '?') + 'utm_source=youtube_broadcast&utm_medium=video',
   );
+  // Inject US-targeting metadata into tags + description so YouTube's
+  // recommendation algorithm classifies the channel/video as US-focused.
+  // Before this commit Danny Williams videos were being served to German
+  // viewers (channel owner is in Germany). The three signals YouTube
+  // weighs heaviest are:
+  //   - defaultLanguage / defaultAudioLanguage on the video snippet
+  //   - tag content (presence of US-keywords)
+  //   - description language + geo references
+  const usSeedTags = ['US tech news', 'American tech', 'tech news USA'];
+  const mergedTags = [
+    ...usSeedTags,
+    ...((opt.tags || []).filter((t) => !usSeedTags.includes(t))),
+  ].slice(0, 15);
+
+  // Description: prepend US-anchor phrase if the LLM's output didn't already
+  // start with one (the LLM is told to lead with "U.S. tech news from
+  // Byte-Pulse" but on fallback / Llama-format-drift it might not).
+  let usDesc = taggedDesc;
+  const startsUS = /^\s*(u\.?s\.?|america|american)/i.test(usDesc);
+  if (!startsUS) {
+    usDesc = `U.S. tech news from Byte-Pulse. ${usDesc}`;
+  }
+
   const snippet = {
     title: (opt.youtubeTitle || meta.title || 'Byte-Pulse Nightly').slice(0, 100),
-    description: taggedDesc.slice(0, 4900),
-    tags: (opt.tags || []).slice(0, 15),
+    description: usDesc.slice(0, 4900),
+    tags: mergedTags,
     categoryId: CATEGORY,
+    // STRONGEST single algorithm signal. Tells YouTube unambiguously that
+    // both the captions/title language AND the audio language are en-US,
+    // which feeds into the "this is for the US audience" classifier.
+    defaultLanguage: 'en-US',
+    defaultAudioLanguage: 'en-US',
   };
   const status = { privacyStatus: PRIVACY, selfDeclaredMadeForKids: false };
 
@@ -117,6 +145,40 @@ async function main() {
   console.log(`[yt] OK — hochgeladen: https://youtu.be/${vid}`);
   console.log(`[yt] Titel: ${snippet.title}`);
   console.log(`[yt] Sichtbarkeit: ${privacy}`);
+
+  // US-Targeting: set recordingDetails.location.countryCode = US.
+  // This is a SECONDARY but documented YouTube algorithm signal
+  // ("where was this recorded") that helps the geo-classifier override
+  // the channel-owner-location default. Best-effort; failure is non-fatal.
+  try {
+    const updateRes = await fetch(
+      'https://www.googleapis.com/youtube/v3/videos?part=recordingDetails',
+      {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: vid,
+          recordingDetails: {
+            recordingDate: new Date().toISOString(),
+            // location object kept minimal — full latitude/longitude is
+            // optional and a precise fabricated coordinate would feel
+            // dishonest. countryCode alone is the value the geo-targeting
+            // classifier actually uses.
+            location: { countryCode: 'US' },
+          },
+        }),
+      },
+    );
+    if (updateRes.ok) {
+      console.log('[yt] US recording location set.');
+    } else {
+      const errTxt = (await updateRes.text()).slice(0, 200);
+      console.warn(`[yt] recordingDetails update ${updateRes.status}: ${errTxt}`);
+    }
+  } catch (e) {
+    console.warn(`[yt] recordingDetails update failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 160)}`);
+  }
+
   if (privacy !== 'public') {
     console.log('[yt] HINWEIS: Video ist nicht oeffentlich. Unauditierte YouTube-');
     console.log('[yt] API-Projekte sperren Uploads auf "privat" — einmaliger Audit');

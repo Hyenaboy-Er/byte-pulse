@@ -111,8 +111,14 @@ async function writeScript(stories) {
       messages: [
         { role: 'system', content:
           'You are the script editor for "Byte-Pulse Nightly", a nightly tech-news TV ' +
-          'broadcast hosted by anchor Danny Williams. Write in confident, clear US-English ' +
-          'broadcast style — like a real evening news anchor. Return STRICT JSON:\n' +
+          'broadcast hosted by anchor Danny Williams. THE AUDIENCE IS AMERICAN — every ' +
+          'phrasing, idiom, dollar reference, and editorial frame should signal "US tech ' +
+          'news" so YouTube\'s recommendation algorithm classifies the channel as US. ' +
+          'Use American English ("color", "customize", "fall" not "autumn"), dollar ' +
+          'figures, and reference U.S. companies/regulators (FCC, FTC, Apple, Google, ' +
+          'Microsoft) over European ones when both apply. The intro should mention ' +
+          '"America" or "the U.S." within the first 10 words. Confident, clear, ' +
+          'evening-news anchor style. Return STRICT JSON:\n' +
           '{ "intro": "...", "reads": ["...", ...], "outro": "...", "thumbnailHook": "..." }\n' +
           'intro: ~40 words — open with a CRISP hook on tonight\'s biggest story (no ' +
           'generic "Good evening, welcome to..."), name the show, tease 1-2 specific ' +

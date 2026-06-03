@@ -110,7 +110,13 @@ async function voiceScript(article) {
         { role: 'system', content:
           'You write 25-second voiceover scripts for a tech-news short video ' +
           '(TikTok / Reels / YouTube Shorts), delivered by anchor Danny Williams. ' +
-          '55-70 words. Spoken, energetic, US English. NEVER use hashtags or emojis. ' +
+          '55-70 words. Spoken, energetic, AMERICAN English (NOT British). The ' +
+          'audience is U.S.-based — use dollar references, American slang, American ' +
+          'spellings ("color", "customize", "fall"). Reference U.S. companies (Apple, ' +
+          'Google, Microsoft, Meta, OpenAI) over European ones where both apply. ' +
+          'Drop one explicit U.S. signal ("in America", "in the States", "U.S. ' +
+          'consumers") within the first 10 words whenever the story allows. NEVER ' +
+          'use hashtags or emojis. ' +
           'STRUCTURE (mandatory): ' +
           '(1) HARD HOOK in the first 1-2 seconds — e.g. "Stop scrolling." or ' +
           '"Big tech move:" or an alarming/surprising fact. The very first 5 words ' +

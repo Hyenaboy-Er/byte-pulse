@@ -38,6 +38,7 @@ import { CATEGORIES } from '../categories';
 import { prisma } from '../db';
 import type { Research } from './researcher';
 import type { WrittenArticle } from './writer';
+import type { MultiSourceBundle } from './multi-source-researcher';
 import {
   DRAFTER_PERSONA,
   EDITOR_PERSONA,
@@ -77,6 +78,7 @@ async function logAgent(
 async function draftLongForm(
   research: Research,
   trendingKeywords?: string[],
+  multiSource?: MultiSourceBundle,
 ): Promise<WrittenArticle> {
   const categoryList = CATEGORIES.map(
     (c) => `- ${c.slug}: ${c.name} (${c.description})`,
@@ -89,7 +91,43 @@ async function draftLongForm(
         .join('\n')}`
     : '';
 
-  const userPrompt = `Source: ${research.source.source.name} (${research.source.source.lang.toUpperCase()})
+  // MULTI-SOURCE PATH (Serhat 2026-06-03): when 2+ outlets reported the
+  // same story, the drafter gets the structured cross-source bundle and
+  // is instructed to attribute, compare, and pick fights between outlets.
+  // This is the path that produces real "above-source originality" — the
+  // single biggest AdSense quality signal.
+  const userPrompt = multiSource
+    ? `MULTI-SOURCE BUNDLE — ${multiSource.alternates.length + 1} outlets reported this story.
+
+Your job is REAL CROSS-SOURCE REPORTING, not single-source rewrite. Treat
+each outlet as a separate informant. Attribute every claim to the outlet
+that said it. Where outlets agree, note the consensus ("Both Heise and The
+Verge cite a 199 EUR launch price"). Where they disagree, that's a NEWS
+ANGLE ("TechCrunch reports 199 USD, Ars Technica reports 249 USD — Byte-
+Pulse's reading is that this reflects regional pricing, not error").
+Where one outlet has detail the others lack, surface it ("Only Ars
+Technica mentions the TDP, which we believe matters because…").
+
+You MUST cite source outlet names in at least 6 places in the body. Use
+phrases like "According to The Verge…", "Heise reports…", "Ars Technica
+adds…", "Ars Technica disagrees with The Verge on…".
+
+In your "Compared to" section, the COMPARISON is not just with the
+predecessor product but ALSO with how each outlet framed the story —
+which outlet hyped it (call it out), which was sober.
+
+In your "Operator's view" / "Why this matters" section, take Serhat's
+stance on what the OUTLETS got wrong, not just the product. This is the
+synthesis layer — where Byte-Pulse adds value that no single outlet has.
+
+${multiSource.drafterBundle}
+
+Allowed categories:
+${categoryList}${trendsBlock}
+
+Write a FULL, EXPANSIVE first draft per your persona instructions plus
+the cross-source rules above.`
+    : `Source: ${research.source.source.name} (${research.source.source.lang.toUpperCase()})
 Original title: ${research.source.title}
 Original URL: ${research.source.link}
 ${research.byline ? 'Original byline: ' + research.byline : ''}
@@ -310,15 +348,17 @@ function wordCount(s: string): number {
 export async function runMultiAgentPipeline(
   research: Research,
   trendingKeywords?: string[],
+  multiSource?: MultiSourceBundle,
 ): Promise<MultiAgentResult> {
   // Stage 1: DRAFTER
-  const draft = await draftLongForm(research, trendingKeywords);
+  const draft = await draftLongForm(research, trendingKeywords, multiSource);
   const drafterWords = wordCount(draft.content);
   await logAgent(
     'drafter',
-    'wrote-longform',
+    multiSource ? 'wrote-longform-multi-source' : 'wrote-longform',
     'success',
-    `${drafterWords}w :: ${draft.title.slice(0, 60)}`,
+    `${drafterWords}w :: ${draft.title.slice(0, 60)}`
+    + (multiSource ? ` :: ${multiSource.citationList.length} sources` : ''),
   );
 
   // Stage 2: EDITOR

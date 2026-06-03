@@ -3,6 +3,8 @@ import { fetchAllSources, findTrending, type FeedItem } from '../rss';
 import { research } from './researcher';
 import { writeArticle } from './writer';
 import { runMultiAgentPipeline } from './multi-agent-pipeline';
+import { clusterByTopic } from './topic-cluster';
+import { researchCluster } from './multi-source-researcher';
 import { humanize } from './humanizer';
 
 // Feature flag: turn the multi-agent newsroom pipeline on. When false the
@@ -324,6 +326,51 @@ export async function runOnce(): Promise<RunReport> {
     report.researched = { fullTextLen: researchResult.fullText.length, hasImage: !!researchResult.imageUrl };
     await logAgent('researcher', 'fetched', 'success', `len=${researchResult.fullText.length}`, { hasImage: !!researchResult.imageUrl });
 
+    // 1b. MULTI-SOURCE PASS (Serhat 2026-06-03): can we find 1-3 other
+    // outlets in this run's fetched pool that reported the same story?
+    // If yes, switch to cross-source synthesis mode — dramatically
+    // higher originality + factuality through built-in cross-reference.
+    let multiSource: Awaited<ReturnType<typeof researchCluster>> | null = null;
+    try {
+      const clusters = clusterByTopic(items, {
+        similarityThreshold: 0.20,
+        minClusterSize: 2,
+      });
+      // Find a cluster that INCLUDES our pick — multi-source is meaningful
+      // only when the pick has cross-reference; clusters without the pick
+      // are other stories we're not writing about now.
+      const pickCluster = clusters.find(
+        (c) =>
+          c.primary.link === pick.link ||
+          c.alternates.some((a) => a.link === pick.link),
+      );
+      if (pickCluster && pickCluster.size >= 2) {
+        // Make sure our pick is the primary so the fetched research
+        // becomes the primary take, and alternates fetch fresh.
+        const reordered = {
+          ...pickCluster,
+          primary: pick,
+          alternates: pickCluster.alternates.filter((a) => a.link !== pick.link)
+            .concat(pickCluster.primary.link !== pick.link ? [pickCluster.primary] : [])
+            .slice(0, 3),
+        };
+        multiSource = await researchCluster(reordered);
+        if (multiSource) {
+          await logAgent(
+            'multi-source-researcher',
+            'cluster-resolved',
+            'success',
+            `topic="${multiSource.topicKey}" sources=${multiSource.citationList.length}`,
+            { citations: multiSource.citationList },
+          );
+        }
+      }
+    } catch (e) {
+      // Multi-source is best-effort — failure here just means we fall
+      // back to single-source, NOT a pipeline kill.
+      await logAgent('multi-source-researcher', 'cluster-failed', 'info', (e as Error).message);
+    }
+
     // 2. Write — newsroom multi-agent pipeline OR legacy single-pass writer.
     //
     // Multi-agent (default): Drafter (Marcus) writes long-form 1700-2200w,
@@ -338,14 +385,16 @@ export async function runOnce(): Promise<RunReport> {
         const result = await runMultiAgentPipeline(
           researchResult,
           trends?.topics.slice(0, 12),
+          multiSource ?? undefined,
         );
         draft = result.article;
         report.written = { title: draft.title, category: draft.category };
         await logAgent(
           'multi-agent',
-          'pipeline-done',
+          multiSource ? 'pipeline-done-multi-source' : 'pipeline-done',
           'success',
-          `drafter=${result.stages.drafterWords}w editor=${result.stages.editorWords}w polisher=${result.stages.polisherWords}w fc=${result.stages.factCheck.factuality_score}`,
+          `drafter=${result.stages.drafterWords}w editor=${result.stages.editorWords}w polisher=${result.stages.polisherWords}w fc=${result.stages.factCheck.factuality_score}`
+          + (multiSource ? ` sources=${multiSource.citationList.length}` : ''),
         );
       } else {
         draft = await writeArticle(
@@ -548,8 +597,18 @@ Return JSON only: { "content": "<expanded markdown>" }`,
 
     // Inject Amazon affiliate links into article body (idempotent: only first
     // mention of each product gets linked). No-op if AMAZON_ASSOCIATE_TAG is unset.
-    const { content: monetizedContent, injected } = injectAmazonLinks(humanized.content, 'en');
+    const { content: amazonInjectedContent, injected } = injectAmazonLinks(humanized.content, 'en');
     if (injected > 0) await logAgent('affiliate', 'amazon-inject', 'success', `${injected} links`);
+
+    // Multi-source: append visible "Sources cross-referenced" footer block
+    // so readers (and AdSense reviewer) can see this was real cross-source
+    // reporting, not a single-source rewrite. Schema.org citation is also
+    // bumped to the full list on render.
+    const monetizedContent = multiSource
+      ? `${amazonInjectedContent}\n\n## Sources cross-referenced\n\nThis story was synthesised from reporting by ${multiSource.citationList.length} outlets:\n\n${multiSource.citationList
+          .map((c, i) => `${i + 1}. [${c.name}](${c.url})`)
+          .join('\n')}\n`
+      : amazonInjectedContent;
 
     const created = await prisma.article.create({
       data: {

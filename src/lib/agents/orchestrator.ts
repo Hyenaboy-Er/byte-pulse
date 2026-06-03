@@ -424,29 +424,29 @@ export async function runOnce(): Promise<RunReport> {
       return report;
     }
 
-    // 4c. LENGTH GATE — raised 2026-06-02 to match the new Multi-Agent
-    // pipeline targets. Drafter writes 2500-3000w, Editor cuts to 1400-1800w,
-    // Polisher ships ~1500w. So the FLOOR for publish is now 1100w (instead
-    // of 500). Anything below that means the pipeline collapsed (a stage
-    // returned a stub) and we should not ship it.
-    // Expand-pass target also bumped to 1400-1800w to match Editor target.
+    // 4c. LENGTH GATE — targets the 8-12 minute reading time Serhat
+    // wants for every published article (= 1700-2400 words at the
+    // standard 200 wpm reading speed). Drafter writes 3000-3500w,
+    // Editor cuts to 1700-2400w. If a stage collapses and Eva ships
+    // under 1700w, the expand pass kicks in. Below 1400w hard skip.
     const wc = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
     let bodyWords = wc(humanized.content);
-    if (bodyWords < 1300) {
+    if (bodyWords < 1700) {
       try {
         const exp = await chat({
           model: MODELS.writer,
-          system: `You are a senior tech editor. Expand this article to 1400-1800 words by
-ADDING depth — more concrete numbers, a "Compared to:" section comparing this
-to its closest predecessor or competitor with prices/specs, a real daily-use
-scenario, a "what this means for you" angle, an honest "what's still unclear",
-a closing take. Keep EVERY existing fact/number/name/quote and the structure.
-NEVER invent specifics. Voice: warm, plainspoken, operator credibility
-("anyone who's shipped hardware knows..."), European frame of reference, no
-"in conclusion"/"game-changing"/"delve into"/"tapestry"/"leverage".
+          system: `You are a senior tech editor. Expand this article to 1700-2400 words
+(= 8-12 minute read) by ADDING depth — more concrete numbers, a "Compared to:"
+section comparing this to its closest predecessor or competitor with prices/specs,
+a real daily-use scenario, a "what this means for you" angle, an honest
+"what's still unclear", a closing take. Keep EVERY existing fact/number/name/
+quote and the structure. NEVER invent specifics. Voice: warm, plainspoken,
+operator credibility ("anyone who's shipped hardware knows..."), European
+frame of reference, no "in conclusion"/"game-changing"/"delve into"/"tapestry"/
+"leverage".
 Return JSON only: { "content": "<expanded markdown>" }`,
-          user: `Title: ${humanized.title}\nCurrent length: ${bodyWords}w (too thin).\n\nBody:\n"""\n${humanized.content}\n"""\n\nExpand to 1400-1800w, same facts, deeper.`,
-          maxTokens: 5500,
+          user: `Title: ${humanized.title}\nCurrent length: ${bodyWords}w (too thin for 8-12 min read).\n\nBody:\n"""\n${humanized.content}\n"""\n\nExpand to 1700-2400w (= 8-12 min read), same facts, deeper.`,
+          maxTokens: 7000,
           json: true,
         });
         const parsed = extractJson<{ content: string }>(exp);
@@ -459,11 +459,12 @@ Return JSON only: { "content": "<expanded markdown>" }`,
         await logAgent('writer', 'length-expand', 'error', (err as Error).message);
       }
     }
-    if (bodyWords < 1100) {
-      // Pipeline collapsed — a stage returned a thin stub. Skip rather than
-      // ship the failed output. Floor raised 500 → 1100 on 2026-06-02 to
-      // match the Multi-Agent newsroom pipeline's design output (1400-1800w).
-      await logAgent('orchestrator', 'skip-thin', 'info', `${humanized.title}: ${bodyWords}w < 1100, not published`);
+    if (bodyWords < 1400) {
+      // 1400w = 7 min read at 200 wpm. Anything below that means the
+      // pipeline collapsed and we ship a thin stub. Skip — better to
+      // miss a publish window than to add a sub-7-min article to a
+      // long-form publication.
+      await logAgent('orchestrator', 'skip-thin', 'info', `${humanized.title}: ${bodyWords}w < 1400 (< 7 min read), not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

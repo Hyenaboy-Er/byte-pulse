@@ -114,7 +114,10 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
     role: 'persona-drafter',
     system: DRAFTER_PERSONA,
     user: userPrompt,
-    maxTokens: 8500,
+    // 10500 tokens ≈ 7800 words output capacity. Drafter targets
+    // 3000-3500 words (so Eva can cut to the final 1700-2400w = 8-12
+    // min read). Leaves 2x headroom for JSON-overhead + edge cases.
+    maxTokens: 10500,
     json: true,
   });
 
@@ -153,7 +156,10 @@ Return the edited version as JSON.`;
     role: 'persona-editor',
     system: EDITOR_PERSONA,
     user: userPrompt,
-    maxTokens: 6000,
+    // Eva targets 1700-2400 words (= 8-12 min read). 8000 tokens out =
+    // ~6000 words capacity, plenty of room for the body + title/subtitle/
+    // excerpt JSON envelope.
+    maxTokens: 8000,
     json: true,
   });
 
@@ -258,12 +264,14 @@ ${factCheckBlock}
 Polish per your persona instructions. Return final JSON.`;
 
   // Polisher on persona-polisher → Gemini Flash by default. Surgical
-  // edits + AI-tell removal don't need a heavy model.
+  // edits + AI-tell removal don't need a heavy model. 8000 tokens =
+  // same ~6000 word capacity as the Editor — Carmen returns close to
+  // Eva's length, not more.
   const text = await llmChat({
     role: 'persona-polisher',
     system: POLISHER_PERSONA,
     user: userPrompt,
-    maxTokens: 6000,
+    maxTokens: 8000,
     json: true,
   });
 

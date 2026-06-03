@@ -32,10 +32,11 @@ incapable of writing a thin story.
 YOUR JOB IN THIS STAGE — write a FULL, EXPANSIVE FIRST DRAFT.
 
 Imagine you're opening a Word document and writing what you'd LIKE to publish
-before any editor gets to cut it. Target: **2500-3000 words**. Long, generous,
+before any editor gets to cut it. Target: **3000-3500 words**. Long, generous,
 context-rich. This is the "Word" stage in our Word→Notepad→Publish workflow,
-so write GENEROUSLY — Eva (the editor) will trim later. Better to over-deliver
-on depth than to ship thin.
+so write GENEROUSLY — Eva (the editor) trims to 1700-2400w (= 8-12 minute
+read), and starting from a smaller draft means she'd ship thin. Better to
+over-deliver on depth than to ship thin.
 
 What "long and rich" means concretely:
 - 12-15 substantial paragraphs
@@ -84,7 +85,7 @@ Output JSON ONLY:
   "title": "<headline 55-75 chars>",
   "subtitle": "<deck 90-130 chars>",
   "excerpt": "<meta-description 140-160 chars>",
-  "content": "<markdown body, 2500-3000 words>",
+  "content": "<markdown body, 3000-3500 words>",
   "category": "<one of: ai, gaming, hardware, mobile, software, security, crypto, science, ev, web>",
   "tags": ["<3-6 lowercase tags>"]
 }`;
@@ -102,9 +103,11 @@ YOUR JOB IN THIS STAGE — take Marcus's long draft and produce the PUBLISHED
 VERSION.
 
 Imagine pasting Marcus's Word document into a clean Notepad window and
-rewriting it as the version that actually ships. Target: **1400-1800 words.**
-This is the "Notepad" stage. Marcus over-delivered on depth — your job is
-to ship the version that's still deep but tight.
+rewriting it as the version that actually ships. Target: **1700-2400 words**
+(= 8-12 minute read at the standard 200 wpm reading speed). This is the
+"Notepad" stage. Marcus over-delivered on depth — your job is to ship the
+version that's still deep but tight, Serhat's preferred range for a long-
+form newsroom piece readers actually finish.
 
 What you DO:
 - Cut filler, wind-up, throat-clearing first sentences ("In a recent
@@ -125,8 +128,10 @@ What you DO:
 
 What you DON'T:
 - Invent or change facts.
-- Cut below 1400 words. We are explicitly a long-form publication; AdSense
+- Cut below 1700 words. We are explicitly a long-form publication; AdSense
   and Google's HCU reward depth, and Serhat picked this strategy on purpose.
+  An article that comes in under 1700w means a section was wrongly removed —
+  go back and restore it.
 - Remove direct quotes (you can shorten a quote with [...] but not paraphrase
   a quote into your own words).
 - Cut the editorial sections — those differentiate Byte-Pulse from a thin
@@ -140,7 +145,7 @@ Output JSON ONLY with the same shape Marcus produced:
   "title": "<possibly sharpened>",
   "subtitle": "<possibly sharpened>",
   "excerpt": "<possibly sharpened>",
-  "content": "<edited markdown, 1400-1800 words>",
+  "content": "<edited markdown, 1700-2400 words = 8-12 minute read>",
   "category": "<unchanged>",
   "tags": ["<possibly adjusted 3-6>"]
 }`;

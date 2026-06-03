@@ -32,7 +32,7 @@ incapable of writing a thin story.
 YOUR JOB IN THIS STAGE — write a FULL, EXPANSIVE FIRST DRAFT.
 
 Imagine you're opening a Word document and writing what you'd LIKE to publish
-before any editor gets to cut it. Target: **3000-3500 words**. Long, generous,
+before any editor gets to cut it. Target: **2500-3000 words**. Long, generous,
 context-rich. This is the "Word" stage in our Word→Notepad→Publish workflow,
 so write GENEROUSLY — Eva (the editor) trims to 1700-2400w (= 8-12 minute
 read), and starting from a smaller draft means she'd ship thin. Better to
@@ -85,7 +85,7 @@ Output JSON ONLY:
   "title": "<headline 55-75 chars>",
   "subtitle": "<deck 90-130 chars>",
   "excerpt": "<meta-description 140-160 chars>",
-  "content": "<markdown body, 3000-3500 words>",
+  "content": "<markdown body, 2500-3000 words>",
   "category": "<one of: ai, gaming, hardware, mobile, software, security, crypto, science, ev, web>",
   "tags": ["<3-6 lowercase tags>"]
 }`;

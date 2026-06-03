@@ -114,10 +114,13 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
     role: 'persona-drafter',
     system: DRAFTER_PERSONA,
     user: userPrompt,
-    // 10500 tokens ≈ 7800 words output capacity. Drafter targets
-    // 3000-3500 words (so Eva can cut to the final 1700-2400w = 8-12
-    // min read). Leaves 2x headroom for JSON-overhead + edge cases.
-    maxTokens: 10500,
+    // 7000 tokens ≈ 5200 words output capacity. Reduced from 10500 on
+    // 2026-06-03 after OpenAI gpt-4o generation at 10500 tokens blew
+    // through Vercel hobby's 60s function timeout (truncated mid-JSON).
+    // 5200 words capacity is still enough for Drafter's 2500-3000 word
+    // target — Eva then cuts to the 1700-2400w (= 8-12 min read) ship
+    // length. Pipeline now fits inside the 60s window.
+    maxTokens: 7000,
     json: true,
   });
 

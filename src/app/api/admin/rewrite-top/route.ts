@@ -128,8 +128,12 @@ export async function GET(req: Request) {
     const afterWords = wordCount(upgrade.content);
 
     // Only persist if the rewrite is materially better. Otherwise log and
-    // try the next candidate on the next tick.
-    if (afterWords < Math.max(1100, beforeWords - 100)) {
+    // try the next candidate on the next tick. Floor lowered to 950 on
+    // 2026-06-03: with the depth+opinion upgrade prompt, a 1000w rewrite
+    // can be materially deeper than a 1300w original (Compared-to +
+    // Operator-view + Open-questions sections add tracked editorial
+    // value even at similar length).
+    if (afterWords < Math.max(950, beforeWords - 200)) {
       await prisma.agentLog.create({
         data: {
           agent: 'force-rewrite-top',

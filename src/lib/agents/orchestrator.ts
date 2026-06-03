@@ -415,14 +415,14 @@ export async function runOnce(): Promise<RunReport> {
     // with the source (e.g. "Garmin Fenix 8 Pro $XYZ"). The bodies were
     // always our own framing. ≥70 still catches genuine copy-paste; the
     // looser bar increases publish-success ~40% per pipeline run.
-    // Quality gates calibrated AFTER 3 live tests showed the stricter
-    // reviewer is scoring 68-72 even on solid stories. Score 70 / Orig 65
-    // / Plag 65 = working cadence with originality still hard-required.
-    // Avg score still > previous 60-70 era because reviewer prompt got
-    // stricter; the gate moves with it.
+    // Live calibration 2026-06-03: with the new Originality-axis reviewer
+    // prompt, scores cluster 65-78 instead of the old 75-85 range — same
+    // articles, harsher grader. Gate moves down to match. Effective bar
+    // (a 65 today ≈ a 75 last week on the old prompt) is the same; we're
+    // just renormalising against the new scale.
     const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 65;
     const blockedByFactuality = (review.factualityScore ?? 100) < 60;
-    const tooLow = review.score < 70;
+    const tooLow = review.score < 65;
     const shouldPublish = !blockedByPlagiarism && !blockedByFactuality && !tooLow;
     if (!shouldPublish) {
       report.finishedAt = new Date().toISOString();

@@ -51,24 +51,21 @@ export default function ArticleBody({
 }) {
   const parts = splitMarkdownByParagraph(content);
   const adsenseLive = !!process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  // Pre-AdSense-approval gate (2026-06-03): when AdSense is not yet live we
+  // also suppress the InlineAffiliateCard fallback. An AdSense reviewer that
+  // sees Amazon affiliate boxes between every paragraph reads that as
+  // pre-monetisation policy violation. Once NEXT_PUBLIC_ADSENSE_CLIENT is
+  // set, the original logic resumes (AdSlot when live, affiliate fallback
+  // otherwise). For now: clean prose, source link only.
+  // Suppress unused-vars warnings while the affiliate fallback is paused.
+  void category; void lang; void title;
   return (
     <>
       {parts.map((part, i) => (
         <div key={i}>
           <Markdown>{part}</Markdown>
-          {i < parts.length - 1 && (
-            adsenseLive ? (
-              <AdSlot slot={`in-content-${i + 1}`} label="Ad" />
-            ) : (
-              category && (
-                <InlineAffiliateCard
-                  category={category}
-                  lang={lang}
-                  title={title}
-                  variant={i === 0 ? 'compact' : 'callout'}
-                />
-              )
-            )
+          {i < parts.length - 1 && adsenseLive && (
+            <AdSlot slot={`in-content-${i + 1}`} label="Ad" />
           )}
         </div>
       ))}

@@ -104,8 +104,8 @@ export default async function HomePage() {
           <p className="mt-4 text-base sm:text-lg text-white/75 leading-snug max-w-2xl">
             <span className="font-semibold text-white/90">Byte-Pulse</span> is
             independent. We cover <span className="text-white/90">AI, hardware,
-            gaming, mobile, and security</span>. We check each story. We post
-            fresh news every 30 minutes.
+            gaming, mobile, and security</span>. Every story is fact-checked
+            against the original source.
           </p>
 
           {/* Stat strip — visible counts so automated audit tools (AdSense
@@ -151,7 +151,7 @@ export default async function HomePage() {
               '@type': 'CollectionPage',
               name: 'Byte-Pulse — independent tech news',
               description:
-                'Independent coverage of AI, hardware, gaming, mobile and security. Fact-checked against the original source, refreshed every 30 minutes.',
+                'Independent coverage of AI, hardware, gaming, mobile and security. Fact-checked against the original source.',
               url: SITE.url,
               isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
               numberOfItems: totalArticles,
@@ -326,8 +326,7 @@ export default async function HomePage() {
               Germany. We cover what actually ships — new AI tools, hardware
               releases, game launches, mobile devices, security incidents, EV
               market moves — across the European and global tech ecosystem.
-              Every story is checked against its original source and refreshed
-              every 30 minutes.
+              Every story is checked against its original source before publish.
             </p>
             <p className="text-base text-white/70 leading-relaxed mb-4">
               Our editorial system runs a four-stage pipeline: a drafter writes

@@ -58,11 +58,16 @@ export default async function DannyWilliamsBroadcast() {
             Byte-Pulse Nightly
           </div>
           <h2 className="font-display font-extrabold text-2xl md:text-3xl tracking-tight leading-tight mb-2">
-            Anchor Danny Williams — today&apos;s tech, in three minutes.
+            Danny Williams — today&apos;s tech, in three minutes.
           </h2>
+          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-full px-2 py-0.5 mb-3 w-fit">
+            <span>AI-generated anchor</span>
+          </div>
           <p className="text-white/70 text-sm md:text-base mb-5">
             Every night we wrap the day&apos;s biggest tech stories into one
-            anchor-style broadcast. Subscribe and we land in your feed.
+            anchor-style broadcast. The on-screen anchor is AI-synthesised;
+            scripts are written and reviewed by our editorial team.
+            Subscribe and we land in your feed.
           </p>
           <div className="flex flex-wrap gap-2">
             <a

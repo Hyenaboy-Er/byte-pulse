@@ -312,11 +312,20 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
 
       <ArticleBody content={article.content} category={article.category} lang="en" title={article.title} />
 
-      <AdsterraNative />
-
-      <AffiliateCTA category={article.category} lang="en" title={article.title} />
-
-      <AdSlot slot="article-bottom" />
+      {/* Pre-AdSense-approval visibility gate.
+          An AdSense pre-review consult (2026-06-03) flagged the in-article
+          'Sponsored · Amazon' affiliate boxes + Adsterra native ads as a
+          real risk: reviewers see active monetisation BEFORE approval and
+          read it as the site exceeding policy. We hide them entirely until
+          NEXT_PUBLIC_ADSENSE_CLIENT is set (= AdSense is approved and live).
+          Once approved, ads return automatically. */}
+      {process.env.NEXT_PUBLIC_ADSENSE_CLIENT ? (
+        <>
+          <AdsterraNative />
+          <AffiliateCTA category={article.category} lang="en" title={article.title} />
+          <AdSlot slot="article-bottom" />
+        </>
+      ) : null}
 
       <div className="mt-10 rounded-xl bg-bg-card border border-white/5 p-5">
         <div className="text-xs uppercase tracking-wider text-muted mb-2">Source</div>

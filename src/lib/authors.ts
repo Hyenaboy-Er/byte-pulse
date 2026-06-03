@@ -112,23 +112,21 @@ const CATEGORY_TO_AUTHOR: Record<string, string> = {
 };
 
 export function authorForArticle(
-  category: string,
+  _category: string,
   _slug?: string,
-  sourceName?: string,
+  _sourceName?: string,
 ): Author {
-  // The founder's real-name byline is reserved for the comparison agent's
-  // flagship buying guides ONLY. Those are the single thing on the site
-  // that sets sourceName=`${SITE.name} Original` — a precise, unambiguous
-  // marker. The old "slug contains -vs-" heuristic was too broad: news
-  // stories like "Elon Musk vs OpenAI" or "Umbrellas vs Drones" wrongly
-  // got the Founder & Editor byline, which hurts credibility/E-E-A-T.
-  // Derived from SITE.name (not imported from the agent) to keep this
-  // page-side module free of the heavy agent graph while staying in sync.
-  if (sourceName === `${BRAND} Original`) {
-    return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[0];
-  }
-  const wanted = CATEGORY_TO_AUTHOR[category] ?? 'byte-pulse-newsroom';
-  return AUTHOR_BY_SLUG[wanted] ?? AUTHORS[0];
+  // CHANGED 2026-06-03 per Serhat's instruction: EVERY published article is
+  // bylined as "Serhat Er" with his photo. The earlier multi-author + anonymous
+  // "Byte-Pulse Newsroom" routing was flagged by an AdSense pre-review consult
+  // as a strong red flag for E-E-A-T (anonymous byline on a solo publication
+  // looks like scaled content). For a single-person newsroom the editorially
+  // honest choice is to put the editor-in-chief's name + photo on everything
+  // he actually reviews — which is every article that ships. The earlier
+  // CATEGORY_TO_AUTHOR map and `${BRAND} Original` carve-out are now ignored;
+  // the helper is kept as a no-op stub so the orchestrator's import stays
+  // working. Args are kept in the signature for backward compatibility.
+  return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[0];
 }
 
 export function getAuthor(slug: string): Author | null {

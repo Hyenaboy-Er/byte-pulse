@@ -22,7 +22,7 @@ const SITE_URL = SITE.url;
 
 const HOME_TITLE = 'Latest tech news, AI, gaming, hardware — Byte-Pulse';
 const HOME_DESCRIPTION =
-  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Fact-checked, updated every 30 minutes.';
+  'Byte-Pulse covers the latest in AI, gaming, hardware, mobile, software and security. Fact-checked against the original source.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

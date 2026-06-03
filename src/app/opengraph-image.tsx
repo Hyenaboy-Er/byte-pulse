@@ -55,7 +55,7 @@ export default async function OpengraphImage() {
             what matters now.
           </div>
           <div style={{ display: 'flex', fontSize: 28, color: '#a8a8b8', marginTop: 8 }}>
-            Updated every 30 min · Bilingual EN + DE
+            Independent tech newsroom · Fact-checked
           </div>
         </div>
 

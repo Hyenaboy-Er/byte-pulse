@@ -216,6 +216,15 @@ What you DO:
     "transformative journey", "stands as a testament", "a beacon of",
     "in the ever-evolving landscape", "paradigm shift", "cutting-edge",
     "robust solution", "seamless experience", "in the dynamic world of".
+- KILL standalone sentence fragments. If any sentence begins with "Using…",
+  "Specifically.", "Potentially…", "Though…", "Importantly…" as a complete
+  sentence, MERGE it into the previous sentence with a comma or conjunction.
+  Bad: "The model was trained from scratch. Using clean data, specifically.
+  Potentially reducing bias." Good: "The model was trained from scratch
+  using specifically curated data, which may reduce bias."
+- BREAK rhythmic patterns. If three sentences in a row are short and punchy,
+  the next must be a long compound sentence. No fixed short-short-long
+  cadence — that's the most reliable AI fingerprint.
 - Make the headline land punchy and specific.
 - Verify the excerpt is 140-160 chars and matches the article's actual angle.
 - Sprinkle in 1-2 first-person hands-on moments where they fit, in the

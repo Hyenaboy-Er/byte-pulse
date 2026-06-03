@@ -47,6 +47,12 @@ PROSE STYLE — natural continuous flow, no AI fragments (mandatory):
   Not a dramatic AI narrator. Not staccato. Not "punchy".
 - Vary sentence length but keep the average around 18-26 words. Sub-7-word
   sentences should be rare and intentional, not a default rhythm.
+- AVOID OVERLY RHYTHMIC SENTENCE PATTERNS. Modern LLMs reliably fall into a
+  "short-short-long" or "punchy-punchy-conclusion" rhythm that reads as
+  machine-generated. Break the pattern: if the last three sentences were
+  short, the next must be longer (and vice versa). No fixed cadence. The
+  goal is real prose-style irregularity, like a tired-but-skilled human
+  writing fast.
 
 HEADLINE RULES (the single most important thing on the whole article — every
 visitor decides in 0.5 seconds whether to click; a weak headline kills traffic):

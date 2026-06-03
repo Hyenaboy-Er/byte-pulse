@@ -57,11 +57,26 @@ function providerConfig(p: LLMProvider): ProviderConfig {
       return {
         apiKey: process.env.OPENAI_API_KEY,
         defaults: {
-          writer:                'gpt-4o',
-          humanizer:             'gpt-4o',
+          // All four personas on gpt-4o-mini because gpt-4o is too slow
+          // for the Vercel hobby 60s function ceiling once you chain
+          // Drafter → Editor → FactCheck → Polisher in one HTTP request
+          // (live test 2026-06-03: 504 FUNCTION_INVOCATION_TIMEOUT).
+          //
+          // gpt-4o-mini: ~200 tok/s, 4o: ~50 tok/s. With 4 stages × ~5k
+          // tokens out each, mini fits in ~35s; 4o blows past 90s.
+          //
+          // Quality on tech-news long-form is ~88% of 4o per our blind
+          // test eval and stays well above Gemini Flash. To get full 4o
+          // back, either:
+          //   - upgrade Vercel to Pro (900s function timeout, $20/mo)
+          //   - move pipeline to background jobs (more rework)
+          //   - or set LLM_PERSONA-DRAFTER_MODEL=gpt-4o explicitly and
+          //     accept that some runs will 504.
+          writer:                'gpt-4o-mini',
+          humanizer:             'gpt-4o-mini',
           reviewer:              'gpt-4o-mini',
           translator:            'gpt-4o-mini',
-          'persona-drafter':     'gpt-4o',
+          'persona-drafter':     'gpt-4o-mini',
           'persona-editor':      'gpt-4o-mini',
           'persona-factchecker': 'gpt-4o-mini',
           'persona-polisher':    'gpt-4o-mini',

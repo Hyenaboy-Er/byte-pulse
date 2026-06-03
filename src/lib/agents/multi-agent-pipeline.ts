@@ -34,6 +34,7 @@
 
 import { chat, MODELS, extractJson } from '../openai';
 import { CATEGORIES } from '../categories';
+import { prisma } from '../db';
 import type { Research } from './researcher';
 import type { WrittenArticle } from './writer';
 import {
@@ -42,7 +43,31 @@ import {
   FACT_CHECKER_PERSONA,
   POLISHER_PERSONA,
 } from './personas';
-import { logAgent } from '../agent-log';
+
+// Inline logger — earlier draft imported from '../agent-log' which does not
+// exist (the real logAgent lives as a private function inside orchestrator.ts).
+// Mirroring its shape here keeps this module self-contained.
+async function logAgent(
+  agent: string,
+  action: string,
+  status: string,
+  message?: string,
+  meta?: object,
+): Promise<void> {
+  try {
+    await prisma.agentLog.create({
+      data: {
+        agent,
+        action,
+        status,
+        message: message?.slice(0, 500),
+        meta: meta ? JSON.stringify(meta).slice(0, 1500) : undefined,
+      },
+    });
+  } catch {
+    /* logging is best-effort — never block the pipeline */
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Stage 1: DRAFTER — Marcus

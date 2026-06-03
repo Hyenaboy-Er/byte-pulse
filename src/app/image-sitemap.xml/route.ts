@@ -13,9 +13,11 @@ import { listPublished } from '@/lib/articles-source';
 import { SITE } from '@/lib/site';
 
 const SITE_URL = SITE.url.replace(/\/$/, '');
-const REVALIDATE_SECONDS = 3600; // 1h — image sitemap doesn't need to be live
 
-export const revalidate = REVALIDATE_SECONDS;
+// Next.js requires `revalidate` to be a literal numeric constant, not a
+// reference to another identifier. 3600 = 1h cache, plenty for an image
+// sitemap (Google doesn't poll faster than daily anyway).
+export const revalidate = 3600;
 
 function esc(s: string): string {
   return s
@@ -62,7 +64,7 @@ ${urls}
     status: 200,
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': `public, max-age=${REVALIDATE_SECONDS}, s-maxage=${REVALIDATE_SECONDS}`,
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
     },
   });
 }

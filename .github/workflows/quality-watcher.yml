@@ -1,0 +1,25 @@
+# Quality-Watcher — runs the audit agent every 30 min.
+#
+# The agent itself is non-destructive: it scans the last 10 published
+# articles, scores them mechanically + via LLM judgment (3 calls max per
+# run on Gemini Flash free-tier), and QUEUES rewrites/polishes via
+# agentLog for the quality-upgrade agent to pick up. It does not modify
+# articles directly.
+#
+# Quality-upgrade agent runs on its own cron and picks up the queue.
+
+name: Quality Watcher
+
+on:
+  schedule:
+    - cron: '17,47 * * * *'   # :17 and :47 — staggered against writer cron stack
+  workflow_dispatch: {}
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire quality-watch endpoint
+        run: |
+          POKE='pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick'
+          curl -sS -m 60 "https://www.byte-pulse.net/api/cron/quality-watch?token=$POKE&audits=10" || true

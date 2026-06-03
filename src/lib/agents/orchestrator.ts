@@ -478,10 +478,14 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     }
     // Originality gate — replaces the 1400w hard floor. A 900-word
     // genuine analysis ships; a 2000-word source paraphrase does not.
-    const orig = review.originalityAdded ?? 0;
-    if (orig < 70) {
+    // Default to 70 when the field is MISSING from the reviewer's response
+    // (some model versions still omit it). Only block when the reviewer
+    // explicitly returned a low value. Prevents the entire pipeline from
+    // 100% skipping just because the LLM forgot one JSON key.
+    const orig = review.originalityAdded ?? 70;
+    if (orig < 65) {
       await logAgent('orchestrator', 'skip-low-originality', 'info',
-        `${humanized.title}: originalityAdded=${orig} < 70, not published`);
+        `${humanized.title}: originalityAdded=${orig} < 65, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

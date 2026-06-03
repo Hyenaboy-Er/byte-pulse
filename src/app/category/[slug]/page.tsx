@@ -1,8 +1,20 @@
 import { listPublished } from '@/lib/articles-source';
 import { notFound } from 'next/navigation';
 import { ArticleCard } from '@/components/ArticleCard';
+import HotSearchTerms from '@/components/HotSearchTerms';
 import { getCategory, CATEGORIES } from '@/lib/categories';
 import type { Metadata } from 'next';
+
+type HotCategory =
+  | 'ai' | 'mobile' | 'hardware' | 'gaming' | 'software'
+  | 'security' | 'ev' | 'science' | 'crypto' | 'web';
+const HOT_CATEGORIES: HotCategory[] = [
+  'ai', 'mobile', 'hardware', 'gaming', 'software',
+  'security', 'ev', 'science', 'crypto', 'web',
+];
+function asHotCategory(slug: string): HotCategory | undefined {
+  return HOT_CATEGORIES.includes(slug as HotCategory) ? (slug as HotCategory) : undefined;
+}
 
 export const revalidate = 600;
 
@@ -40,6 +52,12 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         </h1>
         <p className="text-white/70 mt-2 max-w-2xl">{cat.description}</p>
       </div>
+
+      {/* Category-specific Hot-Search strip. Shows only the long-tail
+          phrases U.S. readers Google in THIS category — deeper than the
+          balanced homepage mix. /category/mobile gets iPhone 18 Pro Max,
+          Galaxy S26 Ultra, foldable phones, etc. */}
+      {asHotCategory(cat.slug) && <HotSearchTerms category={asHotCategory(cat.slug)} />}
 
       {!articles.length ? (
         <p className="text-muted">No articles in this section yet. The bots are on it.</p>

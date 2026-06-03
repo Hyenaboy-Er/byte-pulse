@@ -18,32 +18,111 @@ interface Term {
   label: string;        // what shows in the chip
   query: string;        // what we send to /search (often slightly broader)
   emoji?: string;       // small visual hook
-  cat?: 'phone' | 'gpu' | 'ai' | 'mac' | 'console' | 'ev' | 'vr';
+  byteCat: 'ai' | 'mobile' | 'hardware' | 'gaming' | 'software' | 'security' | 'ev' | 'science' | 'crypto' | 'web';
 }
 
-// Ordered by US-search volume (rough). Phones at the front because they're
-// the highest-CPC AdSense category we want to dominate.
+// All term pools. Ordered roughly by US-search volume. Each term is tagged
+// with the byte-pulse category it belongs to, so we can show:
+//   - homepage:        a BALANCED mix across categories (4 mobile, 4 AI,
+//                      2 hardware, 2 gaming, 1 ev — proportional to a
+//                      tech-news magazine, NOT phone-heavy)
+//   - category page:   only the terms for that category, deeper coverage
 const TERMS: Term[] = [
-  { label: 'iPhone 18 Pro Max',  query: 'iPhone 18 Pro Max',  emoji: '📱', cat: 'phone' },
-  { label: 'iPhone 18 Pro',      query: 'iPhone 18 Pro',      emoji: '📱', cat: 'phone' },
-  { label: 'Galaxy S26 Ultra',   query: 'Galaxy S26 Ultra',   emoji: '📱', cat: 'phone' },
-  { label: 'Pixel 11 Pro',       query: 'Pixel 11 Pro',       emoji: '📱', cat: 'phone' },
-  { label: 'RTX 5090',           query: 'RTX 5090',           emoji: '⚙️', cat: 'gpu' },
-  { label: 'RTX 5080',           query: 'RTX 5080',           emoji: '⚙️', cat: 'gpu' },
-  { label: 'MacBook Pro M5',     query: 'MacBook Pro M5',     emoji: '💻', cat: 'mac' },
-  { label: 'iPad Pro M5',        query: 'iPad Pro M5',        emoji: '💻', cat: 'mac' },
-  { label: 'ChatGPT 5',          query: 'ChatGPT 5',          emoji: '🤖', cat: 'ai' },
-  { label: 'Claude 5',           query: 'Claude 5',           emoji: '🤖', cat: 'ai' },
-  { label: 'Gemini 3',           query: 'Gemini 3',           emoji: '🤖', cat: 'ai' },
-  { label: 'Sora 2',             query: 'Sora 2',             emoji: '🤖', cat: 'ai' },
-  { label: 'Switch 2',           query: 'Switch 2',           emoji: '🎮', cat: 'console' },
-  { label: 'PS6',                query: 'PlayStation 6',      emoji: '🎮', cat: 'console' },
-  { label: 'Apple Vision Pro 2', query: 'Apple Vision Pro 2', emoji: '🥽', cat: 'vr' },
-  { label: 'Tesla Cybercab',     query: 'Tesla Cybercab',     emoji: '🚗', cat: 'ev' },
-  { label: 'Tesla Model Y 2026', query: 'Tesla Model Y 2026', emoji: '🚗', cat: 'ev' },
+  // MOBILE — high volume + high AdSense CPC
+  { label: 'iPhone 18 Pro Max',     query: 'iPhone 18 Pro Max',     emoji: '📱', byteCat: 'mobile' },
+  { label: 'iPhone 18 Pro',         query: 'iPhone 18 Pro',         emoji: '📱', byteCat: 'mobile' },
+  { label: 'iPhone 18',             query: 'iPhone 18',             emoji: '📱', byteCat: 'mobile' },
+  { label: 'Galaxy S26 Ultra',      query: 'Galaxy S26 Ultra',      emoji: '📱', byteCat: 'mobile' },
+  { label: 'Galaxy S26',            query: 'Galaxy S26',            emoji: '📱', byteCat: 'mobile' },
+  { label: 'Pixel 11 Pro',          query: 'Pixel 11 Pro',          emoji: '📱', byteCat: 'mobile' },
+  { label: 'Pixel 11',              query: 'Pixel 11',              emoji: '📱', byteCat: 'mobile' },
+  { label: 'Foldable phone 2026',   query: 'foldable phone 2026',   emoji: '📱', byteCat: 'mobile' },
+  { label: 'Best camera phone',     query: 'best camera phone 2026',emoji: '📷', byteCat: 'mobile' },
+  // AI — strongest growth segment
+  { label: 'ChatGPT 5',             query: 'ChatGPT 5',             emoji: '🤖', byteCat: 'ai' },
+  { label: 'Claude 5',              query: 'Claude 5',              emoji: '🤖', byteCat: 'ai' },
+  { label: 'Gemini 3',              query: 'Gemini 3',              emoji: '🤖', byteCat: 'ai' },
+  { label: 'Sora 2',                query: 'Sora 2',                emoji: '🤖', byteCat: 'ai' },
+  { label: 'Llama 4',               query: 'Llama 4',               emoji: '🤖', byteCat: 'ai' },
+  { label: 'AI agents',             query: 'AI agents',             emoji: '🤖', byteCat: 'ai' },
+  { label: 'Local LLM',             query: 'local LLM',             emoji: '🤖', byteCat: 'ai' },
+  // HARDWARE — GPUs, CPUs, builds
+  { label: 'RTX 5090',              query: 'RTX 5090',              emoji: '⚙️', byteCat: 'hardware' },
+  { label: 'RTX 5080',              query: 'RTX 5080',              emoji: '⚙️', byteCat: 'hardware' },
+  { label: 'RTX 5070',              query: 'RTX 5070',              emoji: '⚙️', byteCat: 'hardware' },
+  { label: 'Snapdragon X Elite 2',  query: 'Snapdragon X Elite 2',  emoji: '⚙️', byteCat: 'hardware' },
+  { label: 'AMD Threadripper 2026', query: 'AMD Threadripper 2026', emoji: '⚙️', byteCat: 'hardware' },
+  { label: 'Best gaming PC build',  query: 'best gaming PC build 2026', emoji: '🖥️', byteCat: 'hardware' },
+  // SOFTWARE / Mac
+  { label: 'MacBook Pro M5',        query: 'MacBook Pro M5',        emoji: '💻', byteCat: 'hardware' },
+  { label: 'iPad Pro M5',           query: 'iPad Pro M5',           emoji: '💻', byteCat: 'hardware' },
+  { label: 'Windows 12',            query: 'Windows 12',            emoji: '🪟', byteCat: 'software' },
+  { label: 'macOS 17',              query: 'macOS 17',              emoji: '🍎', byteCat: 'software' },
+  { label: 'Linux kernel 7',        query: 'Linux kernel 7',        emoji: '🐧', byteCat: 'software' },
+  // GAMING
+  { label: 'Switch 2',              query: 'Switch 2',              emoji: '🎮', byteCat: 'gaming' },
+  { label: 'PS6',                   query: 'PlayStation 6',         emoji: '🎮', byteCat: 'gaming' },
+  { label: 'GTA 6',                 query: 'GTA 6',                 emoji: '🎮', byteCat: 'gaming' },
+  { label: 'Xbox Next',             query: 'Xbox Next',             emoji: '🎮', byteCat: 'gaming' },
+  // EV
+  { label: 'Tesla Cybercab',        query: 'Tesla Cybercab',        emoji: '🚗', byteCat: 'ev' },
+  { label: 'Tesla Model Y 2026',    query: 'Tesla Model Y 2026',    emoji: '🚗', byteCat: 'ev' },
+  { label: 'Rivian R3',             query: 'Rivian R3',             emoji: '🚗', byteCat: 'ev' },
+  // SECURITY
+  { label: 'Zero-day 2026',         query: 'zero-day 2026',         emoji: '🛡️', byteCat: 'security' },
+  { label: 'Best password manager', query: 'best password manager 2026', emoji: '🛡️', byteCat: 'security' },
+  // CRYPTO — kept narrow to avoid YMYL drift
+  { label: 'Bitcoin ETF news',      query: 'Bitcoin ETF',           emoji: '₿',  byteCat: 'crypto' },
+  // SCIENCE / VR
+  { label: 'Apple Vision Pro 2',    query: 'Apple Vision Pro 2',    emoji: '🥽', byteCat: 'hardware' },
+  // WEB / consumer apps
+  { label: 'TikTok ban update',     query: 'TikTok ban',            emoji: '🌐', byteCat: 'web' },
 ];
 
-export default function HotSearchTerms() {
+// Balanced homepage selection — explicitly NOT phone-dominated. Reflects a
+// tech-news magazine that covers everything, not a phone blog:
+//   4 mobile, 4 AI, 3 hardware, 2 gaming, 1 EV, 1 software, 1 security, 1 web
+const HOMEPAGE_SELECTION: string[] = [
+  'iPhone 18 Pro Max',
+  'Galaxy S26 Ultra',
+  'Pixel 11 Pro',
+  'Foldable phone 2026',
+  'ChatGPT 5',
+  'Claude 5',
+  'Gemini 3',
+  'Sora 2',
+  'RTX 5090',
+  'MacBook Pro M5',
+  'Best gaming PC build',
+  'Switch 2',
+  'GTA 6',
+  'Tesla Cybercab',
+  'Windows 12',
+  'Zero-day 2026',
+  'TikTok ban update',
+];
+
+interface Props {
+  /**
+   * When set, the strip shows only terms whose byteCat matches.
+   * Used on /category/<slug> pages for deeper category-specific coverage.
+   * When undefined, the homepage balanced mix is used.
+   */
+  category?: 'ai' | 'mobile' | 'hardware' | 'gaming' | 'software' | 'security' | 'ev' | 'science' | 'crypto' | 'web';
+}
+
+export default function HotSearchTerms({ category }: Props = {}) {
+  const items = category
+    ? TERMS.filter((t) => t.byteCat === category)
+    : TERMS.filter((t) => HOMEPAGE_SELECTION.includes(t.label));
+
+  if (!items.length) return null;
+
+  const label = category ? `Most searched in ${category}` : 'Most searched right now';
+  const note = category
+    ? `Top ${category} phrases U.S. readers type into Google. Click any to see our coverage.`
+    : 'These are the tech phrases U.S. readers type into Google most often. Click any to see our coverage.';
+
   return (
     <section
       aria-labelledby="hot-searches-h"
@@ -54,12 +133,12 @@ export default function HotSearchTerms() {
         className="text-[10px] sm:text-xs uppercase tracking-[0.22em] font-semibold text-muted mb-3 flex items-center gap-2"
       >
         <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-orange-400 live-dot" />
-        Most searched right now
+        {label}
       </h2>
 
       {/* Horizontal scroll on mobile, wrapped pills on desktop. */}
       <div className="flex sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible pb-1 scrollbar-thin">
-        {TERMS.map((t) => (
+        {items.map((t) => (
           <Link
             key={t.label}
             href={`/search?q=${encodeURIComponent(t.query)}`}
@@ -71,10 +150,7 @@ export default function HotSearchTerms() {
         ))}
       </div>
 
-      <p className="text-[11px] text-muted mt-3 leading-snug">
-        These are the tech phrases U.S. readers type into Google most often.
-        Click any to see our coverage.
-      </p>
+      <p className="text-[11px] text-muted mt-3 leading-snug">{note}</p>
     </section>
   );
 }

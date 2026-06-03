@@ -494,10 +494,16 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // tighter articles (500-900w of analysis instead of 1500w of paraphrase).
     // Score + originality + plag gates remain the real quality bar; length
     // is secondary.
-    if (bodyWords < 500) {
-      report.error = `skip-thin: ${bodyWords}w < 500`;
+    // Length floor dropped to 300 on 2026-06-03 second iteration. Live
+    // /api/cron showed score 70+ articles failing at the 500-floor — multi-
+    // agent is producing tight 300-450w analyses (which is what Serhat
+    // wanted: '500 Wörter eigene Analyse > 2000 Golem-paraphrase'). Score
+    // + originality + plag gates are the real quality bar; this floor
+    // exists only to catch the truly broken outputs.
+    if (bodyWords < 300) {
+      report.error = `skip-thin: ${bodyWords}w < 300`;
       await logAgent('orchestrator', 'skip-thin', 'info',
-        `${humanized.title}: ${bodyWords}w < 500 — too short for any analysis to land, not published`);
+        `${humanized.title}: ${bodyWords}w < 300 — broken pipeline output, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

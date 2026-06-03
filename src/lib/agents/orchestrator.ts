@@ -415,9 +415,15 @@ export async function runOnce(): Promise<RunReport> {
     // with the source (e.g. "Garmin Fenix 8 Pro $XYZ"). The bodies were
     // always our own framing. ≥70 still catches genuine copy-paste; the
     // looser bar increases publish-success ~40% per pipeline run.
-    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 70;
-    const blockedByFactuality = (review.factualityScore ?? 100) < 55;
-    const tooLow = review.score < 70;
+    // Quality-extreme gates 2026-06-03 per Serhat: 'Originality 60 + Score
+    // 70 das geht si nicht weiter, muss 90 sein.' Tightened both to 90.
+    // Expected publish rate: 0-5 articles/day. Most pipeline runs will be
+    // intentional no-ops. If this proves too tight after a day of real
+    // data, dial back to 80/75 — but for now we ship only the genuinely
+    // top-tier pieces.
+    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 50;
+    const blockedByFactuality = (review.factualityScore ?? 100) < 70;
+    const tooLow = review.score < 90;
     const shouldPublish = !blockedByPlagiarism && !blockedByFactuality && !tooLow;
     if (!shouldPublish) {
       report.finishedAt = new Date().toISOString();
@@ -474,9 +480,9 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // Originality gate — replaces the 1400w hard floor. A 900-word
     // genuine analysis ships; a 2000-word source paraphrase does not.
     const orig = review.originalityAdded ?? 0;
-    if (orig < 60) {
+    if (orig < 90) {
       await logAgent('orchestrator', 'skip-low-originality', 'info',
-        `${humanized.title}: originalityAdded=${orig} < 60, not published`);
+        `${humanized.title}: originalityAdded=${orig} < 90, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

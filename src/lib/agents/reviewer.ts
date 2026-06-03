@@ -57,20 +57,25 @@ Score SEVEN axes, each 0-100, equally weighted:
 6. SEO (excerpt 140-160 chars, useful tags, category fit)
 7. **Factuality** (CRITICAL): every number/date/claim in the article must be supported by the source OR clearly framed as analyst commentary. Invented facts presented as source-backed = score 0 here AND verdict "reject".
 
-Final score = mean. BUT these HARD GATES trigger automatic "reject":
-  - Factuality < 60
-  - Originality-Added < 40 (= mostly source rephrase, AdSense-killer)
-  - plagiarismRisk > 50
+Final score = mean. BUT these HARD GATES trigger automatic "reject"
+(extreme-quality mode 2026-06-03 — Serhat doesn't want anything below
+top tier shipping anymore):
+  - Factuality < 70
+  - Originality-Added < 90 (only genuinely original analyses publish)
+  - plagiarismRisk >= 50
 
 Also score:
-- aiSmellScore (0-100, where 0 = perfectly human, 100 = reeks of AI). > 55 → at minimum "revise".
-- plagiarismRisk (0-100, where 0 = safely rewritten, 100 = verbatim copy). > 50 → "reject".
+- aiSmellScore (0-100, where 0 = perfectly human, 100 = reeks of AI). > 40 → at minimum "revise".
+- plagiarismRisk (0-100, where 0 = safely rewritten, 100 = verbatim copy). >= 50 → "reject".
 
 Verdict:
-- "publish" if score >= 60 AND no axis < 40 AND originality-added >= 60
-  AND aiSmell <= 55 AND plagiarismRisk <= 50 AND factuality >= 60
-- "revise" if 50-60, or aiSmell 56-70, or originality 40-59
+- "publish" only if score >= 90 AND no axis < 75 AND originality-added >= 90
+  AND aiSmell <= 40 AND plagiarismRisk < 50 AND factuality >= 70
+- "revise" if 70-89, or originality 70-89, or aiSmell 41-60
 - "reject" otherwise
+
+Most articles you see should get "revise" or "reject" — that's the
+intended bar. Do NOT inflate scores to be nice. A 75 is a 75.
 
 Reply with JSON only:
 {

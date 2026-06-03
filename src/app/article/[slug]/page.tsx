@@ -309,13 +309,24 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
         <SaveButton slug={article.slug} title={article.title} />
       </div>
 
-      {article.imageUrl && (
+      {/* COPYRIGHT-SAFE IMAGE STRATEGY (added 2026-06-03 per Serhat):
+          Publisher hot-linked images (IGN, heise, The Verge etc.) are a
+          real AdSense copyright risk during the approval review window.
+          Strategy:
+          - Pre-AdSense-approval phase (NEXT_PUBLIC_ADSENSE_CLIENT unset):
+            we show OUR OWN brand-generated hero from /api/og/<slug>,
+            which renders a category-themed gradient + the article title.
+            No third-party image is fetched, no copyright surface.
+          - Post-approval, the env var flips and the original publisher
+            image returns (with the visible 'Image courtesy of <source>'
+            credit). At that point AdSense has already vetted the site;
+            the licensing exposure is editorial-fair-use territory.
+
+          Either way the visible credit line is now stronger
+          ('Image courtesy of <source> · Used under fair use for news
+          reporting') so the legal frame is explicit. */}
+      {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && article.imageUrl ? (
         <div className="my-8 rounded-xl overflow-hidden bg-bg-card border border-white/5">
-          {/* Hero image proxied via /api/og-proxy → cached at Vercel edge for
-              7 days. First visitor pays the external fetch cost; everyone else
-              gets it from the CDN in ~50ms. Explicit width/height prevents
-              layout shift. fetchPriority="high" tells the browser to prioritize
-              this image over scripts — critical for mobile LCP. */}
           <img
             src={`/api/og-proxy?url=${encodeURIComponent(article.imageUrl)}`}
             alt={article.title}
@@ -327,8 +338,39 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
             className="w-full h-auto object-cover"
           />
           {article.imageCredit && (
-            <div className="px-4 py-2 text-xs text-muted">{article.imageCredit}</div>
+            <div className="px-4 py-2 text-xs text-muted">
+              {article.imageCredit} · Used under fair use for news reporting and commentary.
+            </div>
           )}
+        </div>
+      ) : (
+        <div className="my-8 rounded-xl overflow-hidden bg-bg-card border border-white/5">
+          <img
+            src={`/api/og/${article.slug}`}
+            alt={article.title}
+            width={1200}
+            height={675}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
+          <div className="px-4 py-2 text-xs text-muted">
+            Byte-Pulse original cover. Source story:{' '}
+            {article.sourceName ? (
+              <a
+                href={article.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {article.sourceName}
+              </a>
+            ) : (
+              'see article footer'
+            )}
+            .
+          </div>
         </div>
       )}
 

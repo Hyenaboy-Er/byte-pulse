@@ -438,9 +438,33 @@ ${synthesisedSource}
 
 Allowed category for this article: ${category}
 
-Write an expansive long-form version per your persona instructions. Keep
-every fact/number/quote from the existing body. Add context, EU angle,
-"What this means for you", "What's still unclear", "Why this matters".`;
+This is an UPGRADE pass. The existing body is thin and reads like a press-
+release summary. Your job is to turn it into a Byte-Pulse signature piece:
+DEPTH + STRONG EDITORIAL OPINION.
+
+NON-NEGOTIABLES for this upgrade:
+1. Keep every fact / number / name / date from the existing body.
+2. Add a "Compared to" section with at least TWO concrete competitor or
+   predecessor specs/prices (use your own product knowledge — NOT in the
+   source). Be specific: model names, MHz, USD prices, mAh, TDP, etc.
+3. Add a "What this means for you" section that estimates real-world
+   impact for a defined reader persona (developer / gamer / EV-buyer /
+   IT-admin — pick the right one).
+4. Add a "What's still unclear" section with 2-3 concrete open questions
+   a sceptical reader should track (release date? benchmark methodology?
+   pricing in EU? supply constraints?).
+5. Add a "Why this matters" or "Operator's view" section with an
+   OPINION — take a stance. "This is a defensive move by X because Y."
+   "This will pressure Z." "This won't move the needle unless A."
+   Reviewers should be able to point to specific sentences that show
+   editorial judgement, not neutral summary.
+6. Target 1500-2200 words, structured with markdown ## subheadings.
+7. No fragment sentences ("Using clean data, specifically."). No AI
+   tells ("furthermore", "in essence", "delve into").
+
+If the existing article is off-niche (plant biology, food, fashion,
+politics, sports, celebrity), set category to "skip" — but for already-
+published tech articles this should not happen.`;
 
   const draftText = await llmChat({
     role: 'persona-drafter',
@@ -461,7 +485,11 @@ every fact/number/quote from the existing body. Add context, EU angle,
     const editorText = await llmChat({
       role: 'persona-editor',
       system: EDITOR_PERSONA,
-      user: `Cut Marcus's long upgrade to 900-1300 words. Keep every fact.
+      user: `Cut Marcus's long upgrade to 1400-1900 words. Keep every fact.
+Crucially, KEEP all five upgrade sections intact: Compared to / What this
+means for you / What's still unclear / Operator's view (or Why this matters).
+Cut PADDING and AI-flavored connective tissue, never analytical depth or
+opinionated sentences.
 DRAFT:
 """
 ${draftParsed.content}

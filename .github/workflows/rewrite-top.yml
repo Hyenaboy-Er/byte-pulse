@@ -1,0 +1,39 @@
+# Force-Rewrite Top — drains the top-views queue through the new gpt-4o
+# Multi-Agent pipeline, one article per tick. Runs every 15 minutes until
+# the queue is empty (each tick processes the next not-yet-rewritten
+# article from the top 20 by views).
+#
+# Timeline: started 2026-06-03 to prepare for Serhat's AdSense submission
+# on Saturday 2026-06-07. At 15-min cadence × 24h, 20 articles drain
+# in ~5h. Comfortable margin before Saturday.
+#
+# Auth uses the CRON_SECRET stored as a GitHub Actions secret, NOT the
+# public-poke token (the rewrite endpoint mutates DB so it's CRON-only).
+# After the queue is empty the endpoint returns instantly with
+# status='queue-empty' and the workflow is harmless; just disable it
+# manually post-Saturday.
+
+name: Force-Rewrite Top Articles
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  rewrite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire rewrite-top endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::warning::CRON_SECRET not set — skipping (please add it as a GitHub Actions secret to enable)"
+            exit 0
+          fi
+          # Endpoint takes up to ~150 seconds (Drafter on gpt-4o is the
+          # slow stage). 220s curl timeout = headroom + clean kill.
+          curl -sS -m 220 \
+            "https://www.byte-pulse.net/api/admin/rewrite-top?token=${CRON_SECRET}&topN=20" \
+            || true

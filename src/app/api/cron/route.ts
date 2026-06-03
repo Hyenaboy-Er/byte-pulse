@@ -19,12 +19,12 @@ export const maxDuration = 300;
 //     Writer max. ~3 Artikel/Stunde. Keine kalkulierbare Kosten-Falle.
 //   - Beim regulären CRON_SECRET-Pfad gilt das Limit NICHT.
 const PUBLIC_POKE_TOKEN = 'pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick';
-// 25-min cooldown targets Serhat's '48 articles/day' math (24h / 30min =
-// 48). 25min gives a small slack for GitHub cron drops + pipeline retries
-// while still hitting ~57/day theoretical max if every window publishes.
-// The 4-workflow parallel poke stack ensures at least one trigger arrives
-// inside every 25-min window even when GitHub throttles individual queues.
-const PUBLIC_POKE_MIN_GAP_MS = 25 * 60_000;
+// 15-min cooldown — quality-first since 2026-06-03. The pipeline tries
+// every 15 minutes; most attempts fail the Reviewer's originality + score
+// gate (intended behaviour). When something does pass, the cooldown
+// prevents back-to-back publishes from a single pipeline lucky-streak.
+// We no longer chase a daily article-count target.
+const PUBLIC_POKE_MIN_GAP_MS = 15 * 60_000;
 
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization');

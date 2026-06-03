@@ -1,25 +1,23 @@
-# Writer-Poke — feuert den Artikel-Writer alle 30 Min.
+# Writer-Poke — fires the pipeline. Quality-first since 2026-06-03:
+# we do NOT chase a daily article-count target anymore. The publish
+# decision is the Reviewer's originality + score gate; this cron just
+# gives the pipeline a chance to try a new candidate.
 #
-# Vercel Hobby erlaubt nur DAILY-Crons, deshalb läuft der Trigger hier auf
-# GitHub Actions (keine Frequenz-Limits). Der /api/cron-Endpoint akzeptiert
-# einen öffentlichen Poke-Token (im Code commitet) — kein Secret nötig.
+# Single workflow (writer-poke-2/-3/-4 were removed — they existed to
+# brute-force a ~48/day target which is no longer the goal). One cron,
+# every 15 minutes, server-side cooldown enforces spacing.
 #
-# Missbrauch ist serverseitig abgefangen: /api/cron prüft, ob der letzte
-# Artikel <20 Min alt ist und überspringt den Lauf in dem Fall. Egal wie
-# oft jemand den Endpoint trifft, kann der Writer max. ~3 Artikel/Stunde
-# schreiben.
+# Missbrauch ist serverseitig abgefangen: /api/cron prüft den
+# PUBLIC_POKE_MIN_GAP_MS-Cooldown und überspringt zu enge Pokes.
 
 name: Writer Poke
 
 on:
   schedule:
-    # Alle 10 Minuten. Server-Side enforced PUBLIC_POKE_MIN_GAP_MS=20min,
-    # also wird trotzdem max 1 Artikel pro 20-Min-Fenster publiziert.
-    # Häufigeres Pokeing = robuster gegen GitHub-Actions-Free-Tier-Drops
-    # (Cron-Jobs werden bei Load gerne mal 30-90 Min skipped, also gleichen
-    # wir mit höherer Frequenz aus). Effektiv ergibt das ~36-72 Artikel/Tag
-    # Cap durch das 20-Min-Backoff, nicht den Cron.
-    - cron: '*/10 * * * *'
+    # Every 15 minutes. Server-side cooldown PUBLIC_POKE_MIN_GAP_MS (15 min)
+    # caps actual publishes — most ticks are no-ops by design because the
+    # Reviewer rejects below quality threshold. That's working as intended.
+    - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
 jobs:

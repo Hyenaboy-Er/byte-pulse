@@ -16,7 +16,7 @@ import { reviewArticle } from './reviewer';
 import { uniqueSlug } from '../slugify';
 import { getCurrentTrends, trendsBoost, type TrendsSnapshot } from './keyword-research';
 import { translateArticle } from './translator';
-import { tgError } from '../telegram';
+import { tgError, tgInfo } from '../telegram';
 import { injectAmazonLinks } from '../affiliate';
 import { chat, MODELS, extractJson } from '../openai';
 import { broadcastNewArticle } from '../social';
@@ -566,6 +566,21 @@ Return JSON only: { "content": "<expanded markdown>" }`,
 
     report.published = { slug };
     await logAgent('orchestrator', 'published', 'success', slug, { score: review.score });
+
+    // Personal Telegram ping for Serhat — one short message per new publish
+    // so he sees the cadence without having to poll. Silent (no sound), and
+    // best-effort — failure must not block the post-publish chain.
+    try {
+      const readMin = Math.max(1, Math.round((wc(monetizedContent) || 0) / 200));
+      await tgInfo(
+        `🟢 New article live\n` +
+        `${finalTitle}\n` +
+        `Score ${review.score} · ${readMin} min read · ${humanized.category}\n` +
+        `https://www.byte-pulse.net/article/${slug}`
+      );
+    } catch {
+      /* don't block publish on a Telegram hiccup */
+    }
 
     // Snapshot-sync: commit the new article to data/articles-snapshot.json
     // so the read-side (which currently can't hit Turso due to the read

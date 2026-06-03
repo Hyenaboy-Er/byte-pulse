@@ -11,7 +11,11 @@ import { NextResponse } from 'next/server';
 import { runQualityWatcher } from '@/lib/agents/quality-watcher';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Vercel Pro plan (active 2026-06-03) — quality-watcher does up to 3 LLM
+// judge calls per run on gpt-4o-mini; on a slow afternoon that's ~25s.
+// 180s leaves margin, matches the cron handler's general policy of 'give
+// LLM-driven routes real headroom now that we're not on Hobby anymore'.
+export const maxDuration = 180;
 
 const PUBLIC_POKE_TOKEN = 'pk_HxQ7nR9wYzVbpQc4mDjT3eK8aS6vG2fJ_writer_tick';
 

@@ -3,7 +3,13 @@ import { runOnce, type RunReport } from '@/lib/agents/orchestrator';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Vercel Pro plan (active 2026-06-03): function timeout up to 900s. Lifting
+// the cron handler from 60s -> 300s lets the Multi-Agent pipeline (Drafter
+// gpt-4o → Editor gpt-4o-mini → FactCheck gpt-4o-mini → Polisher gpt-4o-mini
+// → Humanizer + Reviewer afterwards) finish comfortably. 300s is the conservative
+// pick — typical runs land in ~80-120s; 300s leaves 2.5x margin for slow
+// network or model side hiccups without making operator debugging painful.
+export const maxDuration = 300;
 
 // Öffentlicher Poke-Token. Committed bewusst in den public-Repo:
 //   - Erlaubt der GitHub-Action "writer-poke" alle 30 Min /api/cron zu feuern,

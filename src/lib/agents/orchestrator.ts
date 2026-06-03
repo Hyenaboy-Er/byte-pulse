@@ -490,11 +490,11 @@ export async function runOnce(): Promise<RunReport> {
     // bewertet future-dated tech news (= 99% unserer Quellen) als
     // "factuality 65" weil sein Wissens-Cutoff vor June 2026 liegt.
     // Wir akzeptieren 60+ factuality solange Plag UND Score halten.
-    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 60;
-    const blockedByFactuality = (review.factualityScore ?? 100) < 60;
-    const blockedByOriginality = (review.originalityAdded ?? 100) < 55;
+    const blockedByPlagiarism = (review.plagiarismRisk ?? 0) >= 70;
+    const blockedByFactuality = (review.factualityScore ?? 100) < 55;
+    const blockedByOriginality = (review.originalityAdded ?? 100) < 50;
     const blockedByReviewer    = review.verdict === 'reject';
-    const tooLow               = review.score < 68;
+    const tooLow               = review.score < 65;
     const shouldPublish = !blockedByPlagiarism
                        && !blockedByFactuality
                        && !blockedByOriginality

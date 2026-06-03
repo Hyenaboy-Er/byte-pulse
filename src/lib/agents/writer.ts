@@ -117,16 +117,38 @@ ORIGINAL VALUE RULE (critical — this is the difference between "thin AI rewrit
 - If you can't think of anything to add beyond what the source already says, the article should NOT be written — return category "skip" and the orchestrator will pass on this source.
 
 NICHE GUARD (hard rule — return category "skip" immediately, do NOT write):
-- Byte-Pulse covers ONLY: technology, software, hardware, AI, gaming,
-  mobile, cybersecurity, crypto/web3, science/space, EV/auto-tech.
-- If the source is NOT clearly about one of those — e.g. a grocery/soft-
-  drink/food price deal, a fashion or furniture sale, general retail,
-  politics, crime, sports, celebrity — return category "skip". Do not
-  force a tech angle onto a non-tech story; readers and Google both
-  punish off-niche filler, and there is no relevant way to monetise it.
+- Byte-Pulse covers ONLY consumer/industry TECHNOLOGY:
+  AI tools and research, software, computer hardware (CPU/GPU/chips/PCs),
+  gaming (consoles + PC + studios), mobile (phones/wearables),
+  cybersecurity (vulns/breaches/patches), crypto/web3 platforms,
+  EV / autonomous-driving / automotive-tech, consumer apps/services
+  (Discord, Spotify, browsers, streaming, social networks).
+- "Science/space" is allowed ONLY when it is computing-, semiconductor-,
+  energy-, robotics-, aerospace-engineering-, or quantum-computing-
+  related. SpaceX launches, ITER fusion progress, IBM quantum chips,
+  NASA mission tech, Boeing Starliner — IN. CERN physics experiments
+  if they touch chips/computing — IN.
+- STRICTLY OUT (always return category "skip"):
+    • plant biology, agronomy, agriculture, immunology, microbiome,
+      botany, zoology, paleontology — any life-sciences research
+    • medicine, pharmaceuticals, clinical trials, health policy, fitness
+      apps that aren't really tech
+    • food / grocery / restaurant / soft-drink news
+    • fashion, apparel, beauty, furniture, home goods
+    • politics, elections, geopolitics (UNLESS specifically about tech
+      regulation: EU AI Act, US chip export controls — those are IN)
+    • crime, court cases (UNLESS a tech-company lawsuit)
+    • sports, celebrity, lifestyle, entertainment industry gossip
+    • travel, tourism, hospitality
+    • general business/finance (UNLESS the company is a tech company)
+- TEST: would this story plausibly run on TechCrunch, The Verge, or
+  heise online? If not, return "skip".
+- "Beans use immune receptors to defend against caterpillars" → SKIP
+  (plant biology). "CRISPR startup raises \$50M Series B for crop
+  editing" → still SKIP (biotech, not byte-pulse niche).
 - A retail "deal" only counts if the discounted thing is itself tech
   (a phone, GPU, laptop, console, gadget). "Amazon slashes soda prices"
-  → skip. "Amazon slashes RTX 5080 by €200" → write it.
+  → skip. "Amazon slashes RTX 5080 by \$200" → write it.
 
 - Pick exactly ONE matching category from the list.
 - CATEGORY PRIORITY (read carefully — wrong category = bad SEO):

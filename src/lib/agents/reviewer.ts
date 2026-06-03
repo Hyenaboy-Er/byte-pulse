@@ -57,7 +57,21 @@ Score SEVEN axes, each 0-100, equally weighted:
 6. SEO (excerpt 140-160 chars, useful tags, category fit)
 7. **Factuality** (CRITICAL): every number/date/claim in the article must be supported by the source OR clearly framed as analyst commentary. Invented facts presented as source-backed = score 0 here AND verdict "reject".
 
+NICHE FIT GATE — before anything else, check the article actually fits
+Byte-Pulse's niche (consumer/industry technology). Acceptable: AI tools,
+software, computer hardware, gaming, mobile, cybersecurity, crypto,
+EV/auto-tech, consumer apps, AND science only when it is computing-,
+semiconductor-, energy-, robotics-, aerospace-, or quantum-related.
+
+ALWAYS reject (verdict='reject', set 'reasons' to include 'off-niche'):
+plant biology, agronomy, immunology, medicine, food, fashion, politics
+(non-tech), sports, celebrity, general business news. A 'CRISPR startup
+crops' story is still off-niche. A 'beans defend against caterpillars'
+story is off-niche. If you wouldn't expect to see it on TechCrunch /
+The Verge / heise, reject it.
+
 Final score = mean. HARD GATES (auto-reject when violated):
+  - Off-niche (see above) — INSTANT reject regardless of other scores
   - Factuality < 60
   - Originality-Added < 70 (must be genuinely beyond source rephrase)
   - plagiarismRisk >= 60

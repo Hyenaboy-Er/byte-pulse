@@ -80,7 +80,20 @@ export function ArticleCard({
           {article.subtitle && (
             <p className="mt-3 text-base md:text-lg text-white/70 max-w-3xl line-clamp-2">{article.subtitle}</p>
           )}
+          {/* Hero-card byline with author photo. Same E-E-A-T signal as
+              the article-page byline: visible human bylined every story. */}
           <div className="mt-4 flex items-center gap-3 text-xs text-muted">
+            {author.photo && (
+              <img
+                src={author.photo}
+                alt={author.name}
+                width={28}
+                height={28}
+                loading="lazy"
+                decoding="async"
+                className="w-7 h-7 rounded-full object-cover ring-1 ring-white/15 shrink-0"
+              />
+            )}
             <span className="text-white/75 font-medium">{isDE ? 'Von' : 'By'} {author.name}</span>
             <span>·</span>
             <span>{time}</span>

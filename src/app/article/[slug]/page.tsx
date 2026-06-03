@@ -226,7 +226,31 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
         <p className="mt-4 text-xl text-white/75 leading-snug">{article.subtitle}</p>
       )}
 
+      {/* Byline row — author photo + name front and center.
+          Serhat's portrait appears next to the name so every reader sees
+          a real human bylined the piece. This is the E-E-A-T 'who wrote
+          this' signal Google's reviewers look for, mirrored by the
+          NewsArticle JSON-LD's author.image field above. Photo links to
+          the author page just like the name does — same click target,
+          larger surface area. */}
       <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted">
+        {author.photo && (
+          <Link
+            href={`/author/${author.slug}`}
+            className="shrink-0"
+            aria-label={`More about ${author.name}`}
+          >
+            <img
+              src={author.photo}
+              alt={`${author.name} — ${author.role}`}
+              width={36}
+              height={36}
+              loading="eager"
+              decoding="async"
+              className="w-9 h-9 rounded-full object-cover ring-1 ring-white/15 hover:ring-accent/60 transition"
+            />
+          </Link>
+        )}
         <Link href={`/author/${author.slug}`} className="font-medium text-white/85 hover:text-accent transition">
           By {author.name}
         </Link>

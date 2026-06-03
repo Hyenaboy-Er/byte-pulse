@@ -191,7 +191,6 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           rel="preload"
           as="image"
           href={heroImageUrl}
-          // @ts-expect-error -- React types don't know fetchPriority yet
           fetchPriority="high"
         />
       )}

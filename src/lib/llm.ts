@@ -24,7 +24,25 @@
 
 import OpenAI from 'openai';
 
-export type LLMRole = 'writer' | 'humanizer' | 'reviewer' | 'translator';
+// LLM roles. The first four are the legacy single-pass roles; the four
+// 'persona-…' roles below back the Multi-Agent newsroom pipeline (Drafter
+// → Editor → FactChecker → Polisher). Splitting them lets each persona
+// use the model that's best for its job:
+//   - 'persona-drafter'     long-form creative depth → Gemini 2.5 Pro
+//   - 'persona-editor'      surgical structured cut → Gemini 2.5 Flash
+//   - 'persona-factchecker' independent verification → Groq Llama 3.3 70B
+//   - 'persona-polisher'    targeted polish + AI-tell removal → Gemini 2.5 Flash
+// Each falls back to 'writer' / 'reviewer' if no provider-specific default
+// is set, so old configs keep working.
+export type LLMRole =
+  | 'writer'
+  | 'humanizer'
+  | 'reviewer'
+  | 'translator'
+  | 'persona-drafter'
+  | 'persona-editor'
+  | 'persona-factchecker'
+  | 'persona-polisher';
 export type LLMProvider = 'openai' | 'gemini' | 'deepseek' | 'groq' | 'ollama';
 
 type ProviderConfig = {
@@ -39,10 +57,14 @@ function providerConfig(p: LLMProvider): ProviderConfig {
       return {
         apiKey: process.env.OPENAI_API_KEY,
         defaults: {
-          writer:     'gpt-4o',
-          humanizer:  'gpt-4o',
-          reviewer:   'gpt-4o-mini',
-          translator: 'gpt-4o-mini',
+          writer:                'gpt-4o',
+          humanizer:             'gpt-4o',
+          reviewer:              'gpt-4o-mini',
+          translator:            'gpt-4o-mini',
+          'persona-drafter':     'gpt-4o',
+          'persona-editor':      'gpt-4o-mini',
+          'persona-factchecker': 'gpt-4o-mini',
+          'persona-polisher':    'gpt-4o-mini',
         },
       };
     case 'gemini':
@@ -50,11 +72,18 @@ function providerConfig(p: LLMProvider): ProviderConfig {
         baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
         apiKey: process.env.GEMINI_API_KEY,
         defaults: {
-          // Gemini 2.5 models — Flash is the cost-optimal default; reviewer can stay on it too.
-          writer:     'gemini-2.5-flash',
-          humanizer:  'gemini-2.5-flash',
-          reviewer:   'gemini-2.5-flash-lite',
-          translator: 'gemini-2.5-flash-lite',
+          writer:                'gemini-2.5-flash',
+          humanizer:             'gemini-2.5-flash',
+          reviewer:              'gemini-2.5-flash-lite',
+          translator:            'gemini-2.5-flash-lite',
+          // Drafter on Pro: best long-form creative depth in the Gemini
+          // family. Free tier 50 req/day → covers ~30 articles/day with
+          // headroom. Pipeline falls back to Flash via 429-handler when
+          // the Pro quota's exhausted, so this is upside-only.
+          'persona-drafter':     'gemini-2.5-pro',
+          'persona-editor':      'gemini-2.5-flash',
+          'persona-factchecker': 'gemini-2.5-flash',
+          'persona-polisher':    'gemini-2.5-flash',
         },
       };
     case 'deepseek':
@@ -62,10 +91,14 @@ function providerConfig(p: LLMProvider): ProviderConfig {
         baseURL: 'https://api.deepseek.com/v1',
         apiKey: process.env.DEEPSEEK_API_KEY,
         defaults: {
-          writer:     'deepseek-chat',
-          humanizer:  'deepseek-chat',
-          reviewer:   'deepseek-chat',
-          translator: 'deepseek-chat',
+          writer:                'deepseek-chat',
+          humanizer:             'deepseek-chat',
+          reviewer:              'deepseek-chat',
+          translator:            'deepseek-chat',
+          'persona-drafter':     'deepseek-chat',
+          'persona-editor':      'deepseek-chat',
+          'persona-factchecker': 'deepseek-chat',
+          'persona-polisher':    'deepseek-chat',
         },
       };
     case 'groq':
@@ -73,15 +106,17 @@ function providerConfig(p: LLMProvider): ProviderConfig {
         baseURL: 'https://api.groq.com/openai/v1',
         apiKey: process.env.GROQ_API_KEY,
         defaults: {
-          // 70B for writer + humanizer (long-form quality), 8B-instant for
-          // reviewer + translator (short JSON, latency-sensitive). 70B for
-          // all four pushed the full pipeline past Vercel's 60s ceiling.
-          // The 8B verdict/score inconsistency is now caught by the score-
-          // only publish gate in orchestrator (verdict is advisory).
-          writer:     'llama-3.3-70b-versatile',
-          humanizer:  'llama-3.3-70b-versatile',
-          reviewer:   'llama-3.1-8b-instant',
-          translator: 'llama-3.1-8b-instant',
+          writer:                'llama-3.3-70b-versatile',
+          humanizer:             'llama-3.3-70b-versatile',
+          reviewer:              'llama-3.1-8b-instant',
+          translator:            'llama-3.1-8b-instant',
+          'persona-drafter':     'llama-3.3-70b-versatile',
+          'persona-editor':      'llama-3.3-70b-versatile',
+          // Groq Llama 70B for fact-checking — independent model family
+          // from Gemini, so verification finds different errors than
+          // 'same-model checks same-model' would. Free tier ~10k req/day.
+          'persona-factchecker': 'llama-3.3-70b-versatile',
+          'persona-polisher':    'llama-3.1-8b-instant',
         },
       };
     case 'ollama':
@@ -95,13 +130,14 @@ function providerConfig(p: LLMProvider): ProviderConfig {
         baseURL: process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434/v1',
         apiKey: process.env.OLLAMA_API_KEY || 'ollama-no-auth',
         defaults: {
-          // gemma4:e4b is the user's current best local model (8B params,
-          // Q4_K_M). For shorter JSON tasks we still send to gemma4:e4b —
-          // the local 4B variant exists but its JSON adherence is fragile.
-          writer:     process.env.OLLAMA_MODEL || 'gemma4:e4b',
-          humanizer:  process.env.OLLAMA_MODEL || 'gemma4:e4b',
-          reviewer:   process.env.OLLAMA_MODEL || 'gemma4:e4b',
-          translator: process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          writer:                process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          humanizer:             process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          reviewer:              process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          translator:            process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          'persona-drafter':     process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          'persona-editor':      process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          'persona-factchecker': process.env.OLLAMA_MODEL || 'gemma4:e4b',
+          'persona-polisher':    process.env.OLLAMA_MODEL || 'gemma4:e4b',
         },
       };
   }

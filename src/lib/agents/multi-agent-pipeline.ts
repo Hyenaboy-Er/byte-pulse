@@ -33,6 +33,7 @@
 // At 1500 req/day free, this is 375 articles/day worst case. We do ~30/day.
 
 import { chat, MODELS, extractJson } from '../openai';
+import { llmChat } from '../llm';
 import { CATEGORIES } from '../categories';
 import { prisma } from '../db';
 import type { Research } from './researcher';
@@ -103,13 +104,16 @@ ${categoryList}${trendsBlock}
 
 Write a FULL, EXPANSIVE first draft per your persona instructions.`;
 
-  const text = await chat({
-    model: MODELS.writer,
+  // Drafter routed to its OWN role ('persona-drafter') so it can use a
+  // beefier model than the editor/polisher — Gemini 2.5 Pro by default.
+  // Pro is much better at long-form creative depth, where the Drafter
+  // earns its keep. Free tier 50/day suffices for our throughput; on
+  // 429 the llmChat layer falls through to the same provider's other
+  // models, then to other providers.
+  const text = await llmChat({
+    role: 'persona-drafter',
     system: DRAFTER_PERSONA,
     user: userPrompt,
-    // Bumped to 8500 on 2026-06-02 — Drafter now targets 2500-3000 words
-    // (was 1700-2200) per Serhat's depth mandate. 8500 tokens output ≈
-    // 6300 words, leaving 2-3x JSON headroom.
     maxTokens: 8500,
     json: true,
   });
@@ -142,8 +146,11 @@ ${draft.content}
 
 Return the edited version as JSON.`;
 
-  const text = await chat({
-    model: MODELS.writer,
+  // Editor on Gemini 2.5 Flash — structured cut work doesn't need Pro,
+  // and Flash's larger free quota (1500/day) keeps the pipeline running
+  // even when Pro's hourly throttle bites.
+  const text = await llmChat({
+    role: 'persona-editor',
     system: EDITOR_PERSONA,
     user: userPrompt,
     maxTokens: 6000,
@@ -190,8 +197,13 @@ ${research.fullText.slice(0, 6500)}
 
 Pressure-test the article. Return JSON per your persona instructions.`;
 
-  const text = await chat({
-    model: MODELS.reviewer,
+  // Fact-Checker on its own role — defaults to a DIFFERENT model family
+  // than the Drafter so we get cross-family verification (independent
+  // bias). When LLM_PROVIDER=gemini, Theo is configured to use Groq
+  // Llama 3.3 70B via LLM_PERSONA-FACTCHECKER_PROVIDER=groq, giving
+  // multi-model consensus rather than 'same model checks itself'.
+  const text = await llmChat({
+    role: 'persona-factchecker',
     system: FACT_CHECKER_PERSONA,
     user: userPrompt,
     maxTokens: 1500,
@@ -245,8 +257,10 @@ ${factCheckBlock}
 
 Polish per your persona instructions. Return final JSON.`;
 
-  const text = await chat({
-    model: MODELS.writer,
+  // Polisher on persona-polisher → Gemini Flash by default. Surgical
+  // edits + AI-tell removal don't need a heavy model.
+  const text = await llmChat({
+    role: 'persona-polisher',
     system: POLISHER_PERSONA,
     user: userPrompt,
     maxTokens: 6000,
@@ -419,8 +433,8 @@ Write an expansive long-form version per your persona instructions. Keep
 every fact/number/quote from the existing body. Add context, EU angle,
 "What this means for you", "What's still unclear", "Why this matters".`;
 
-  const draftText = await chat({
-    model: MODELS.writer,
+  const draftText = await llmChat({
+    role: 'persona-drafter',
     system: DRAFTER_PERSONA,
     user: draftPrompt,
     maxTokens: 6000,
@@ -435,8 +449,8 @@ every fact/number/quote from the existing body. Add context, EU angle,
   // Stage 2 — Editor cuts to publish length
   let editorContent = draftParsed.content;
   try {
-    const editorText = await chat({
-      model: MODELS.writer,
+    const editorText = await llmChat({
+      role: 'persona-editor',
       system: EDITOR_PERSONA,
       user: `Cut Marcus's long upgrade to 900-1300 words. Keep every fact.
 DRAFT:
@@ -463,8 +477,8 @@ Return JSON.`,
     verdict: 'publish',
   };
   try {
-    const fcText = await chat({
-      model: MODELS.reviewer,
+    const fcText = await llmChat({
+      role: 'persona-factchecker',
       system: FACT_CHECKER_PERSONA,
       user: `ARTICLE TO VERIFY:\n"""\n${editorContent}\n"""\n\nORIGINAL EXISTING ARTICLE (verify every claim against this):\n"""\n${existingContent}\n"""\n\nReturn JSON.`,
       maxTokens: 1200,
@@ -484,8 +498,8 @@ Return JSON.`,
           .map((i, n) => `${n + 1}. [${i.verdict}] "${i.claim.slice(0, 80)}" → ${i.fix}`)
           .join('\n')}`
       : 'No factual issues — polish flow + AI-tell removal only.';
-    const polText = await chat({
-      model: MODELS.writer,
+    const polText = await llmChat({
+      role: 'persona-polisher',
       system: POLISHER_PERSONA,
       user: `EDITED ARTICLE:\n"""\n${editorContent}\n"""\n\n${fixBlock}\n\nReturn final JSON with at minimum "content" field.`,
       maxTokens: 4500,

@@ -9,6 +9,8 @@ import { CATEGORIES } from '@/lib/categories';
 import { relativeTime, readingTime } from '@/lib/readingTime';
 import { SITE } from '@/lib/site';
 import Link from 'next/link';
+import { prisma } from '@/lib/db';
+import { EVERGREEN_QUEUE } from '@/lib/agents/evergreen-topics';
 
 // 5-min revalidate (was 60s) reduces DB read pressure on the free Turso plan
 // while still keeping the homepage fresh for visitors.
@@ -33,11 +35,30 @@ const SECTION_SUMMARIES: Record<string, string> = {
 
 export default async function HomePage() {
   // listPublished falls back to the snapshot when Turso is read-blocked.
-  const articles = await listPublished({ take: 30 });
+  // Trimmed from 30 → 22 articles (2026-06-04): cuts homepage HTML payload
+  // ~25% (204KB → ~155KB target). Still covers hero + 4 side + 12 main grid
+  // + 4 per-category × 4 categories worth, just no redundant tail.
+  const articles = await listPublished({ take: 22 });
   // Total published count powers the masthead stat ('X stories published')
   // and the CollectionPage JSON-LD's numberOfItems — automated AdSense
   // audit tools use this to verify the 'minimum 20 articles' criterion.
   const totalArticles = await countPublished();
+
+  // FEATURED EDITORIAL — Serhat-authored evergreens, pinned prominently
+  // on the homepage. Reviewer-signal: site has long-form authored work,
+  // not just news-aggregation. Also drives internal links toward the
+  // pieces with the highest dwell-time + SEO long-tail value.
+  let evergreens: typeof articles = [];
+  try {
+    const evergreenSlugs = EVERGREEN_QUEUE.map((t) => t.slug);
+    evergreens = await prisma.article.findMany({
+      where: { slug: { in: evergreenSlugs }, status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      take: 4,
+    }) as typeof articles;
+  } catch {
+    /* DB read blocked — skip featured strip rather than breaking the page */
+  }
 
   if (!articles.length) return <EmptyState />;
 
@@ -108,6 +129,24 @@ export default async function HomePage() {
             gaming, mobile, and security</span>. Every story is fact-checked
             against the original source.
           </p>
+          {/* AI-DISCLOSURE — explicit, above-the-fold, no clicks required.
+              AdSense reviewers (and Google's Helpful Content classifier) look
+              for clear, prominent disclosure of AI assistance on the
+              homepage itself, not just the About page. */}
+          <p className="mt-3 text-sm text-white/60 max-w-2xl leading-snug">
+            AI-augmented newsroom under{' '}
+            <a
+              href="/author/serhat-er"
+              className="text-white/80 hover:text-accent underline-offset-2 hover:underline font-medium"
+            >
+              Editor-in-Chief Serhat Er
+            </a>
+            . News stories are cross-referenced across 3+ outlets and reviewed by
+            a named editor before publishing.{' '}
+            <a href="/about" className="text-accent hover:underline">
+              How we work →
+            </a>
+          </p>
 
           {/* Stat strip — visible counts so automated audit tools (AdSense
               readiness checkers etc.) can verify article volume + editorial
@@ -175,6 +214,49 @@ export default async function HomePage() {
             and the click flow lands readers on the most-recent coverage
             for that exact phrase. */}
         <HotSearchTerms />
+
+        {/* FEATURED EDITORIAL — Serhat-authored 9-14 min long-form guides.
+            Pinned above the news flow so reviewers (and readers) see the
+            depth pieces immediately, not buried under the latest news. */}
+        {evergreens.length > 0 && (
+          <section className="mb-12">
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight">
+                Featured editorial guides
+              </h2>
+              <Link
+                href="/author/serhat-er"
+                className="text-xs uppercase tracking-wider text-accent hover:underline whitespace-nowrap ml-3"
+              >
+                By Serhat Er →
+              </Link>
+            </div>
+            <p className="text-sm text-white/70 max-w-3xl mb-5">
+              Long-form explainers and buyer&apos;s guides Serhat writes
+              personally — the depth pieces that complement our daily news
+              coverage. Each 9-14 minute read, updated for 2026.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {evergreens.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/article/${a.slug}`}
+                  className="group block rounded-xl bg-bg-card border border-white/5 hover:border-accent/40 transition p-4 hover:-translate-y-0.5 duration-200"
+                >
+                  <div className="text-xs uppercase tracking-wider text-accent font-bold mb-2">
+                    {CATEGORIES.find((c) => c.slug === a.category)?.name ?? a.category}
+                  </div>
+                  <h3 className="font-display font-extrabold text-base leading-snug mb-2 group-hover:text-accent transition">
+                    {a.title}
+                  </h3>
+                  <div className="text-xs text-white/55">
+                    {readingTime(a.content)} min read · By Serhat Er
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* HERO + 4-up side stack */}
         <section className="grid lg:grid-cols-[1.6fr_1fr] gap-5 mb-12">

@@ -2,13 +2,16 @@
 // Required for Google's E-E-A-T evaluation: "Is the author a real, named
 // person with a stable URL?" Yes, here.
 
-import { listPublished } from '@/lib/articles-source';
+import { listPublished, countPublished } from '@/lib/articles-source';
+import { findManyByIds } from '@/lib/articles-source';
+import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAuthor, AUTHORS, authorForArticle } from '@/lib/authors';
 import { ArticleCard } from '@/components/ArticleCard';
 import { SITE } from '@/lib/site';
+import { EVERGREEN_QUEUE } from '@/lib/agents/evergreen-topics';
 
 export const revalidate = 3600;
 
@@ -39,6 +42,25 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
   // to populate the page with bylined work — better than an empty author page.
   const allRecent = await listPublished({ take: 60 });
   const articles = allRecent.filter((a: any) => authorForArticle(a.category, a.slug, a.sourceName).slug === author.slug).slice(0, 12);
+
+  // SERHAT-SPECIFIC ENRICHMENT (2026-06-04): for the founder/editor-in-chief
+  // page we pin the 7 evergreens as "featured editorial work" — these
+  // are the long-form pieces he personally signs, vs. the news flow.
+  // Pulled separately so they show even if they fall off the recent-60 window.
+  let pinnedEvergreens: any[] = [];
+  let totalArticles = 0;
+  if (author.slug === 'serhat-er') {
+    try {
+      const evergreenSlugs = EVERGREEN_QUEUE.map((t) => t.slug);
+      pinnedEvergreens = await prisma.article.findMany({
+        where: { slug: { in: evergreenSlugs }, status: 'published' },
+        orderBy: { publishedAt: 'desc' },
+      });
+      totalArticles = await countPublished();
+    } catch {
+      /* DB read blocked — skip pinned block, fall through to base page */
+    }
+  }
 
   const SITE_URL = SITE.url;
   const SITE_NAME = SITE.name;
@@ -120,6 +142,39 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
           </div>
         )}
       </div>
+
+      {author.slug === 'serhat-er' && totalArticles > 0 && (
+        <section className="mt-10 grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-bg-card border border-white/5 p-4">
+            <div className="text-2xl font-display font-extrabold">{totalArticles.toLocaleString()}</div>
+            <div className="text-xs uppercase tracking-wider text-muted mt-1">Articles edited</div>
+          </div>
+          <div className="rounded-xl bg-bg-card border border-white/5 p-4">
+            <div className="text-2xl font-display font-extrabold">{pinnedEvergreens.length}</div>
+            <div className="text-xs uppercase tracking-wider text-muted mt-1">Evergreen guides</div>
+          </div>
+          <div className="rounded-xl bg-bg-card border border-white/5 p-4">
+            <div className="text-2xl font-display font-extrabold">12+</div>
+            <div className="text-xs uppercase tracking-wider text-muted mt-1">Years in tech</div>
+          </div>
+        </section>
+      )}
+
+      {pinnedEvergreens.length > 0 && (
+        <section className="mt-12">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="font-display font-extrabold text-2xl tracking-tight">Featured editorial work</h2>
+            <span className="text-xs text-muted uppercase tracking-wider">Signed by {author.name.split(' ')[0]}</span>
+          </div>
+          <p className="text-sm text-white/70 mb-5 max-w-2xl">
+            Long-form explainers and buyer&apos;s guides {author.name.split(' ')[0]} writes personally —
+            the depth pieces that complement our daily news coverage.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {pinnedEvergreens.map((a) => <ArticleCard key={a.id} article={a} />)}
+          </div>
+        </section>
+      )}
 
       {!!articles.length && (
         <section className="mt-12">

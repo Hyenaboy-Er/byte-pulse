@@ -1,13 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { CATEGORIES } from '@/lib/categories';
+import NewsletterForm from './NewsletterForm';
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Byte-Pulse';
 
 export default function Footer() {
   return (
     <footer className="border-t border-white/5 mt-20">
-      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-5 gap-8 text-sm">
+      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-6 gap-8 text-sm">
         <div className="col-span-2">
           <div className="font-display font-extrabold text-lg mb-2">{SITE_NAME}</div>
           <p className="text-muted max-w-md mb-4">
@@ -36,6 +37,13 @@ export default function Footer() {
               RSS
             </a>
           </div>
+        </div>
+        <div>
+          <div className="text-white/60 mb-3 uppercase text-xs tracking-wider">Newsletter</div>
+          <p className="text-white/70 text-xs mb-3 leading-relaxed">
+            Weekly tech analysis from Serhat Er. One email, every Friday.
+          </p>
+          <NewsletterForm compact />
         </div>
         <div>
           <div className="text-white/60 mb-3 uppercase text-xs tracking-wider">Sections</div>

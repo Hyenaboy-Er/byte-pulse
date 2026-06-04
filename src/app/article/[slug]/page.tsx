@@ -16,6 +16,7 @@ import Breadcrumbs from '@/components/Breadcrumbs';
 import DiscussionBlock from '@/components/DiscussionBlock';
 import { SITE } from '@/lib/site';
 import NewsletterForm from '@/components/NewsletterForm';
+import { extractFaqs } from '@/lib/extract-faqs';
 import { getCategory } from '@/lib/categories';
 import { authorForArticle } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
@@ -195,6 +196,31 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
         />
       )}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* FAQ-Schema for evergreens (Serhat 2026-06-04): if the article body
+          has a "Frequently Asked Questions" H2 followed by H3+content
+          pairs, emit FAQPage JSON-LD so Google can show rich FAQ snippets
+          in search results — typically a 30-40% CTR boost on top of
+          existing ranking. Extraction is body-string-based since markdown
+          is rendered server-side from article.content. */}
+      {extractFaqs(article.content).length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: extractFaqs(article.content).map((qa) => ({
+                '@type': 'Question',
+                name: qa.q,
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: qa.a,
+                },
+              })),
+            }),
+          }}
+        />
+      )}
       <ViewCounter slug={article.slug} />
       <ReadingProgress />
       <ShareBar title={article.title} />

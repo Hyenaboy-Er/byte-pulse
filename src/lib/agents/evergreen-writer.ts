@@ -70,18 +70,29 @@ FACT DISCIPLINE
   explicitly: "expected to land around X" or "industry rumor puts it
   at X — unconfirmed".
 
-DEPTH SKELETON (mandatory)
-- 8-12 ## subheadings (H2). Use ### (H3) for sub-points where natural.
-- At least ONE markdown comparison table in the body.
-- One bullet list per major section.
-- "Frequently Asked Questions" H2 block at the end with 4-6 Q&As
-  written in YOUR voice (not formal corporate FAQ tone).
-- "Updated June 2026" line near the top of the body so readers see
-  the date stamp.
+DEPTH SKELETON (mandatory, NON-NEGOTIABLE word counts)
+You MUST produce ALL of these sections, each at the specified depth:
 
-LENGTH TARGET: 2200-2800 words (= 11-14 minute read at 200 wpm).
-Going under 2000 means structural sections were cut — DON'T do that.
-Going over 2900 means padding — also DON'T do that.
+1. Lead paragraph (180-240 words) — hook + thesis + why-now
+2. "Updated June 2026" callout line (separate from prose)
+3. ## What [the thing] actually is (220-300 words)
+4. ## How it works under the hood (250-350 words)
+5. ## ## Where it sits in the stack / vs alternatives (250-350 words)
+6. ## Comparison table — markdown table, 4-6 rows minimum
+   Below the table, 100-150 words of "what the table actually tells you"
+7. ## Real-world performance / benchmarks (220-300 words)
+8. ## What's still unclear (180-260 words) — push back on hype
+9. ## Buying / using framework (220-300 words) — practical action
+10. ## What this means for you specifically (180-240 words) —
+    addressed to the persona named in the brief
+11. ## Operator's view (160-220 words) — Serhat-voice opinion
+12. ## Frequently Asked Questions (300-450 words total) — 5-6 Q&As
+
+Math check: 180+220+250+250+(table)+100+220+180+220+180+160+300 = 2260w
+floor. Aim higher: 2500-2800w final.
+
+If you write less than 1800 words YOUR DRAFT WILL BE REJECTED and a
+new pass will overwrite it. Don't be terse. This is a 12-minute read.
 `;
 
 const DRAFTER_SYSTEM = `You are MARCUS WEISS, senior tech editor at Byte-Pulse.

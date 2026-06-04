@@ -99,26 +99,68 @@ async function draftLongForm(
   const userPrompt = multiSource
     ? `MULTI-SOURCE BUNDLE — ${multiSource.alternates.length + 1} outlets reported this story.
 
-Your job is REAL CROSS-SOURCE REPORTING, not single-source rewrite. Treat
-each outlet as a separate informant. Attribute every claim to the outlet
-that said it. Where outlets agree, note the consensus ("Both Heise and The
-Verge cite a 199 EUR launch price"). Where they disagree, that's a NEWS
-ANGLE ("TechCrunch reports 199 USD, Ars Technica reports 249 USD — Byte-
-Pulse's reading is that this reflects regional pricing, not error").
-Where one outlet has detail the others lack, surface it ("Only Ars
-Technica mentions the TDP, which we believe matters because…").
+Drei Quellen allein erzeugen noch keine Qualität. Qualität entsteht erst,
+wenn du Unterschiede erkennst (Widersprüche, Fokusverschiebungen,
+Auslassungen) und daraus eine eigene konsistente redaktionelle Linie
+baust. Das ist DEIN Job.
 
-You MUST cite source outlet names in at least 6 places in the body. Use
-phrases like "According to The Verge…", "Heise reports…", "Ars Technica
-adds…", "Ars Technica disagrees with The Verge on…".
+STEP 1 — ANALYTICAL PASS (do this BEFORE writing a single sentence of
+the article). Internally identify and structure:
 
-In your "Compared to" section, the COMPARISON is not just with the
-predecessor product but ALSO with how each outlet framed the story —
-which outlet hyped it (call it out), which was sober.
+  (a) FAKTEN-KONSENS: Welche konkreten Fakten (Zahlen, Daten, Namen)
+      sind in ALLEN ${multiSource.alternates.length + 1} Quellen identisch?
+      Diese sind hoch-confidence; übernimm sie als Anker.
 
-In your "Operator's view" / "Why this matters" section, take Serhat's
-stance on what the OUTLETS got wrong, not just the product. This is the
-synthesis layer — where Byte-Pulse adds value that no single outlet has.
+  (b) WIDERSPRÜCHE: Welche Behauptungen unterscheiden sich zwischen
+      Quellen? (Anderer Preis? Anderes Datum? Andere Spec?) Jeder
+      Widerspruch ist ein eigener News-Angle. Stelle den Widerspruch
+      explizit nebeneinander und beziehe eine STELLUNG: welche Quelle
+      hat wahrscheinlich recht und warum.
+
+  (c) FOKUS-VERSCHIEBUNG: Welche Quelle hat WELCHEN Aspekt betont?
+      (Verge geht auf Design, Heise auf Lizenzfragen, Ars auf
+      Architektur.) Was sagt diese Fokus-Verteilung über das tatsächliche
+      Gewicht der Story? Pick die Verschiebung die DU für die wichtigste
+      hältst und führe Sie als Hauptlinie.
+
+  (d) AUSLASSUNGEN: Was hat KEINE der Quellen abgedeckt, das aber
+      offensichtlich kritisch ist? (Niemand fragt nach EU-Verfügbarkeit?
+      Niemand erwähnt Yield? Niemand fragt nach Open-Source?) Diese
+      Auslassungen sind dein Differenzierungs-Material — formuliere sie
+      als "What's still unclear" oder als kritische Frage.
+
+STEP 2 — KONSOLIDIERTE LINIE (das ist die eigentliche redaktionelle
+Arbeit). Aus den (a)-(d) Erkenntnissen baust du EINE konsistente These
+für den Artikel. Diese These = der Lead-Paragraph + die Headline-Logik.
+Beispiele für konsolidierte Linien:
+  - "Verge sagt Wow, Heise sagt vorsichtig, Ars deckt die Architektur
+     auf — und die Architektur entscheidet ob Heises Vorsicht
+     berechtigt ist."
+  - "Drei Outlets, drei Preise — und das verrät mehr über regionale
+     Channel-Strategie als die Outlets selbst merken."
+  - "Alle drei loben Feature X. Niemand fragt nach Y. Y ist der
+     eigentliche Test."
+
+STEP 3 — DRAFTING (jetzt erst schreibst du). Während du schreibst:
+
+  - MIN 6x explizite Source-Attribution im Body. Phrasen wie "According
+    to The Verge…", "Heise reports…", "Ars Technica adds…", "Engadget
+    disagrees with…", "All three outlets confirm…".
+  - JEDER Widerspruch aus (b) bekommt eine eigene Behandlung (mind. 2-3
+    Sätze) mit DEINER STELLUNGNAHME ("Honestly, I'd side with Ars here
+    because…").
+  - DEINE konsolidierte Linie aus Step 2 ist die Hauptthese — alles
+    andere ordnet sich unter.
+  - "Compared to" section vergleicht NICHT nur Produkte, sondern auch
+    wie die Quellen die Story framten.
+  - "Operator's view" greift die OUTLETS an wo sie Fehler machten,
+    nicht das Produkt.
+  - "What's still unclear" listet die Auslassungen aus (d) — was ALLE
+    Quellen übersehen haben.
+
+VERBOTEN: bloße Aneinanderreihung von Zitaten ohne Synthese. "Verge said X.
+Heise said Y. Ars said Z. End of story." → das ist Aggregator-Müll. Du
+bist die redaktionelle Stimme die aus X, Y, Z eine eigene Position formt.
 
 ${multiSource.drafterBundle}
 
@@ -126,7 +168,7 @@ Allowed categories:
 ${categoryList}${trendsBlock}
 
 Write a FULL, EXPANSIVE first draft per your persona instructions plus
-the cross-source rules above.`
+the three-step cross-source process above.`
     : `Source: ${research.source.source.name} (${research.source.source.lang.toUpperCase()})
 Original title: ${research.source.title}
 Original URL: ${research.source.link}

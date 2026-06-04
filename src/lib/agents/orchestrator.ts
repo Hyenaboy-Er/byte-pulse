@@ -183,7 +183,15 @@ function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnap
   // Threshold lowered 0.20 → 0.12 to catch cross-language matches
   // (Heise DE + Engadget EN on same product story share ~15% lexical
   // overlap via proper nouns alone).
-  const clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 2 });
+  // Serhat 2026-06-04: MIN 3 SOURCES PFLICHT für echte Cross-Source-
+  // Reportage. Wenn 3+ Outlets eine Story berichten, lohnt sich die
+  // Synthese; bei 2 ist es eher "zwei Versionen vergleichen".
+  // Fallback auf 2 wenn KEIN 3+ Cluster in diesem Batch existiert
+  // (besser 2-Source als gar nicht publish).
+  let clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 3 });
+  if (clusters.length === 0) {
+    clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 2 });
+  }
   if (clusters.length > 0) {
     // Rank clusters: prefer (1) larger size, (2) primary's external
     // trend match, (3) recency of primary.
@@ -364,10 +372,18 @@ export async function runOnce(): Promise<RunReport> {
     // higher originality + factuality through built-in cross-reference.
     let multiSource: Awaited<ReturnType<typeof researchCluster>> | null = null;
     try {
-      const clusters = clusterByTopic(items, {
+      // Mirror the picker's preference: try 3-source clusters first,
+      // then fall back to 2-source. Match what the picker decided.
+      let clusters = clusterByTopic(items, {
         similarityThreshold: 0.12,
-        minClusterSize: 2,
+        minClusterSize: 3,
       });
+      if (clusters.length === 0) {
+        clusters = clusterByTopic(items, {
+          similarityThreshold: 0.12,
+          minClusterSize: 2,
+        });
+      }
       // Find a cluster that INCLUDES our pick — multi-source is meaningful
       // only when the pick has cross-reference; clusters without the pick
       // are other stories we're not writing about now.

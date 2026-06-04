@@ -19,4 +19,13 @@ export const SOURCES: Source[] = [
   { name: '9to5Mac',        url: 'https://9to5mac.com/feed/',                              lang: 'en', hint: 'Apple-Ökosystem' },
   { name: 'Android Police', url: 'https://www.androidpolice.com/feed/',                    lang: 'en', hint: 'Android' },
   { name: 'BleepingComputer', url: 'https://www.bleepingcomputer.com/feed/',               lang: 'en', hint: 'Cybersecurity, Leaks' },
+  // Expanded 2026-06-04 for 3+ source clusters: with these added the
+  // overlap on big tech stories (Apple, Samsung, gaming launches,
+  // breaking AI news) reliably hits 3-4 outlets per topic.
+  { name: 'MacRumors',      url: 'https://feeds.macrumors.com/MacRumors-All',              lang: 'en', hint: 'Apple-Rumors' },
+  { name: '9to5Google',     url: 'https://9to5google.com/feed/',                           lang: 'en', hint: 'Google-Ökosystem' },
+  { name: 'Wired',          url: 'https://www.wired.com/feed/rss',                         lang: 'en', hint: 'Tech, Culture, Science' },
+  { name: 'Eurogamer',      url: 'https://www.eurogamer.net/?format=rss',                  lang: 'en', hint: 'Gaming, EU-Perspektive' },
+  { name: 'AnandTech',      url: 'https://www.anandtech.com/rss/',                         lang: 'en', hint: 'Hardware-Deep-Dives' },
+  { name: 'GSMArena',       url: 'https://www.gsmarena.com/rss-news-reviews.php3',         lang: 'en', hint: 'Mobile-Hardware' },
 ];

@@ -88,13 +88,21 @@ Quote three or four facts from the source; everything else must be (b)
 through (e). A 1000-word article where 80% is (b)-(e) beats a 2500-word
 article where 80% is (a).
 
-Target length: **2200-2800 words** (= 11-14 min read at 200 wpm).
-This is non-negotiable as of 2026-06-04 per the editor-in-chief:
-Byte-Pulse does NOT publish under-1800w articles anymore. Period.
-If you cannot reach 2200w from THIS story with substantive (b)-(e)
-content, return category="skip" — don't fake length. But if you have
-3+ outlets and real cross-source material, 2200-2800w is achievable
-every time. The depth comes from synthesis across outlets, not padding.
+Target length: **variable, follows the story's actual depth**.
+  - Breaking news with strong analysis: 900-1400 words
+  - Multi-outlet explainer with context: 1300-2000 words
+  - Controversial / multi-angle deep synthesis: 1800-2800 words
+
+NEVER PAD to hit a length target. Forced expansion creates redundancy
+and is detected as low-quality content. A sharp 900-word piece with
+3 distinct cross-source analytical adds beats a padded 2500-word
+piece every time.
+
+The only floor is "is there enough non-redundant material to warrant
+publishing at all". If the 3 outlets all say the exact same 4 facts
+with no contradiction, no focus-shift, no omission worth flagging,
+the story doesn't justify a Byte-Pulse synthesis piece — return
+category="skip".
 
 What "long and rich" means concretely:
 - 12-15 substantial paragraphs
@@ -203,7 +211,7 @@ Output JSON ONLY with the same shape Marcus produced:
   "title": "<possibly sharpened>",
   "subtitle": "<possibly sharpened>",
   "excerpt": "<possibly sharpened>",
-  "content": "<edited markdown, 2000-2400 words = 10-12 minute read. NEVER below 1900w.>",
+  "content": "<edited markdown, length appropriate to story depth — typically 1000-2400 words. Cut padding aggressively. Never expand artificially.>",
   "category": "<unchanged>",
   "tags": ["<possibly adjusted 3-6>"]
 }`;

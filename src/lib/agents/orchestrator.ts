@@ -596,13 +596,22 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // wanted: '500 Wörter eigene Analyse > 2000 Golem-paraphrase'). Score
     // + originality + plag gates are the real quality bar; this floor
     // exists only to catch the truly broken outputs.
-    // 2026-06-04 Serhat-Direktive: 9-Min-Pflicht für JEDEN news-publish.
-    // 1800w = ~9 min read at 200 wpm. Wenn Drafter+Editor+Polisher unter
-    // 1800w fallen → kein Publish, nächster Cron versucht erneut. Strict.
-    if (bodyWords < 1800) {
-      report.error = `skip-too-short: ${bodyWords}w < 1800 (= 9 min min)`;
-      await logAgent('orchestrator', 'skip-too-short', 'info',
-        `${humanized.title}: ${bodyWords}w < 1800 — under 9-min floor, not published`);
+    // 2026-06-04 (revidiert): Länge != Qualität. Hartes 1800w Floor
+    // erzwingt Filler-Synthese (Reviewer/Algorithmus erkennt forced
+    // expansion patterns als negativ). Stattdessen: BREAK-OUTPUT-FLOOR
+    // bei 500w (Pipeline-Sanity) + Qualität wird über die Gates oben
+    // (Originality, Factuality, Plagiarism, verdict, Score) durchgesetzt.
+    // Variable Länge nach Stoff:
+    //   Breaking News mit starker Analyse:    800-1400w
+    //   Multi-Outlet Explainer:               1200-2000w
+    //   Kontroverse / kompletter Synthese:    1800-3000w
+    // Cluster-Pickbest + 3-Source-Pflicht + Delta-Analyse-Prompt
+    // produzieren die Tiefe — der Editor entscheidet dann was die
+    // Story tatsächlich braucht, nicht ein willkürlicher Mindest-Quote.
+    if (bodyWords < 500) {
+      report.error = `skip-broken-output: ${bodyWords}w < 500`;
+      await logAgent('orchestrator', 'skip-broken-output', 'info',
+        `${humanized.title}: ${bodyWords}w < 500 — pipeline produced too little, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

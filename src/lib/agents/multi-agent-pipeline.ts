@@ -214,17 +214,28 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
 // ---------------------------------------------------------------------------
 
 async function editToPublishLength(draft: WrittenArticle): Promise<WrittenArticle> {
-  const userPrompt = `Marcus's long draft is below. Cut it to 2000-2400 words
-(= 10-12 min read). DO NOT go below 1900 words — that's our hard floor for
-publish-ready depth. If the draft is already under 2000w, RESTORE missing
-sections instead of cutting further.
+  const userPrompt = `Marcus's long draft is below. Your job is to find
+the RIGHT length for the story — not a target length. Cut what's redundant,
+what's filler, what's just rephrasing the same point. Keep what's analytically
+distinct.
+
+Decision framework:
+  - If the story is genuinely "3 outlets reported the same 4 facts" →
+    short (900-1200w) with sharp cross-source synthesis
+  - If there's real disagreement / framing-shift / omission worth working
+    out → medium (1300-2000w)
+  - If the story has multiple non-trivial angles (regulation + technical +
+    market + ethical) → long (1800-2800w)
+
+NEVER PAD. NEVER ARTIFICIALLY EXTEND. A 1100w piece that earns every
+word beats a 2400w piece with 30% redundancy.
 
 Preserve every fact, number, quote and named entity. Keep ALL signature
-sections (Cross-source consensus / Differing claims / Framing analysis /
-What's missing from the discussion / Compared to / What this means for you /
-What's still unclear / Operator's view / Why this matters). The cross-source
-sections are NON-NEGOTIABLE — they are what differentiates Byte-Pulse from
-single-source rewrites.
+sections that have substantive content (Cross-source consensus / Differing
+claims / Framing analysis / What's missing from the discussion / Compared
+to / What this means for you / What's still unclear / Operator's view).
+If a section would be filler, CUT IT entirely rather than padding it —
+short article without weak sections beats long article with weak sections.
 
 DRAFT:
 """

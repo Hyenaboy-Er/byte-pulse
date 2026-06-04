@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   if (words < 1500) {
     return NextResponse.json({
       ok: false,
-      error: `evergreen too thin: ${words}w < 1800`,
+      error: `evergreen too thin: ${words}w < 1500`,
       slug: topic.slug,
       previewTitle: draft.title,
     });

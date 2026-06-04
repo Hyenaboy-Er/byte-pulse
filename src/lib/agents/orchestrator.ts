@@ -172,21 +172,40 @@ function looksOffTopic(title: string): boolean {
 function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnapshot | null): { item: FeedItem; boost: number } | null {
   const fresh = items.filter((i) => !seenHashes.has(i.hash) && !looksOffTopic(i.title));
   if (!fresh.length) return null;
-  const trending = findTrending(fresh);
 
-  // 2026-06-03 (Serhat): pre-compute multi-source topic clusters and
-  // give a strong boost to picks that appear in a cluster with 2+
-  // outlets. These are exactly the stories where our cross-source
-  // synthesis path lights up — and where the article ends up with
-  // 85+ originality instead of 60. Picking them first is the single
-  // highest-leverage move for AdSense-grade output.
-  const clusters = clusterByTopic(fresh, { similarityThreshold: 0.20, minClusterSize: 2 });
-  const multiSourceLinks = new Set<string>();
-  for (const c of clusters) {
-    multiSourceLinks.add(c.primary.link);
-    for (const a of c.alternates) multiSourceLinks.add(a.link);
+  // 2026-06-04 (Serhat: "wirklich qualität?"): MULTI-SOURCE FIRST.
+  // findTrending uses internal RSS clustering that DOESN'T agree with
+  // our topic-cluster output, so the boost-based picker never actually
+  // landed on a multi-source candidate. Restructured: clusterByTopic
+  // runs FIRST, and if any 2+ outlet cluster exists, we pick from the
+  // best cluster's primary DIRECTLY. Single-source path only fires
+  // when zero multi-source clusters exist in this batch.
+  // Threshold lowered 0.20 → 0.12 to catch cross-language matches
+  // (Heise DE + Engadget EN on same product story share ~15% lexical
+  // overlap via proper nouns alone).
+  const clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 2 });
+  if (clusters.length > 0) {
+    // Rank clusters: prefer (1) larger size, (2) primary's external
+    // trend match, (3) recency of primary.
+    const ranked = clusters
+      .map((c) => {
+        const top = c.primary;
+        const ageHours = Math.max(0.5, (Date.now() - new Date(top.isoDate).getTime()) / 3_600_000);
+        const recency = Math.max(0, 24 - ageHours) / 24;
+        const extBoost = trends ? trendsBoost(top.title, trends) : 0;
+        // Size dominates — 3 outlets > 2 outlets, but recency + ext
+        // boost break ties.
+        const score = c.size * 0.50 + recency * 0.30 + extBoost * 0.20;
+        return { cluster: c, score, extBoost };
+      })
+      .sort((a, b) => b.score - a.score);
+    const winner = ranked[0];
+    return { item: winner.cluster.primary, boost: winner.extBoost };
   }
 
+  // Fallback: classic trending picker for windows where no story has
+  // multi-outlet coverage. These still get the single-source pipeline.
+  const trending = findTrending(fresh);
   let best: FeedItem | null = null;
   let bestBoost = 0;
   let bestScore = -1;
@@ -196,11 +215,8 @@ function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnap
     const recency = Math.max(0, 24 - ageHours) / 24;
     const cluster = Math.min(group.length, 4) / 4;
     const titleLen = Math.min(top.title.length, 80) / 80;
-    // External trends boost (HN + Reddit + Google Suggest match)
     const extBoost = trends ? trendsBoost(top.title, trends) : 0;
-    // Multi-source boost: pick stories where multiple outlets are reporting.
-    const multiBoost = multiSourceLinks.has(top.link) ? 0.50 : 0;
-    const score = recency * 0.30 + cluster * 0.15 + titleLen * 0.05 + extBoost * 0.20 + multiBoost;
+    const score = recency * 0.45 + cluster * 0.30 + titleLen * 0.05 + extBoost * 0.20;
     if (score > bestScore) { bestScore = score; best = top; bestBoost = extBoost; }
   }
   return best ? { item: best, boost: bestBoost } : null;
@@ -349,7 +365,7 @@ export async function runOnce(): Promise<RunReport> {
     let multiSource: Awaited<ReturnType<typeof researchCluster>> | null = null;
     try {
       const clusters = clusterByTopic(items, {
-        similarityThreshold: 0.20,
+        similarityThreshold: 0.12,
         minClusterSize: 2,
       });
       // Find a cluster that INCLUDES our pick — multi-source is meaningful

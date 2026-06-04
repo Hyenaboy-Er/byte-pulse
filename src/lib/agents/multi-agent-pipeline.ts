@@ -152,11 +152,13 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
     role: 'persona-drafter',
     system: DRAFTER_PERSONA,
     user: userPrompt,
-    // 10500 tokens ≈ 7800 words output capacity. Restored to 10500 on
-    // 2026-06-03 after Vercel Pro upgrade lifted the function timeout
-    // from 60s to 900s. Drafter targets 2500-3000w; Eva trims to
-    // 1700-2400w (= 8-12 min read). Headroom is for JSON overhead.
-    maxTokens: 10500,
+    // 14000 tokens — bumped 2026-06-04 because multi-source prompts
+    // produce longer JSON output (cross-source attribution adds ~30%
+    // body length). 10500 was truncating mid-string on 3-source bundles.
+    // JSON-mode also bloats output by ~30% via escape-wrapping, so the
+    // raw word target of 1500-2200 lands ~6000 tokens; doubled to 14000
+    // for safety on edge cases.
+    maxTokens: 14000,
     json: true,
   });
 

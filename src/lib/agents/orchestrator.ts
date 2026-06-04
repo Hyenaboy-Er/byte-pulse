@@ -596,10 +596,13 @@ Return JSON only: { "content": "<expanded markdown>" }`,
     // wanted: '500 Wörter eigene Analyse > 2000 Golem-paraphrase'). Score
     // + originality + plag gates are the real quality bar; this floor
     // exists only to catch the truly broken outputs.
-    if (bodyWords < 300) {
-      report.error = `skip-thin: ${bodyWords}w < 300`;
-      await logAgent('orchestrator', 'skip-thin', 'info',
-        `${humanized.title}: ${bodyWords}w < 300 — broken pipeline output, not published`);
+    // 2026-06-04 Serhat-Direktive: 9-Min-Pflicht für JEDEN news-publish.
+    // 1800w = ~9 min read at 200 wpm. Wenn Drafter+Editor+Polisher unter
+    // 1800w fallen → kein Publish, nächster Cron versucht erneut. Strict.
+    if (bodyWords < 1800) {
+      report.error = `skip-too-short: ${bodyWords}w < 1800 (= 9 min min)`;
+      await logAgent('orchestrator', 'skip-too-short', 'info',
+        `${humanized.title}: ${bodyWords}w < 1800 — under 9-min floor, not published`);
       report.finishedAt = new Date().toISOString();
       return report;
     }

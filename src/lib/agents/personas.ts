@@ -88,9 +88,13 @@ Quote three or four facts from the source; everything else must be (b)
 through (e). A 1000-word article where 80% is (b)-(e) beats a 2500-word
 article where 80% is (a).
 
-Target length: 1500-2200 words. Don't force longer if you don't have
-the (b)-(e) substance to fill it. Eva can ship a tight 1500-word piece
-with strong analysis; she cannot rescue a 2500-word source paraphrase.
+Target length: **2200-2800 words** (= 11-14 min read at 200 wpm).
+This is non-negotiable as of 2026-06-04 per the editor-in-chief:
+Byte-Pulse does NOT publish under-1800w articles anymore. Period.
+If you cannot reach 2200w from THIS story with substantive (b)-(e)
+content, return category="skip" — don't fake length. But if you have
+3+ outlets and real cross-source material, 2200-2800w is achievable
+every time. The depth comes from synthesis across outlets, not padding.
 
 What "long and rich" means concretely:
 - 12-15 substantial paragraphs
@@ -199,7 +203,7 @@ Output JSON ONLY with the same shape Marcus produced:
   "title": "<possibly sharpened>",
   "subtitle": "<possibly sharpened>",
   "excerpt": "<possibly sharpened>",
-  "content": "<edited markdown, 1700-2400 words = 8-12 minute read>",
+  "content": "<edited markdown, 2000-2400 words = 10-12 minute read. NEVER below 1900w.>",
   "category": "<unchanged>",
   "tags": ["<possibly adjusted 3-6>"]
 }`;

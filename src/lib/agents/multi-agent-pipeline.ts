@@ -214,10 +214,17 @@ Write a FULL, EXPANSIVE first draft per your persona instructions.`;
 // ---------------------------------------------------------------------------
 
 async function editToPublishLength(draft: WrittenArticle): Promise<WrittenArticle> {
-  const userPrompt = `Marcus's long draft is below. Cut it to 1400-1800 words per your
-persona instructions. Preserve every fact, number, quote and named entity.
-Keep ALL signature sections (Context / Compared to / What this means for you /
-What's still unclear / Why this matters).
+  const userPrompt = `Marcus's long draft is below. Cut it to 2000-2400 words
+(= 10-12 min read). DO NOT go below 1900 words — that's our hard floor for
+publish-ready depth. If the draft is already under 2000w, RESTORE missing
+sections instead of cutting further.
+
+Preserve every fact, number, quote and named entity. Keep ALL signature
+sections (Cross-source consensus / Differing claims / Framing analysis /
+What's missing from the discussion / Compared to / What this means for you /
+What's still unclear / Operator's view / Why this matters). The cross-source
+sections are NON-NEGOTIABLE — they are what differentiates Byte-Pulse from
+single-source rewrites.
 
 DRAFT:
 """

@@ -39,6 +39,7 @@ import { prisma } from '../db';
 import type { Research } from './researcher';
 import type { WrittenArticle } from './writer';
 import type { MultiSourceBundle } from './multi-source-researcher';
+import { planFormat, type FormatChoice } from './format-planner';
 import {
   DRAFTER_PERSONA,
   EDITOR_PERSONA,
@@ -80,6 +81,27 @@ async function draftLongForm(
   trendingKeywords?: string[],
   multiSource?: MultiSourceBundle,
 ): Promise<WrittenArticle> {
+  // FORMAT PLANNING (Serhat 2026-06-04 — anti-sameness):
+  // when we have a multi-source bundle, plan the structural FORMAT before
+  // writing so every article ends up with custom H2 sections tailored to
+  // ITS specific story, instead of every article inheriting the same
+  // Facts-All-Confirm / Contrasting-Claims / Compared-to skeleton.
+  // 10 formats available — planner picks the best fit per story.
+  let format: FormatChoice | null = null;
+  if (multiSource) {
+    try {
+      format = await planFormat(multiSource);
+      await logAgent(
+        'format-planner',
+        'format-chosen',
+        'success',
+        `${format.formatId} :: ${format.rationale.slice(0, 100)}`,
+        { headings: format.customHeadings },
+      );
+    } catch {
+      /* planner is best-effort; fall through to standard skeleton */
+    }
+  }
   const categoryList = CATEGORIES.map(
     (c) => `- ${c.slug}: ${c.name} (${c.description})`,
   ).join('\n');
@@ -96,8 +118,28 @@ async function draftLongForm(
   // is instructed to attribute, compare, and pick fights between outlets.
   // This is the path that produces real "above-source originality" — the
   // single biggest AdSense quality signal.
+  const formatBlock = format
+    ? `\n\nFORMAT FOR THIS STORY: **${format.formatId}**
+Rationale: ${format.rationale}
+
+Use EXACTLY these H2 section headings, in this order, customised for this
+specific story — do NOT use the generic Facts-All-Confirm / Contrasting-
+Claims / Compared-to / What-This-Means template:
+
+${format.customHeadings.map((h, i) => `  ${i + 1}. ## ${h}`).join('\n')}
+
+Format-specific guidance: ${format.formatGuidance}
+
+These headings are NON-NEGOTIABLE — they exist to break the structural
+sameness pattern that AdSense reviewers can otherwise detect across
+multi-source AI articles. Every article gets a different shape, tailored
+to its actual story. The cross-source attribution rules still apply
+(name outlets, surface disagreements, take a stance) — but EMBEDDED in
+the format above, not in a separate Facts-All-Confirm section.\n\n`
+    : '';
+
   const userPrompt = multiSource
-    ? `MULTI-SOURCE BUNDLE — ${multiSource.alternates.length + 1} outlets reported this story.
+    ? `MULTI-SOURCE BUNDLE — ${multiSource.alternates.length + 1} outlets reported this story.${formatBlock}
 
 Drei Quellen allein erzeugen noch keine Qualität. Qualität entsteht erst,
 wenn du Unterschiede erkennst (Widersprüche, Fokusverschiebungen,
@@ -230,10 +272,17 @@ Decision framework:
 NEVER PAD. NEVER ARTIFICIALLY EXTEND. A 1100w piece that earns every
 word beats a 2400w piece with 30% redundancy.
 
-Preserve every fact, number, quote and named entity. Keep ALL signature
-sections that have substantive content (Cross-source consensus / Differing
-claims / Framing analysis / What's missing from the discussion / Compared
-to / What this means for you / What's still unclear / Operator's view).
+Preserve every fact, number, quote and named entity.
+
+IMPORTANT (Serhat 2026-06-04 anti-sameness rule): if the draft uses
+CUSTOM H2 section headings (e.g. story-specific phrasings like "Why
+Apple's silence on Berlin is revealing" rather than the generic
+"Facts All Sources Confirm"), KEEP THOSE HEADINGS verbatim. Do NOT
+revert to the generic Facts-All-Confirm / Contrasting-Claims template.
+The custom headings exist because the Format Planner chose them for
+THIS specific story. Generic template headings are the failure mode
+we're trying to avoid.
+
 If a section would be filler, CUT IT entirely rather than padding it —
 short article without weak sections beats long article with weak sections.
 

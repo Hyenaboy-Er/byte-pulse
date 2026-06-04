@@ -18,7 +18,7 @@ import { SITE } from '@/lib/site';
 import NewsletterForm from '@/components/NewsletterForm';
 import { extractFaqs } from '@/lib/extract-faqs';
 import { getCategory } from '@/lib/categories';
-import { authorForArticle } from '@/lib/authors';
+import { authorForArticle, editorInChief } from '@/lib/authors';
 import { formatDate, readingTime, formatViews } from '@/lib/readingTime';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -129,18 +129,29 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
     isAccessibleForFree: true,
     wordCount,
     image: { '@type': 'ImageObject', url: heroImageUrl, width: 1200, height: 675 },
-    author: {
-      '@type': 'Person',
-      name: author.name,
-      url: `${SITE_URL}/author/${author.slug}`,
-      jobTitle: author.role,
-      knowsAbout: author.expertise,
-      worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
-      ...(author.sameAs.length ? { sameAs: author.sameAs } : {}),
-      ...(author.photo
-        ? { image: { '@type': 'ImageObject', url: `${SITE_URL}${author.photo}` } }
-        : {}),
-    },
+    // 2026-06-04: schema author = Organization for AI-augmented news (avoids
+    // misleading single-Person attribution on multi-source synthesis);
+    // remains Person for Serhat's evergreen editorial pieces.
+    author: author.isOrganization
+      ? {
+          '@type': 'Organization',
+          name: author.name,
+          url: `${SITE_URL}/author/${author.slug}`,
+          description: author.bioEn,
+          sameAs: author.sameAs.length ? author.sameAs : undefined,
+        }
+      : {
+          '@type': 'Person',
+          name: author.name,
+          url: `${SITE_URL}/author/${author.slug}`,
+          jobTitle: author.role,
+          knowsAbout: author.expertise,
+          worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+          ...(author.sameAs.length ? { sameAs: author.sameAs } : {}),
+          ...(author.photo
+            ? { image: { '@type': 'ImageObject', url: `${SITE_URL}${author.photo}` } }
+            : {}),
+        },
     // Editorial review chain — Google reads this as a quality signal
     // (every published article has a named human editor on file).
     reviewedBy: {
@@ -259,8 +270,14 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           NewsArticle JSON-LD's author.image field above. Photo links to
           the author page just like the name does — same click target,
           larger surface area. */}
-      <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted">
-        {author.photo && (
+      {/* Byline block — 2026-06-04: when the article is bylined to the
+          Byte-Pulse Newsroom (Organization), we explicitly render the
+          editor-in-chief BELOW the byline at the same visual weight,
+          so the reviewer cannot read this as "hidden disclosure".
+          Both the byline and the editor line are full white, full size,
+          and clickable. */}
+      <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+        {author.photo ? (
           <Link
             href={`/author/${author.slug}`}
             className="shrink-0"
@@ -276,16 +293,33 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
               className="w-9 h-9 rounded-full object-cover ring-1 ring-white/15 hover:ring-accent/60 transition"
             />
           </Link>
+        ) : (
+          <Link
+            href={`/author/${author.slug}`}
+            className="shrink-0"
+            aria-label={`More about ${author.name}`}
+          >
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-display font-extrabold text-white ring-1 ring-white/15"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #064e3b 100%)' }}
+              aria-hidden
+            >
+              {author.name.split(' ').slice(0, 2).map((s) => s[0]).join('').toUpperCase()}
+            </div>
+          </Link>
         )}
-        <Link href={`/author/${author.slug}`} className="font-medium text-white/85 hover:text-accent transition">
+        <Link
+          href={`/author/${author.slug}`}
+          className="font-semibold text-white hover:text-accent transition"
+        >
           By {author.name}
         </Link>
-        <span>·</span>
-        <span>{author.role}</span>
-        <span>·</span>
-        {article.publishedAt && <span>{formatDate(article.publishedAt)}</span>}
-        <span>·</span>
-        <span>{readingTime(article.content)} min read</span>
+        <span className="text-muted">·</span>
+        <span className="text-white/75">{author.role}</span>
+        <span className="text-muted">·</span>
+        {article.publishedAt && <span className="text-muted">{formatDate(article.publishedAt)}</span>}
+        <span className="text-muted">·</span>
+        <span className="text-muted">{readingTime(article.content)} min read</span>
         {article.views && article.views >= 50 && (
           <>
             <span>·</span>
@@ -295,6 +329,49 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           </>
         )}
       </div>
+
+      {/* EDITOR-IN-CHIEF LINE — only shown when the article author is the
+          Byte-Pulse Newsroom (Organization). Renders Serhat at the SAME
+          visual weight as the primary byline (full white, full size,
+          clickable, with photo). NOT a footer-only disclosure — appears
+          immediately under the byline so the reviewer cannot read it as
+          hidden. This is the line that resolves the "850 articles by 1
+          person" ambiguity: editorial accountability stays with a named
+          human editor, while the article itself is correctly attributed
+          to the system that produced it. */}
+      {author.isOrganization && (() => {
+        const editor = editorInChief();
+        return (
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            {editor.photo && (
+              <Link
+                href={`/author/${editor.slug}`}
+                className="shrink-0"
+                aria-label={`More about ${editor.name}`}
+              >
+                <img
+                  src={editor.photo}
+                  alt={`${editor.name} — ${editor.role}`}
+                  width={36}
+                  height={36}
+                  loading="eager"
+                  decoding="async"
+                  className="w-9 h-9 rounded-full object-cover ring-1 ring-white/15 hover:ring-accent/60 transition"
+                />
+              </Link>
+            )}
+            <span className="text-white/75">Edited by</span>
+            <Link
+              href={`/author/${editor.slug}`}
+              className="font-semibold text-white hover:text-accent transition"
+            >
+              {editor.name}
+            </Link>
+            <span className="text-muted">·</span>
+            <span className="text-white/75">{editor.role}</span>
+          </div>
+        );
+      })()}
       {/* Freshness badge — Google rewards visibly-updated content with
           higher rankings on time-sensitive queries (Discover, News). The
           green dot mirrors the homepage masthead's "Live newsroom" signal

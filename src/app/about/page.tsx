@@ -87,27 +87,49 @@ export default function About() {
         every article so you can read further at any time.
       </p>
 
-      <h2>Editorial process</h2>
+      <h2>How Byte-Pulse content is produced and attributed</h2>
       <p>
-        Every story goes through a multi-stage editorial pipeline before publishing:
+        We separate two kinds of pieces by attribution so readers (and search
+        engines) always know who is accountable for what:
       </p>
       <ul>
-        <li><strong>Sourcing</strong> — we pull the full text of the original articles.</li>
-        <li><strong>Writing</strong> — we craft an original English summary with our own angle.</li>
-        <li><strong>Editing</strong> — language is polished for clarity and voice.</li>
-        <li><strong>Quality review</strong> — scores for accuracy, originality and plagiarism risk. Only stories that pass every check ship.</li>
-        <li><strong>Translation</strong> — every article is published in German as well.</li>
-        <li><strong>Monitoring</strong> — published content is audited daily for accuracy and dead links.</li>
+        <li>
+          <strong>News stories</strong> are bylined <em>Byte-Pulse Newsroom</em>{' '}
+          — our AI-augmented editorial system that researches, drafts and
+          fact-checks daily tech news. Every news article is{' '}
+          <strong>edited and approved by Serhat Er, Editor-in-Chief</strong>,
+          whose name and photo appear on every article. He is the named
+          human accountable for what ships.
+        </li>
+        <li>
+          <strong>Evergreen explainers and buyer&apos;s guides</strong>{' '}
+          (long-form 9-14 minute pieces) are bylined directly to{' '}
+          <em>Serhat Er</em> because he personally briefs, structures and
+          edits these pieces deeply.
+        </li>
       </ul>
 
-      <h2>Use of AI tooling (transparency notice)</h2>
+      <h2>Editorial pipeline (every story)</h2>
+      <ul>
+        <li><strong>Sourcing</strong> — we cross-reference 3+ independent outlets per story (not single-source rewriting).</li>
+        <li><strong>Delta analysis</strong> — consensus, contradictions, focus shifts and omissions across sources are identified before drafting.</li>
+        <li><strong>Drafting</strong> — original synthesis with our own editorial line, not aggregated quotes.</li>
+        <li><strong>Fact-checking</strong> — claims are verified against the linked sources.</li>
+        <li><strong>Polishing</strong> — language tightened, AI tells removed.</li>
+        <li><strong>Editor review</strong> — Serhat Er signs off before publish.</li>
+        <li><strong>Monitoring</strong> — content is audited continuously for accuracy and dead links.</li>
+      </ul>
+
+      <h2>Use of AI (transparency notice)</h2>
       <p>
-        To keep up with the speed of the tech industry we use AI-assisted tooling
-        throughout the editorial pipeline (sourcing, drafting, translation, fact-checking).
-        Every article is fact-checked against the linked source before publishing. Despite
-        these safeguards, we cannot guarantee the accuracy of every detail — please verify
-        before acting on any information. If you spot an error, mail us and we&apos;ll
-        correct it.
+        Byte-Pulse uses AI-assisted tooling across the editorial pipeline
+        (research, drafting, translation, fact-checking). We disclose this
+        openly. AI augments speed; it does not replace editorial judgement —
+        every article that publishes has been reviewed by Serhat Er,
+        Editor-in-Chief, and editorial accountability stays with him. We
+        cannot guarantee every detail is correct; if you spot an error,
+        mail us and we&apos;ll correct it on record at{' '}
+        <a href="/corrections">/corrections</a>.
       </p>
 
       <h2>Contact</h2>

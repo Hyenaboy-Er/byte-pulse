@@ -29,6 +29,10 @@ export type Author = {
   // Public photo (path under /public). Empty string → falls back to initials
   // avatar in the UI but Schema.org Person.image is omitted, not lied about.
   photo?: string;
+  // 2026-06-04: when true, this entity is rendered as schema.org Organization,
+  // not Person — used for the newsroom byline on AI-augmented news articles.
+  // Avoids the "850 articles by one human in 3 weeks" impossibility flag.
+  isOrganization?: boolean;
 };
 
 // Three personas so the byline rotates and looks like an editorial team.
@@ -70,11 +74,12 @@ export const AUTHORS: Author[] = [
   {
     slug: 'byte-pulse-newsroom',
     name: `${BRAND} Newsroom`,
-    role: 'Editorial Team',
-    bioEn: `The ${BRAND} newsroom covers hardware, gaming and mobile launches in real time. Every story goes through a multi-step fact-checking pipeline — sourcing, factuality scoring, and editor review by ${SITE.founderName} — before it's published. Tips: editorial@byte-pulse.net.`,
-    bioDe: `Das ${BRAND}-Newsroom-Team berichtet in Echtzeit über Hardware-, Gaming- und Mobile-Launches. Jede Story durchläuft eine mehrstufige Faktenprüfung — Quellen-Check, Faktentreue-Bewertung und Editor-Review durch ${SITE.founderName} — bevor sie veröffentlicht wird. Hinweise: editorial@byte-pulse.net.`,
-    expertise: ['Hardware', 'Gaming', 'Mobile'],
+    role: 'AI-augmented editorial system',
+    bioEn: `The ${BRAND} Newsroom is the editorial system that produces ${BRAND}'s daily tech news coverage. Each story is cross-referenced across 3+ independent outlets, drafted with AI assistance by the newsroom system (Drafter → Editor → Fact-Checker → Polisher), and reviewed by ${SITE.founderName}, Editor-in-Chief, before publication. We disclose AI augmentation openly. Editorial accountability stays with the named editor on every article. Tips: editorial@byte-pulse.net.`,
+    bioDe: `Die ${BRAND}-Newsroom ist das redaktionelle System, das ${BRAND}s tägliche Tech-News-Berichterstattung produziert. Jede Story wird über 3+ unabhängige Quellen verifiziert, KI-gestützt vom Newsroom-System verfasst (Drafter → Editor → Fact-Checker → Polisher) und vor Veröffentlichung von ${SITE.founderName}, Chefredakteur, freigegeben. KI-Augmentation wird offen offengelegt. Redaktionelle Verantwortung liegt beim namentlich genannten Editor jedes Artikels. Hinweise: editorial@byte-pulse.net.`,
+    expertise: ['Hardware', 'AI', 'Gaming', 'Mobile', 'Security', 'EV', 'Software'],
     sameAs: [BRAND_X, BRAND_MASTODON, BRAND_BLUESKY, BRAND_YOUTUBE, BRAND_TIKTOK, BRAND_SITE],
+    isOrganization: true,
   },
   {
     slug: 'leah-becker',
@@ -114,18 +119,36 @@ const CATEGORY_TO_AUTHOR: Record<string, string> = {
 export function authorForArticle(
   _category: string,
   _slug?: string,
-  _sourceName?: string,
+  sourceName?: string | null,
 ): Author {
-  // CHANGED 2026-06-03 per Serhat's instruction: EVERY published article is
-  // bylined as "Serhat Er" with his photo. The earlier multi-author + anonymous
-  // "Byte-Pulse Newsroom" routing was flagged by an AdSense pre-review consult
-  // as a strong red flag for E-E-A-T (anonymous byline on a solo publication
-  // looks like scaled content). For a single-person newsroom the editorially
-  // honest choice is to put the editor-in-chief's name + photo on everything
-  // he actually reviews — which is every article that ships. The earlier
-  // CATEGORY_TO_AUTHOR map and `${BRAND} Original` carve-out are now ignored;
-  // the helper is kept as a no-op stub so the orchestrator's import stays
-  // working. Args are kept in the signature for backward compatibility.
+  // 2026-06-04 final attribution model (after AdSense pre-review consult):
+  //   - EVERGREENS (deep editorial pieces Serhat personally briefs and reviews
+  //     intensively): bylined to Serhat Er. Signal: sourceName === 'Byte-Pulse
+  //     Original' OR slug matches the evergreen queue.
+  //   - NEWS ARTICLES (multi-source AI-augmented synthesis): bylined to
+  //     Byte-Pulse Newsroom (Organization), with "Edited by Serhat Er,
+  //     Editor-in-Chief" prominently rendered AND emitted in Schema.org
+  //     editor/reviewedBy fields. Solves the "850 articles by one person
+  //     in 3 weeks" mathematical-impossibility flag that AdSense reviewers
+  //     read as "misleading attribution". Industry-standard pattern —
+  //     Reuters, AP, Bloomberg all attribute breaking-news desk pieces to
+  //     the newsroom organization with a named editor below.
+  //
+  // The signal we use is the article's sourceName: evergreens explicitly
+  // set 'Byte-Pulse Original'; news articles set the actual outlet name
+  // (Heise, TechCrunch, etc).
+  if (sourceName === 'Byte-Pulse Original') {
+    return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[0];
+  }
+  return AUTHOR_BY_SLUG['byte-pulse-newsroom'] ?? AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[0];
+}
+
+/**
+ * The editor-in-chief who signs off on every article. Used for the
+ * "Edited by …" sub-byline on news articles and as the schema.org
+ * editor/reviewedBy person.
+ */
+export function editorInChief(): Author {
   return AUTHOR_BY_SLUG['serhat-er'] ?? AUTHORS[0];
 }
 

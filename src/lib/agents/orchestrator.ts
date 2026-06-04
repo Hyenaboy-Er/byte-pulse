@@ -187,15 +187,13 @@ function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnap
   // Threshold lowered 0.20 → 0.12 to catch cross-language matches
   // (Heise DE + Engadget EN on same product story share ~15% lexical
   // overlap via proper nouns alone).
-  // Serhat 2026-06-04: MIN 3 SOURCES PFLICHT für echte Cross-Source-
-  // Reportage. Wenn 3+ Outlets eine Story berichten, lohnt sich die
-  // Synthese; bei 2 ist es eher "zwei Versionen vergleichen".
-  // Fallback auf 2 wenn KEIN 3+ Cluster in diesem Batch existiert
-  // (besser 2-Source als gar nicht publish).
-  let clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 3 });
-  if (clusters.length === 0) {
-    clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 2 });
-  }
+  // Serhat 2026-06-04 (verschärft): STRIKT MIN 3 SOURCES PFLICHT.
+  // Kein Fallback auf 2-Source mehr. Wenn kein 3+ Cluster im Batch
+  // existiert → return null → kein Publish in diesem Tick. Der nächste
+  // Cron (alle 30 Min) holt frische RSS-Items und versucht erneut.
+  // Konsequenz: Qualität >> Quantität. Jeder publishter Artikel ist
+  // garantierte 3-Outlet Cross-Source-Synthese.
+  const clusters = clusterByTopic(fresh, { similarityThreshold: 0.12, minClusterSize: 3 });
   if (clusters.length > 0) {
     // Rank clusters: prefer (1) larger size, (2) primary's external
     // trend match, (3) recency of primary.
@@ -215,23 +213,11 @@ function pickBest(items: FeedItem[], seenHashes: Set<string>, trends: TrendsSnap
     return { item: winner.cluster.primary, boost: winner.extBoost };
   }
 
-  // Fallback: classic trending picker for windows where no story has
-  // multi-outlet coverage. These still get the single-source pipeline.
-  const trending = findTrending(fresh);
-  let best: FeedItem | null = null;
-  let bestBoost = 0;
-  let bestScore = -1;
-  for (const [, group] of trending) {
-    const top = group[0];
-    const ageHours = Math.max(0.5, (Date.now() - new Date(top.isoDate).getTime()) / 3_600_000);
-    const recency = Math.max(0, 24 - ageHours) / 24;
-    const cluster = Math.min(group.length, 4) / 4;
-    const titleLen = Math.min(top.title.length, 80) / 80;
-    const extBoost = trends ? trendsBoost(top.title, trends) : 0;
-    const score = recency * 0.45 + cluster * 0.30 + titleLen * 0.05 + extBoost * 0.20;
-    if (score > bestScore) { bestScore = score; best = top; bestBoost = extBoost; }
-  }
-  return best ? { item: best, boost: bestBoost } : null;
+  // KEIN Single-Source-Fallback mehr (Serhat 2026-06-04). Wenn dieser Batch
+  // keinen 3+ Outlet Cluster hat, returnen wir null — der Tick endet ohne
+  // Publish. Nächster Cron in 30 Min lädt frische RSS-Items + versucht
+  // erneut. Qualität >> Cadence.
+  return null;
 }
 
 export async function runOnce(): Promise<RunReport> {
@@ -376,18 +362,11 @@ export async function runOnce(): Promise<RunReport> {
     // higher originality + factuality through built-in cross-reference.
     let multiSource: Awaited<ReturnType<typeof researchCluster>> | null = null;
     try {
-      // Mirror the picker's preference: try 3-source clusters first,
-      // then fall back to 2-source. Match what the picker decided.
-      let clusters = clusterByTopic(items, {
+      // Strikt: nur 3+ Outlet Cluster (Serhat-Direktive). Kein 2-Fallback.
+      const clusters = clusterByTopic(items, {
         similarityThreshold: 0.12,
         minClusterSize: 3,
       });
-      if (clusters.length === 0) {
-        clusters = clusterByTopic(items, {
-          similarityThreshold: 0.12,
-          minClusterSize: 2,
-        });
-      }
       // Find a cluster that INCLUDES our pick — multi-source is meaningful
       // only when the pick has cross-reference; clusters without the pick
       // are other stories we're not writing about now.

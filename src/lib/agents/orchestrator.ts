@@ -162,6 +162,10 @@ const OFFTOPIC_TERMS = [
   'soft drink', 'softdrink', 'soda ', 'beverage', 'grocery', 'groceries',
   'supermarket', 'snack', 'coffee beans', 'cereal', 'frozen food',
   'fashion sale', 'clothing deal', 'furniture', 'mattress', 'toy deal',
+  // 2026-06-04: filter coupon/promo content — Wired & 9to5* increasingly
+  // run these for affiliate revenue. They're not tech analysis.
+  'promo code', 'coupon', 'discount code', 'voucher code', 'doordash',
+  'uber eats', 'grubhub', 'instacart',
 ];
 
 function looksOffTopic(title: string): boolean {

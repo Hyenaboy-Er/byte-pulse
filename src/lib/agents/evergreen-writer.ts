@@ -190,9 +190,59 @@ Every paragraph earns its space.`;
   const draft = extractJson<EvergreenDraft>(draftText);
   if (!draft) throw new Error('Evergreen drafter JSON parse failed');
 
-  // Editor cut
+  const draftWords = wc(draft.content);
+
+  // If drafter came in short (under 2200w), run an EXPANSION pass
+  // before the editor cuts. The editor was previously cutting 1700w
+  // drafts down further, producing 1300w final output — exactly the
+  // anti-pattern we wanted to avoid.
+  if (draftWords < 2200) {
+    try {
+      const expandText = await llmChat({
+        role: 'persona-drafter',
+        system: DRAFTER_SYSTEM,
+        user: `Marcus, your draft came in at ${draftWords} words — under the 2200-2800 target. EXPAND it to 2400-2800 words by:
+
+1. Adding 1-2 more ## subheadings with substantive content (not filler)
+2. Deepening the "Compared to" / comparison sections with more concrete numbers
+3. Adding a "What's still unclear" or "Counterpoint" section that pushes back on the conventional wisdom
+4. Strengthening the FAQ block with 2-3 more Q&As
+5. Adding more first-person opinion sentences (target: 5 minimum)
+
+Original draft:
+"""
+TITLE: ${draft.title}
+SUBTITLE: ${draft.subtitle}
+EXCERPT: ${draft.excerpt}
+CATEGORY: ${draft.category}
+TAGS: ${draft.tags.join(', ')}
+
+${draft.content}
+"""
+
+Return JSON with the expanded body. Do NOT remove existing content — only add.`,
+        maxTokens: 14000,
+        json: true,
+      });
+      const expanded = extractJson<EvergreenDraft>(expandText);
+      if (expanded?.content && wc(expanded.content) > draftWords) {
+        draft.content = expanded.content;
+        if (expanded.title) draft.title = expanded.title;
+        if (expanded.subtitle) draft.subtitle = expanded.subtitle;
+        if (expanded.excerpt) draft.excerpt = expanded.excerpt;
+        if (expanded.tags) draft.tags = expanded.tags;
+      }
+    } catch {
+      /* expansion failed — keep original draft */
+    }
+  }
+
+  // Editor cut (now skipped if draft is short — we never want to cut
+  // an already-short evergreen below the floor).
   let edited: EvergreenDraft = draft;
+  const skipEditor = wc(draft.content) < 2400;
   try {
+    if (skipEditor) throw new Error('SKIP_EDITOR');
     const editUser = `Marcus's draft:
 """
 TITLE: ${draft.title}

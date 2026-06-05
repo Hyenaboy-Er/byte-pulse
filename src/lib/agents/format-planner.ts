@@ -121,14 +121,24 @@ Selection rules:
      A product launch facing a clear rival = contrast.
      A regulator-driven story = timeline.
      A pure spec announcement = explainer-pivot.
-  2. NEVER pick "classic-analysis" unless nothing else fits — that's the
-     default skeleton we're trying to escape.
+     A roadmap / company strategy story = operator-pov.
+     Multiple discrete angles each worth a section = listicle-deep.
+  2. **NEVER pick "classic-analysis"**. It's a sentinel — its presence in
+     our output means the planner failed. Every real story fits into one
+     of the other 9 formats; if you find yourself reaching for classic,
+     re-read the catalog and pick the next-best fit (usually
+     operator-pov, case-study, or listicle-deep is the right escape).
   3. Generate 4-6 H2 headings that are SPECIFIC to this story (not
      "Facts All Sources Confirm" — instead "Why a 2026 launch date makes
      no sense" or "How Snapdragon's silence here is revealing").
   4. Headings must sound like a human editor wrote them — declarative,
      specific, with a verb and a noun the reader recognizes. Not titlecase
      stock phrases.
+  5. Headings must NEVER include the phrases: "Facts All Sources
+     Confirm", "Contrasting Claims", "Focus Shift", "Compared to",
+     "What This Means for You", "Why This Matters", "What's Still
+     Unclear" — these are the legacy skeleton we are escaping. Use
+     story-specific phrasings instead.
 
 OUTPUT JSON ONLY:
 {
@@ -173,18 +183,21 @@ Pick the best format and generate custom headings for this specific story.`;
     /* fall through to default */
   }
 
-  // Safe fallback — never block the pipeline because the planner hiccupped.
+  // Safe fallback — operator-pov with generic-but-not-skeleton headings.
+  // We do NOT fall back to classic-analysis because that brings the
+  // Facts-All-Confirm template back. operator-pov is the broadest
+  // non-skeleton format.
   return {
-    formatId: 'classic-analysis',
-    rationale: 'Planner unavailable — defaulted to classic analysis',
+    formatId: 'operator-pov',
+    rationale: 'Planner unavailable — defaulted to operator-pov',
     customHeadings: [
-      'What we know so far',
-      'How the outlets see it',
-      'The angle that matters',
-      'What to watch next',
+      'What the announcement actually says',
+      'What an operator hears in this',
+      'The signal nobody is covering',
+      'What would change my mind',
     ],
     formatGuidance:
-      'Use the standard analytical voice — concrete facts up front, synthesis in the middle, forward-looking close.',
+      'Read the story through the eyes of someone who has shipped real products in this space — what does the press copy gloss over that the industry takes for granted.',
   };
 }
 

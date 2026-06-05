@@ -166,6 +166,16 @@ const OFFTOPIC_TERMS = [
   // run these for affiliate revenue. They're not tech analysis.
   'promo code', 'coupon', 'discount code', 'voucher code', 'doordash',
   'uber eats', 'grubhub', 'instacart',
+  // 2026-06-05 (Senior-Engineer-Sweep): aggressive deal-listing filter.
+  // "Prime Day Discounts" and "AirPods Deals" articles were getting past
+  // the niche guard because they are tech-adjacent — but they read as
+  // affiliate-driven commerce content, which is the single biggest
+  // "thin content" pattern an AdSense reviewer flags. We are a tech-
+  // analysis publication, not a coupon site.
+  'prime day', 'amazon resale', 'best deals on', 'best deal of', 'top deals',
+  'massive savings', 'unbeatable price', 'unbeatable deal',
+  'huge discount', 'huge sale', 'biggest sale', 'limited-time offer',
+  'unprecedented deals', 'record-low price', 'doorbuster',
 ];
 
 function looksOffTopic(title: string): boolean {

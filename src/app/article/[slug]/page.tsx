@@ -392,21 +392,59 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           rel="noopener noreferrer" + we deliberately do NOT add "nofollow"
           here: this is editorial attribution, not paid placement, so the
           link should count. */}
-      {article.sourceUrl && article.sourceName && (
-        <div className="mt-3 text-xs text-white/65 flex flex-wrap items-center gap-1.5">
-          <span className="uppercase tracking-wider text-[10px] font-semibold text-muted">
-            Reported from
-          </span>
-          <a
-            href={article.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent hover:underline font-medium break-all"
-          >
-            {article.sourceName} ↗
-          </a>
-        </div>
-      )}
+      {(() => {
+        // 2026-06-05 (Senior-Engineer-Fix): inkonsistenz behebt zwischen
+        //   Top:    "Reported from <single source>"
+        //   Bottom: "Sources cross-referenced from N outlets"
+        //
+        // Detect multi-source articles by looking for the cross-referenced
+        // footer string in the article body. If found, replace the single-
+        // source "Reported from" label at the top with an accurate
+        // "Cross-referenced across N outlets" badge that matches the
+        // bottom-of-page citation list. Same source data, same number,
+        // consistent message.
+        const xrefMatch = article.content?.match(
+          /Sources cross-referenced[\s\S]{0,80}?reporting by (\d+) outlets/i,
+        );
+        const xrefOutletCount = xrefMatch ? parseInt(xrefMatch[1], 10) : 0;
+        const isMultiSource = xrefOutletCount >= 2;
+
+        if (isMultiSource) {
+          // Multi-source: badge that matches the footer count, links to
+          // the in-page footer where the full citation list lives.
+          return (
+            <div className="mt-3 text-xs text-white/65 flex flex-wrap items-center gap-1.5">
+              <span className="uppercase tracking-wider text-[10px] font-semibold text-emerald-400">
+                Cross-referenced across {xrefOutletCount} outlets
+              </span>
+              <span className="text-white/55">
+                · full list at end of article ↓
+              </span>
+            </div>
+          );
+        }
+
+        // Legacy single-source articles (pre multi-source pipeline) keep
+        // the original "Reported from" attribution — accurate for them.
+        if (article.sourceUrl && article.sourceName) {
+          return (
+            <div className="mt-3 text-xs text-white/65 flex flex-wrap items-center gap-1.5">
+              <span className="uppercase tracking-wider text-[10px] font-semibold text-muted">
+                Reported from
+              </span>
+              <a
+                href={article.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline font-medium break-all"
+              >
+                {article.sourceName} ↗
+              </a>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       <div className="mt-4">
         <SaveButton slug={article.slug} title={article.title} />

@@ -1,0 +1,42 @@
+# Community-Reply Bot — antwortet auf Mastodon-Mentions automatisch.
+#
+# Hintergrund: byte-pulse.net hat einen Mastodon-Auto-Posting-Bot, der
+# regelmäßig neue Articles broadcastet. Dadurch bekommen wir Mentions
+# und Zitate vom Fediverse — aber bisher ohne Antwort. Ein
+# "Broadcast-only" Account wirkt wie ein Werbe-Bot und wächst nicht.
+#
+# Dieser Workflow triggert alle 30 Min /api/community-reply, das den
+# Community-Bot-Agenten laufen lässt: holt frische Mentions/Replies,
+# generiert sinnvolle LLM-Antworten und antwortet auf Mastodon.
+#
+# Token-Cost: ~10-20 Anthropic-Tokens pro Reply, ~3-8 Replies pro Run
+# = vernachlässigbar.
+#
+# Cadence: 30 Min ist Sweet-Spot — Threads bewegen sich nicht schneller,
+# Token-Verbrauch bleibt überschaubar.
+
+name: Community Reply Bot
+
+on:
+  schedule:
+    # Alle 30 Min — Mentions kommen rolling rein, 30 Min sind early
+    # genug um relevant zu wirken, nicht spammy.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger /api/community-reply
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          CODE=$(curl -sS -o /tmp/out.json -w "%{http_code}" \
+            "https://www.byte-pulse.net/api/community-reply?token=${CRON_SECRET}")
+          echo "HTTP: $CODE"
+          cat /tmp/out.json
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Community-reply endpoint returned $CODE"
+            exit 1
+          fi

@@ -107,16 +107,29 @@ category="skip".
 What "long and rich" means concretely:
 - 12-15 substantial paragraphs
 - 5-6 ## subheadings that each frame a distinct angle
+
+**SECTION HEADING RULE (IMPORTANT, anti-sameness):**
+- If the user prompt provides a "FORMAT FOR THIS STORY" block with custom
+  H2 headings, USE THOSE HEADINGS VERBATIM in the order given. They were
+  chosen specifically for this story to escape the same-skeleton pattern.
+- Do NOT add "Compared to:" / "What this means for you:" / "Why this
+  matters:" sections unless they appear in the chosen format's heading
+  list. The Format Planner already decided whether they fit this story.
+- ONLY if no format block is provided, fall back to a sensible set of
+  4-6 headings appropriate to the story — but vary them per story, never
+  use the same template twice in a row.
+
+Other concrete depth requirements (these apply regardless of format):
 - Multiple direct quotes from the source (in quotation marks, attributed)
-- At least one numbered or bulleted list
-- THREE "Context:" paragraphs:
-    • a European/EU angle (regulator? local manufacturer? GDPR? EU funding?)
-    • a "how this fits the broader trend" (industry pattern from your knowledge)
-    • a hands-on operator angle ("if you've ever shipped hardware, you know…")
-- One MANDATORY "Compared to [closest competitor/predecessor]:" paragraph —
-  draw a concrete comparison: prices, specs, market position, timeline. This
-  is the section that turns a news re-write into a real analysis.
-- One "What this means for you:" paragraph addressing the reader directly
+- At least one numbered or bulleted list where it fits the format
+- European/EU framing where the story has an EU angle (regulator? local
+  manufacturer? GDPR? EU funding?)
+- A "broader trend" observation from your industry knowledge
+- A hands-on operator angle where it fits ("if you've shipped hardware…")
+- Concrete comparison numbers when the story IS about a comparison
+  (prices, specs, market position, timeline) — but only when the chosen
+  format calls for one. Don't force-fit "Compared to" into every story.
+- Reader-direct address ("you") where the chosen format calls for it
 - One "What's still unclear:" honest open-questions paragraph
 - One "Why this matters:" closing editorial paragraph
 - Specific numbers wherever the source provides them — prices, dates, headcounts,
@@ -182,11 +195,13 @@ What you DO:
   consequence, it goes.
 - Keep EVERY number, name, quote, date and specific claim. You cut prose,
   not facts. If Marcus had 5 specific stats, your version still has all 5.
-- Keep ALL ## subheadings (rename if you can sharpen them, but don't lose
-  the structural skeleton).
-- Keep the "Context:", "Compared to:", "What this means for you:",
-  "What's still unclear:", "Why this matters:" sections — these are
-  Byte-Pulse signature blocks. The "Compared to:" section in particular
+- **Keep Marcus's H2 headings VERBATIM** — they were chosen by the Format
+  Planner specifically for this story, so each article gets a unique
+  structure instead of inheriting the same template. NEVER rename them
+  to generic "Facts All Sources Confirm" / "Compared to" / "Why This
+  Matters" labels. If a heading is sharp, leave it.
+- Only when Marcus used legacy generic headings (Context / Compared to /
+  What this means for you / Why this matters), those legacy blocks remain
   is non-negotiable; it's our differentiator.
 - Sharpen the headline if you can find a punchier verb or a more specific
   consequence. Keep it 55-75 chars.

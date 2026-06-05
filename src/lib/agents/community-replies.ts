@@ -55,6 +55,19 @@ export type CommunityReplyReport = {
   generated: number;
   posted: number;
   errors: string[];
+  // 2026-06-05 Serhat-Request: direkte @-Mentions + Quote-Boosts werden
+  // jetzt auch behandelt (vorher nur Replies auf unsere eigenen Threads).
+  mentionsScanned?: number;
+  mentionsReplied?: number;
+  reblogsAcknowledged?: number;
+};
+
+type MastodonNotification = {
+  id: string;
+  type: 'mention' | 'reblog' | 'favourite' | 'follow' | 'follow_request' | string;
+  created_at: string;
+  account: { id: string; acct: string };
+  status?: Status;
 };
 
 function stripHtml(html: string): string {
@@ -179,6 +192,141 @@ async function postReply(opts: {
   if (!res.ok) throw new Error(`mastodon ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
+/**
+ * 2026-06-05 Serhat: Mastodon notifications direkt verarbeiten — Mentions
+ * (@BytePulseNet ...) und Quote-Boosts (zitierte Beiträge). Vorher hat der
+ * Bot NUR Replies in unseren eigenen Threads behandelt — Mentions die uns
+ * direkt taggen wurden nie beantwortet. Resultat: Account wirkte wie
+ * broadcast-only Bot.
+ *
+ * Mention = direkter @-Tag → wir antworten kontextuell
+ * Reblog (mit Kommentar) = Quote-Boost → wir antworten als "thanks for
+ *                                         the quote, here's our take"
+ * Reblog (ohne Kommentar) = nur Boost → wir LIKEN den boost zurück
+ */
+async function processMentions(report: CommunityReplyReport): Promise<void> {
+  if (!TOKEN) return;
+
+  const url = `https://${INSTANCE}/api/v1/notifications?types[]=mention&types[]=reblog&limit=30`;
+  let notes: MastodonNotification[];
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${TOKEN}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      report.errors.push(`notifications: ${res.status}`);
+      return;
+    }
+    notes = (await res.json()) as MastodonNotification[];
+  } catch (e) {
+    report.errors.push(`notifications: ${(e as Error).message}`);
+    return;
+  }
+
+  report.mentionsScanned = notes.length;
+  report.mentionsReplied = 0;
+  report.reblogsAcknowledged = 0;
+
+  for (const n of notes) {
+    if (!n.status) continue;
+
+    // Dedup via agentLog — same notification-id never processed twice.
+    const action = `community-notif-${n.id}`;
+    const alreadyHandled = await prisma.agentLog.findFirst({
+      where: { agent: 'community', action, status: 'ok' },
+      select: { id: true },
+    });
+    if (alreadyHandled) continue;
+
+    // Don't reply to ourselves (avoid loops on our own boosts).
+    if (n.account.acct === OUR_ACCT) continue;
+
+    if (n.type === 'mention') {
+      // Direct mention — answer it contextually.
+      const userText = stripHtml(n.status.content)
+        .replace(new RegExp(`@${OUR_ACCT}`, 'gi'), '')
+        .replace(/^[\s,.:;-]+/, '')
+        .trim();
+
+      // If the user text is empty (e.g. just "@BytePulseNet"), skip — no
+      // useful prompt to answer.
+      if (userText.length < 3) {
+        await prisma.agentLog.create({
+          data: {
+            agent: 'community', action, status: 'info',
+            message: `skipped empty mention from @${n.account.acct}`,
+          },
+        }).catch(() => null);
+        continue;
+      }
+
+      // Find the article context if the mention is replying to a thread
+      // on one of our posts (the parent might be ours).
+      const parentArticleUrl = extractArticleUrl(n.status.content);
+      const slug = parentArticleUrl ? parentArticleUrl.split('/article/')[1] : null;
+      const article = slug
+        ? await prisma.article.findUnique({ where: { slug }, select: { title: true, excerpt: true } })
+        : null;
+
+      let body: string;
+      try {
+        body = await generateReply({
+          articleTitle: article?.title ?? null,
+          articleExcerpt: article?.excerpt ?? null,
+          userContent: userText,
+          userAcct: n.account.acct,
+        });
+        report.generated++;
+      } catch (e) {
+        report.errors.push(`mention-llm ${n.id}: ${(e as Error).message}`);
+        continue;
+      }
+
+      try {
+        await postReply({ inReplyToId: n.status.id, userAcct: n.account.acct, body });
+        report.mentionsReplied = (report.mentionsReplied ?? 0) + 1;
+        report.posted++;
+        await prisma.agentLog.create({
+          data: {
+            agent: 'community', action, status: 'ok',
+            message: `mention-reply to @${n.account.acct}: ${body.slice(0, 200)}`,
+          },
+        });
+      } catch (e) {
+        report.errors.push(`mention-post ${n.id}: ${(e as Error).message}`);
+        await prisma.agentLog.create({
+          data: {
+            agent: 'community', action, status: 'error',
+            message: `mention-post: ${(e as Error).message}`.slice(0, 500),
+          },
+        }).catch(() => null);
+      }
+    } else if (n.type === 'reblog') {
+      // Quote-boost or plain boost — favourite the boost as engagement
+      // acknowledgement (Mastodon convention). Cheap, no LLM call.
+      try {
+        const favRes = await fetch(`https://${INSTANCE}/api/v1/statuses/${n.status.id}/favourite`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${TOKEN}` },
+          signal: AbortSignal.timeout(8_000),
+        });
+        if (favRes.ok) {
+          report.reblogsAcknowledged = (report.reblogsAcknowledged ?? 0) + 1;
+          await prisma.agentLog.create({
+            data: {
+              agent: 'community', action, status: 'ok',
+              message: `favourited reblog by @${n.account.acct}`,
+            },
+          });
+        }
+      } catch (e) {
+        report.errors.push(`fav ${n.id}: ${(e as Error).message}`);
+      }
+    }
+  }
+}
+
 export async function runCommunityReplies(): Promise<CommunityReplyReport> {
   const report: CommunityReplyReport = {
     postsScanned: 0,
@@ -291,6 +439,15 @@ export async function runCommunityReplies(): Promise<CommunityReplyReport> {
         });
       }
     }
+  }
+
+  // 2026-06-05: zusätzlich Mentions + Quote-Boosts behandeln (vorher
+  // nur Thread-Replies in unseren eigenen Posts). Best-effort — Failure
+  // im Mention-Block bricht nicht den ganzen Run.
+  try {
+    await processMentions(report);
+  } catch (e) {
+    report.errors.push(`mentions block: ${(e as Error).message}`);
   }
 
   // Surface activity via Telegram if anything happened. Skip the chat-spam

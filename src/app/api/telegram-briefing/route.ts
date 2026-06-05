@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { tg } from '@/lib/telegram';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -88,6 +89,34 @@ async function mastodonStats(): Promise<{ followers: number; statuses: number; l
   };
 }
 
+// Reichweite-Zahlen aus DB (2026-06-05 Serhat-Request: Briefing soll Views
+// wieder zeigen). Best-effort — DB-read kann auf Turso quota-blockiert sein,
+// dann liefern wir null und Briefing zeigt den Block aus statt zu crashen.
+async function viewsStats(): Promise<{ totalViews: number; totalArticles: number; top5: Array<{ slug: string; title: string; views: number }> } | null> {
+  try {
+    const [agg, top5] = await Promise.all([
+      prisma.article.aggregate({
+        where: { status: 'published' },
+        _sum: { views: true },
+        _count: { _all: true },
+      }),
+      prisma.article.findMany({
+        where: { status: 'published' },
+        orderBy: { views: 'desc' },
+        take: 5,
+        select: { slug: true, title: true, views: true },
+      }),
+    ]);
+    return {
+      totalViews: agg._sum.views ?? 0,
+      totalArticles: agg._count._all ?? 0,
+      top5: top5.map((a) => ({ slug: a.slug, title: a.title, views: a.views ?? 0 })),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function blueskyStats(): Promise<{ followers: number; posts: number } | null> {
   const data = await fetchJson(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${BLUESKY_HANDLE}`);
   if (!data) return null;
@@ -108,12 +137,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  const [pub, clips, bing, mast, bsky] = await Promise.all([
+  const [pub, clips, bing, mast, bsky, views] = await Promise.all([
     publishedLast24h(),
     videoClipsLast24h(),
     bingStats(),
     mastodonStats(),
     blueskyStats(),
+    viewsStats(),
   ]);
 
   const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
@@ -123,6 +153,23 @@ export async function GET(req: Request) {
   lines.push(`<b>Pipeline (last 24h)</b>`);
   lines.push(`  Articles published: <b>${pub.count}</b>`);
   lines.push(`  Video clips posted: <b>${clips}</b>`);
+
+  // VIEWS / TRAFFIC — Hauptzahl die Serhat sehen will (2026-06-05).
+  if (views) {
+    lines.push('');
+    lines.push(`<b>Traffic (all-time)</b>`);
+    lines.push(`  Total views: <b>${views.totalViews.toLocaleString('de-DE')}</b>`);
+    lines.push(`  Total articles published: <b>${views.totalArticles.toLocaleString('de-DE')}</b>`);
+    if (views.top5.length) {
+      lines.push('');
+      lines.push(`<b>Top 5 by views</b>`);
+      for (const a of views.top5) {
+        const titleEsc = escape(a.title).slice(0, 60);
+        lines.push(`  <b>${a.views.toLocaleString('de-DE')}</b> · <a href="https://www.byte-pulse.net/article/${a.slug}">${titleEsc}</a>`);
+      }
+    }
+  }
+
   if (pub.titles.length) {
     lines.push('');
     lines.push(`<b>Today's slugs</b>`);
@@ -152,6 +199,7 @@ export async function GET(req: Request) {
       bing,
       mastodon: mast,
       bluesky: bsky,
+      views,
     },
   });
 }

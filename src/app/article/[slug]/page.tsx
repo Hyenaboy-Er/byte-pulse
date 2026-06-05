@@ -393,16 +393,28 @@ export default async function ArticlePage({ params }: { params: Promise<Params> 
           here: this is editorial attribution, not paid placement, so the
           link should count. */}
       {(() => {
-        // 2026-06-05 (Senior-Engineer-Fix): inkonsistenz behebt zwischen
-        //   Top:    "Reported from <single source>"
-        //   Bottom: "Sources cross-referenced from N outlets"
+        // TECH DEBT (2026-06-05) — acknowledged symptom-level fix.
         //
-        // Detect multi-source articles by looking for the cross-referenced
-        // footer string in the article body. If found, replace the single-
-        // source "Reported from" label at the top with an accurate
-        // "Cross-referenced across N outlets" badge that matches the
-        // bottom-of-page citation list. Same source data, same number,
-        // consistent message.
+        // Architecturally cleaner would be: a dedicated DB field on Article
+        // (e.g. sourceDisplayMode: "single" | "multi" + sourceCitations: JSON)
+        // set deterministically by the orchestrator at persist time, and read
+        // here without content parsing. That's the correct long-term design
+        // because the article has three semantic source-layers (RSS origin,
+        // multi-source synthesis, editorial branding) that should be modeled
+        // as explicit data, not inferred from body strings.
+        //
+        // Decision to take the symptom-fix instead: AdSense submission is
+        // 22h away. A DB schema change + migration + backfill of ~900
+        // articles on Turso production carries real outage risk; the visible
+        // effect to the reviewer is identical to the clean fix; tech-debt
+        // is documented here for post-approval refactor.
+        //
+        // Symptom-fix logic: parse article body for "Sources cross-
+        // referenced from N outlets" footer. If found, render a "Cross-
+        // referenced across N outlets" badge at the top so the source
+        // count is consistent end-to-end. Legacy single-source articles
+        // (pre multi-source pipeline) keep the original "Reported from"
+        // attribution — accurate for them.
         const xrefMatch = article.content?.match(
           /Sources cross-referenced[\s\S]{0,80}?reporting by (\d+) outlets/i,
         );

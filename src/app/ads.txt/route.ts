@@ -9,10 +9,14 @@
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT?.replace(/^ca-/, '') ?? '';
+  // 2026-06-06: Publisher-ID hardgecoded nach AdSense-Submission. Env-Var
+  // bleibt als Override falls später nötig. Vorher war Placeholder aktiv —
+  // jetzt mit echter ID damit Google die DIRECT-Berechtigung sehen kann.
+  const envClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT?.replace(/^ca-/, '');
+  const client = envClient || 'pub-7174734517406918';
 
   let body: string;
-  if (client && /^pub-\d{12,20}$/.test(client)) {
+  if (/^pub-\d{12,20}$/.test(client)) {
     // The canonical AdSense ads.txt format:
     //   google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
     body = `google.com, ${client}, DIRECT, f08c47fec0942fa0\n`;

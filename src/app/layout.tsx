@@ -58,7 +58,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  // AdSense Publisher ID. Hardgecoded am 2026-06-06 für Submission;
+  // env var bleibt als Override falls später nötig.
+  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || 'ca-pub-7174734517406918';
   // Brave Creators verification — required for Brave-browser users to send us
   // BAT tips passively as they read. Verification token comes from
   // creators.brave.com once we register the domain there. Zero-cost passive

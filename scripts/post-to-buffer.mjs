@@ -65,16 +65,29 @@ const captionYouTube = addUtm(`${opt.youtubeDescription}\n\n${hashtagLine}`, 'yo
 // X-Caption: 280-Zeichen-Limit, Hashtag-Spam abgewöhnt (X-Algorithmus
 // throttled Posts mit >2 Hashtags). Wir nehmen Caption, hängen Article-URL
 // dran, optional die 2 stärksten Hashtags am Ende. UTM für Klick-Tracking.
+// AI-Disclosure (2026-06-07): X-Posts müssen ebenfalls als AI-generiert
+// gekennzeichnet sein. Wir reservieren Budget für ein kompaktes Suffix
+// "🤖 AI anchor." + erzwingen #aigenerated als top-Hashtag, damit die
+// Disclosure auch bei aggressiver Trunkierung überlebt.
 function buildXCaption() {
   const articleUrl = (meta.url || 'https://byte-pulse.net').replace(/\/$/, '');
   const urlWithUtm = articleUrl + (articleUrl.includes('?') ? '&' : '?') + 'utm_source=x&utm_medium=social';
-  const topTags = opt.hashtags.slice(0, 2).map((h) => '#' + h).join(' ');
+  // Force #aigenerated als ersten Tag, falls die LLM ihn nicht schon vorgegeben hat.
+  const tagsForX = opt.hashtags.slice();
+  if (!tagsForX.some((h) => /^aigenerated$/i.test(h))) tagsForX.unshift('aigenerated');
+  const topTags = tagsForX.slice(0, 2).map((h) => '#' + h).join(' ');
+  const aiSuffix = '🤖 AI anchor.';
   const reservedForUrl = urlWithUtm.length + 1; // space before url
   const reservedForTags = topTags.length ? topTags.length + 2 : 0; // \n\n#a #b
-  const captionBudget = 280 - reservedForUrl - reservedForTags;
+  const reservedForAi = aiSuffix.length + 1; // space before suffix
+  const captionBudget = 280 - reservedForUrl - reservedForTags - reservedForAi;
   let body = opt.caption.replace(/\n+/g, ' ').trim();
+  // Strip jegliche AI-Disclosure die optimizeMetadata schon eingebaut hat —
+  // die 280-Zeichen-Trunkierung könnte sie zerreißen. Wir hängen die kompakte
+  // Version stattdessen nach der getrunkten Body an.
+  body = body.replace(/🤖[^]*?(AI[- ]generated|AI anchor)[^]*?(?=\s|$)/i, '').replace(/\s{2,}/g, ' ').trim();
   if (body.length > captionBudget) body = body.slice(0, captionBudget - 1).trimEnd() + '…';
-  return `${body} ${urlWithUtm}${topTags ? `\n\n${topTags}` : ''}`;
+  return `${body} ${aiSuffix} ${urlWithUtm}${topTags ? `\n\n${topTags}` : ''}`;
 }
 const captionX = buildXCaption();
 
